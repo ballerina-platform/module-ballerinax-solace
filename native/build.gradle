@@ -40,19 +40,7 @@ dependencies {
     implementation(group: 'com.solacesystems', name: 'sol-jms', version: "${solaceJmsVersion}") {
         exclude group: 'org.apache.geronimo.specs', module: 'geronimo-jms_2.0_spec'
     }
-    implementation group: 'com.solace', name: 'solace-serdes', version: "${solaceSerdesVersion}"
     implementation group: 'javax.jms', name: 'javax.jms-api', version: "${jmsApiVersion}"
-    implementation group: 'commons-logging', name: 'commons-logging', version: "${commonsLoggingVersion}"
-    implementation group: 'org.apache.servicemix.bundles', name: 'org.apache.servicemix.bundles.jzlib', version: "${servicemixJzlibVersion}"
-    implementation group: 'org.osgi', name: 'org.osgi.annotation', version: "${osgiAnnotationVersion}"
-
-    implementation group: 'io.netty', name: 'netty-transport', version: "${nettyVersion}"
-    implementation group: 'io.netty', name: 'netty-handler', version: "${nettyVersion}"
-    implementation group: 'io.netty', name: 'netty-codec', version: "${nettyVersion}"
-    implementation group: 'io.netty', name: 'netty-buffer', version: "${nettyVersion}"
-    implementation group: 'io.netty', name: 'netty-common', version: "${nettyVersion}"
-    implementation group: 'io.netty', name: 'netty-resolver', version: "${nettyVersion}"
-    implementation group: 'io.netty', name: 'netty-tcnative-boringssl-static', version: "${nettyTcnativeBoringsslStaticVersion}"
 }
 
 tasks.withType(JavaCompile) {

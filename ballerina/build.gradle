@@ -71,17 +71,6 @@ dependencies {
         transitive = false
     }
 
-    /* Other JMS dependencies */
-    externalJars(group: 'commons-logging', name: 'commons-logging', version: "${commonsLoggingVersion}") {
-        transitive = false
-    }
-    externalJars(group: 'org.apache.servicemix.bundles', name: 'org.apache.servicemix.bundles.jzlib', version: "${servicemixJzlibVersion}") {
-        transitive = false
-    }
-    externalJars(group: 'org.osgi', name: 'org.osgi.annotation', version: "${osgiAnnotationVersion}") {
-        transitive = false
-    }
-
     /* Netty dependencies */
     externalJars(group: 'io.netty', name: 'netty-transport', version: "${nettyVersion}") {
         transitive = false
@@ -102,6 +91,17 @@ dependencies {
         transitive = false
     }
     externalJars(group: 'io.netty', name: 'netty-tcnative-boringssl-static', version: "${nettyTcnativeBoringsslStaticVersion}") {
+        transitive = false
+    }
+
+    /* Other dependencies */
+    externalJars(group: 'commons-logging', name: 'commons-logging', version: "${commonsLoggingVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'org.apache.servicemix.bundles', name: 'org.apache.servicemix.bundles.jzlib', version: "${servicemixJzlibVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'org.osgi', name: 'org.osgi.annotation', version: "${osgiAnnotationVersion}") {
         transitive = false
     }
 }
