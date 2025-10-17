@@ -31,16 +31,17 @@ version = "@sol.jms.version@"
 path = "./lib/sol-jms-@sol.jms.version@.jar"
 
 [[platform.java21.dependency]]
+groupId = "com.solace"
+artifactId = "solace-serdes"
+version = "@solace.serdes.version@"
+path = "./lib/solace-serdes-@solace.serdes.version@.jar"
+
+[[platform.java21.dependency]]
 groupId = "commons-logging"
 artifactId = "commons-logging"
 version = "@commons.logging.version@"
 path = "./lib/commons-logging-@commons.logging.version@.jar"
 
-[[platform.java21.dependency]]
-groupId = "org.apache.geronimo.specs"
-artifactId = "geronimo-jms_2.0_spec"
-version = "@geronimo.jms.version@"
-path = "./lib/geronimo-jms_2.0_spec-@geronimo.jms.version@.jar"
 
 [[platform.java21.dependency]]
 groupId = "org.apache.servicemix.bundles"
@@ -53,3 +54,45 @@ groupId = "org.osgi"
 artifactId = "org.osgi.annotation"
 version = "@osgi.annotation.version@"
 path = "./lib/org.osgi.annotation-@osgi.annotation.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport"
+version = "@netty.version@"
+path = "./lib/netty-transport-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-handler"
+version = "@netty.version@"
+path = "./lib/netty-handler-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-codec"
+version = "@netty.version@"
+path = "./lib/netty-codec-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-buffer"
+version = "@netty.version@"
+path = "./lib/netty-buffer-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-common"
+version = "@netty.version@"
+path = "./lib/netty-common-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-resolver"
+version = "@netty.version@"
+path = "./lib/netty-resolver-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-tcnative-boringssl-static"
+version = "@netty.tcnative.boringssl.static.version@"
+path = "./lib/netty-tcnative-boringssl-static-@netty.tcnative.boringssl.static.version@.jar"
