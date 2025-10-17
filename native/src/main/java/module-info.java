@@ -20,7 +20,7 @@ module io.ballerina.lib.solace {
     requires io.ballerina.runtime;
     requires io.ballerina.lang.value;
     requires javax.jms.api;
-    requires com.solacesystems.jms;
+    requires sol.jms;
 
     exports io.ballerina.lib.solace;
 }
