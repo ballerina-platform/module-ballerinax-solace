@@ -15,5 +15,3 @@ jobs:
     secrets: inherit
     with:
       repo-name: module-ballerinax-solace
-      additional-build-flags: "-x test"
-      additional-test-flags: "-x test"
