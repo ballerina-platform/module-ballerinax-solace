@@ -21,16 +21,15 @@ module io.ballerina.lib.solace {
     requires io.ballerina.lang.value;
     requires javax.jms.api;
     requires sol.jms;
-    requires solace.serdes;
-    requires commons.logging;
-    requires org.apache.servicemix.bundles.jzlib;
-    requires org.osgi.annotation;
-    requires io.netty.transport;
-    requires io.netty.handler;
-    requires io.netty.codec;
-    requires io.netty.buffer;
-    requires io.netty.common;
-    requires io.netty.resolver;
+//    requires com.solace.serdes;
+//    requires org.apache.commons.logging;
+//    requires org.osgi.annotation;
+//    requires io.netty.transport;
+//    requires io.netty.handler;
+//    requires io.netty.codec;
+//    requires io.netty.buffer;
+//    requires io.netty.common;
+//    requires io.netty.resolver;
 
     exports io.ballerina.lib.solace;
 }
