@@ -29,3 +29,27 @@ groupId = "com.solacesystems"
 artifactId = "sol-jms"
 version = "@sol.jms.version@"
 path = "./lib/sol-jms-@sol.jms.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "commons-logging"
+artifactId = "commons-logging"
+version = "@commons.logging.version@"
+path = "./lib/commons-logging-@commons.logging.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "org.apache.geronimo.specs"
+artifactId = "geronimo-jms_2.0_spec"
+version = "@geronimo.jms.version@"
+path = "./lib/geronimo-jms_2.0_spec-@geronimo.jms.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "org.apache.servicemix.bundles"
+artifactId = "org.apache.servicemix.bundles.jzlib"
+version = "@servicemix.jzlib.version@"
+path = "./lib/org.apache.servicemix.bundles.jzlib-@servicemix.jzlib.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "org.osgi"
+artifactId = "org.osgi.annotation"
+version = "@osgi.annotation.version@"
+path = "./lib/org.osgi.annotation-@osgi.annotation.version@.jar"

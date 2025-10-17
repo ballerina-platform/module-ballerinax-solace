@@ -66,6 +66,20 @@ dependencies {
     externalJars(group: 'com.solacesystems', name: 'sol-jms', version: "${solaceJmsVersion}") {
         transitive = false
     }
+
+    /* Other JMS dependencies */
+    externalJars(group: 'commons-logging', name: 'commons-logging', version: "${commonsLoggingVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'org.apache.geronimo.specs', name: 'geronimo-jms_2.0_spec', version: "${geronimoJmsVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'org.apache.servicemix.bundles', name: 'org.apache.servicemix.bundles.jzlib', version: "${servicemixJzlibVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'org.osgi', name: 'org.osgi.annotation', version: "${osgiAnnotationVersion}") {
+        transitive = false
+    }
 }
 
 task updateTomlFiles {
@@ -74,6 +88,10 @@ task updateTomlFiles {
         newBallerinaToml = newBallerinaToml.replace("@toml.version@", tomlVersion)
         newBallerinaToml = newBallerinaToml.replace('@javax.jms.version@', project.jmsApiVersion)
         newBallerinaToml = newBallerinaToml.replace("@sol.jms.version@", project.solaceJmsVersion)
+        newBallerinaToml = newBallerinaToml.replace('@commons.logging.version@', project.commonsLoggingVersion)
+        newBallerinaToml = newBallerinaToml.replace('@geronimo.jms.version@', project.geronimoJmsVersion)
+        newBallerinaToml = newBallerinaToml.replace('@servicemix.jzlib.version@', project.servicemixJzlibVersion)
+        newBallerinaToml = newBallerinaToml.replace('@osgi.annotation.version@', project.osgiAnnotationVersion)
         ballerinaTomlFile.text = newBallerinaToml
     }
 }

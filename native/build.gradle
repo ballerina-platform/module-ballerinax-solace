@@ -39,6 +39,10 @@ dependencies {
     implementation group: 'org.ballerinalang', name: 'value', version: "${ballerinaLangVersion}"
     implementation group: 'com.solacesystems', name: 'sol-jms', version: "${solaceJmsVersion}"
     implementation group: 'javax.jms', name: 'javax.jms-api', version: "${jmsApiVersion}"
+    implementation group: 'commons-logging', name: 'commons-logging', version: "${commonsLoggingVersion}"
+    implementation group: 'org.apache.geronimo.specs', name: 'geronimo-jms_2.0_spec', version: "${geronimoJmsVersion}"
+    implementation group: 'org.apache.servicemix.bundles', name: 'org.apache.servicemix.bundles.jzlib', version: "${servicemixJzlibVersion}"
+    implementation group: 'org.osgi', name: 'org.osgi.annotation', version: "${osgiAnnotationVersion}"
 }
 
 tasks.withType(JavaCompile) {
