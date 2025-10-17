@@ -111,6 +111,7 @@ publishing {
 
 clean {
     delete 'build'
+    delete 'lib'
 }
 
 build.dependsOn copyToLib
