@@ -37,7 +37,9 @@ dependencies {
     implementation group: 'org.ballerinalang', name: 'ballerina-runtime', version: "${ballerinaLangVersion}"
     implementation group: 'org.ballerinalang', name: 'ballerina-lang', version: "${ballerinaLangVersion}"
     implementation group: 'org.ballerinalang', name: 'value', version: "${ballerinaLangVersion}"
-    implementation group: 'com.solacesystems', name: 'sol-jms', version: "${solaceJmsVersion}"
+    implementation(group: 'com.solacesystems', name: 'sol-jms', version: "${solaceJmsVersion}") {
+        exclude group: 'org.apache.geronimo.specs', module: 'geronimo-jms_2.0_spec'
+    }
     implementation group: 'javax.jms', name: 'javax.jms-api', version: "${jmsApiVersion}"
 }
 
