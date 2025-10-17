@@ -1,0 +1,31 @@
+[package]
+distribution = "2201.12.0"
+org = "ballerinax"
+name = "solace"
+version = "@toml.version@"
+license= ["Apache-2.0"]
+authors = ["Ballerina"]
+keywords = ["solace", "messaging", "network", "pubsub"]
+icon = "icon.png"
+repository = "https://github.com/ballerina-platform/module-ballerinax-solace"
+
+[platform.java21]
+graalvmCompatible = true
+
+[[platform.java21.dependency]]
+groupId = "io.ballerina.lib"
+artifactId = "solace-native"
+version = "@project.version@"
+path = "../native/build/libs/solace-native-@project.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "javax.jms"
+artifactId = "javax.jms-api"
+version = "@javax.jms.version@"
+path = "./lib/javax.jms-api-@javax.jms.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "com.solacesystems"
+artifactId = "sol-jms"
+version = "@sol.jms.version@"
+path = "./lib/sol-jms-@sol.jms.version@.jar"
