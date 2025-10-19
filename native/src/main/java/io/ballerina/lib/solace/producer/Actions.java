@@ -131,6 +131,50 @@ public final class Actions {
     }
 
     /**
+     * Commits all messages done in this transaction and releases any locks currently held.
+     *
+     * @param producer  Ballerina producer object
+     * @return          {@code null} on success, or Ballerina {@code solace:Error} if the session is not using a local
+     *                  transaction or if the broker fails to commit the transaction due to some internal error
+     */
+    public static Object commit(BObject producer) {
+        Session nativeSession = (Session) producer.getNativeData(NATIVE_SESSION);
+        if (nativeSession == null) {
+            return SolaceUtils.createError("Cannot commit transaction: session is not initialized");
+        }
+        try {
+            nativeSession.commit();
+            return null;
+        } catch (JMSException exception) {
+            return SolaceUtils.createError(
+                    String.format("Error occurred while committing the transaction: %s",
+                            exception.getMessage()), exception);
+        }
+    }
+
+    /**
+     * Rolls back any messages done in this transaction and releases any locks currently held.
+     *
+     * @param producer Ballerina producer object
+     * @return {@code null} on success, or Ballerina {@code solace:Error} if the session is not using
+     * a local transaction or if the broker fails to roll back the transaction due to some internal error
+     */
+    public static Object rollback(BObject producer) {
+        Session nativeSession = (Session) producer.getNativeData(NATIVE_SESSION);
+        if (nativeSession == null) {
+            return SolaceUtils.createError("Cannot rollback transaction: session is not initialized");
+        }
+        try {
+            nativeSession.rollback();
+            return null;
+        } catch (JMSException exception) {
+            return SolaceUtils.createError(
+                    String.format("Error occurred while rolling back the transaction: %s",
+                            exception.getMessage()), exception);
+        }
+    }
+
+    /**
      * Closes the message producer and the underlying connection.
      *
      * @param producer Ballerina producer object
