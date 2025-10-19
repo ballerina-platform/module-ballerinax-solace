@@ -16,29 +16,35 @@
 
 import ballerina/constraint;
 
+# Represents the configuration for a Solace message producer.
 public type ProducerConfiguration record {|
     *ConnectionConfiguration;
+    # Enables transacted messaging when set to `true`. In transacted mode, messages are sent and received 
+    # within a transaction context, requiring explicit commit or rollback
     boolean transacted = false;
+    # The destination (Topic or Queue) where messages will be published
     Destination destination;
 |};
 
+# Represents a message destination in Solace.
+# Can be either a Topic for publish/subscribe messaging or a Queue for point-to-point messaging.
 public type Destination Topic|Queue;
 
+# Represents a topic destination for publish/subscribe messaging.
 public type Topic record {|
+    # The name of the topic. Topics support wildcard subscriptions and multi-level hierarchies 
+    # using '/' as a delimiter (e.g., "orders/retail/usa")
     string topicName;
 |};
 
+# Represents a queue destination for point-to-point messaging.
 public type Queue record {|
+    # The name of the queue
     string queueName;
 |};
 
 # Represents the configuration for establishing a connection to a Solace broker.
 public type ConnectionConfiguration record {|
-    // # The broker URL in the format `<scheme>://[username]:[password]@<host>[:port]`.
-    // # Supported schemes are `smf` (plain-text) and `smfs` (TLS/SSL).
-    // # Multiple hosts can be specified as a comma-separated list for failover support.
-    // # Default ports: 55555 (standard), 55003 (compression), 55443 (SSL)
-    // string url;
     # The name of the message VPN to connect to
     string messageVpn = "default";
     # The client identifier. If not specified, a unique client ID is auto-generated
