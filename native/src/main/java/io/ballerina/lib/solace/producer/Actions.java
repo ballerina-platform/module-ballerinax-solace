@@ -21,8 +21,6 @@ package io.ballerina.lib.solace.producer;
 import com.solacesystems.jms.SolConnectionFactory;
 import com.solacesystems.jms.SolJmsUtility;
 import com.solacesystems.jms.SupportedProperty;
-
-import javax.naming.Context;
 import io.ballerina.lib.solace.config.ConnectionConfiguration;
 import io.ballerina.lib.solace.config.auth.BasicAuthConfig;
 import io.ballerina.lib.solace.config.auth.KerberosConfig;
@@ -35,12 +33,14 @@ import io.ballerina.runtime.api.values.BString;
 
 import java.util.Hashtable;
 import java.util.concurrent.CompletableFuture;
+
 import javax.jms.Connection;
 import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
+import javax.naming.Context;
 
 /**
  * Actions class for {@link javax.jms.MessageProducer} with utility methods to invoke as inter-op functions.
