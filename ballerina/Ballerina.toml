@@ -93,6 +93,12 @@ path = "./lib/netty-codec-4.1.126.Final.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
+artifactId = "netty-transport-native-unix-common"
+version = "4.1.126.Final"
+path = "./lib/netty-transport-native-unix-common-4.1.126.Final.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
 artifactId = "netty-tcnative-boringssl-static"
 version = "2.0.73.Final"
 path = "./lib/netty-tcnative-boringssl-static-2.0.73.Final.jar"
