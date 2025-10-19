@@ -97,23 +97,23 @@ artifactId = "netty-transport-native-epoll"
 version = "4.1.126.Final"
 path = "./lib/netty-transport-native-epoll-4.1.126.Final.jar"
 
-[[platform.java21.dependency]]
-groupId = "io.netty"
-artifactId = "netty-tcnative-boringssl-static"
-version = "2.0.73.Final"
-path = "./lib/netty-tcnative-boringssl-static-2.0.73.Final.jar"
+# [[platform.java21.dependency]]
+# groupId = "io.netty"
+# artifactId = "netty-tcnative-boringssl-static"
+# version = "2.0.73.Final"
+# path = "./lib/netty-tcnative-boringssl-static-2.0.73.Final.jar"
 
-[[platform.java21.dependency]]
-path = "./lib/netty-tcnative-boringssl-static-2.0.73.Final-windows-x86_64.jar"
+# [[platform.java21.dependency]]
+# path = "./lib/netty-tcnative-boringssl-static-2.0.73.Final-windows-x86_64.jar"
 
-[[platform.java21.dependency]]
-path = "./lib/netty-tcnative-boringssl-static-2.0.73.Final-linux-aarch_64.jar"
+# [[platform.java21.dependency]]
+# path = "./lib/netty-tcnative-boringssl-static-2.0.73.Final-linux-aarch_64.jar"
 
-[[platform.java21.dependency]]
-path = "./lib/netty-tcnative-boringssl-static-2.0.73.Final-linux-x86_64.jar"
+# [[platform.java21.dependency]]
+# path = "./lib/netty-tcnative-boringssl-static-2.0.73.Final-linux-x86_64.jar"
 
-[[platform.java21.dependency]]
-path = "./lib/netty-tcnative-boringssl-static-2.0.73.Final-osx-aarch_64.jar"
+# [[platform.java21.dependency]]
+# path = "./lib/netty-tcnative-boringssl-static-2.0.73.Final-osx-aarch_64.jar"
 
-[[platform.java21.dependency]]
-path = "./lib/netty-tcnative-boringssl-static-2.0.73.Final-osx-x86_64.jar"
+# [[platform.java21.dependency]]
+# path = "./lib/netty-tcnative-boringssl-static-2.0.73.Final-osx-x86_64.jar"
