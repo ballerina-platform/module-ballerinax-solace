@@ -55,11 +55,11 @@ artifactId = "org.osgi.annotation"
 version = "6.0.0"
 path = "./lib/org.osgi.annotation-6.0.0.jar"
 
-# [[platform.java21.dependency]]
-# groupId = "io.netty"
-# artifactId = "netty-common"
-# version = "4.1.126.Final"
-# path = "./lib/netty-common-4.1.126.Final.jar"
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-common"
+version = "4.1.126.Final"
+path = "./lib/netty-common-4.1.126.Final.jar"
 
 # [[platform.java21.dependency]]
 # groupId = "io.netty"
