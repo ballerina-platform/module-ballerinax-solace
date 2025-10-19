@@ -110,6 +110,12 @@ version = "4.1.126.Final"
 path = "./lib/netty-transport-native-epoll-4.1.126.Final.jar"
 
 [[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport-classes-epoll"
+version = "4.1.126.Final"
+path = "./lib/netty-transport-classes-epoll-4.1.126.Final.jar"
+
+[[platform.java21.dependency]]
 path = "./lib/netty-transport-native-epoll-4.1.126.Final-linux-x86_64.jar"
 
 [[platform.java21.dependency]]
@@ -120,6 +126,12 @@ groupId = "io.netty"
 artifactId = "netty-transport-native-kqueue"
 version = "4.1.126.Final"
 path = "./lib/netty-transport-native-kqueue-4.1.126.Final.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport-classes-kqueue"
+version = "4.1.126.Final"
+path = "./lib/netty-transport-classes-kqueue-4.1.126.Final.jar"
 
 [[platform.java21.dependency]]
 path = "./lib/netty-transport-native-kqueue-4.1.126.Final-osx-x86_64.jar"
