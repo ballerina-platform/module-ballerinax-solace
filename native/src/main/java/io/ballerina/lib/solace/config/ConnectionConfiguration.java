@@ -25,10 +25,9 @@ import io.ballerina.lib.solace.config.auth.OAuth2Config;
 import io.ballerina.lib.solace.config.retry.RetryConfig;
 import io.ballerina.lib.solace.config.ssl.SecureSocketConfig;
 import io.ballerina.runtime.api.utils.StringUtils;
+import io.ballerina.runtime.api.values.BDecimal;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
-
-import java.math.BigDecimal;
 
 import static io.ballerina.lib.solace.config.ConfigUtils.decimalToMillis;
 
@@ -87,8 +86,8 @@ public record ConnectionConfiguration(
                 config.getStringValue(CLIENT_DESCRIPTION).getValue(),
                 config.getBooleanValue(ALLOW_DUPLICATE_CLIENT_ID),
                 config.containsKey(LOCALHOST) ? config.getStringValue(LOCALHOST).getValue() : null,
-                decimalToMillis((BigDecimal) config.get(CONNECT_TIMEOUT)),
-                decimalToMillis((BigDecimal) config.get(READ_TIMEOUT)),
+                decimalToMillis(((BDecimal) config.get(CONNECT_TIMEOUT)).decimalValue()),
+                decimalToMillis(((BDecimal) config.get(READ_TIMEOUT)).decimalValue()),
                 config.getIntValue(COMPRESSION_LEVEL).intValue(),
                 config.containsKey(AUTH) ? getAuthConfig((BMap<BString, Object>) config.getMapValue(AUTH)) : null,
                 config.containsKey(RETRY_CONFIG) ?

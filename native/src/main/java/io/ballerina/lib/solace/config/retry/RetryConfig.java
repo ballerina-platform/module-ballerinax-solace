@@ -19,10 +19,9 @@
 package io.ballerina.lib.solace.config.retry;
 
 import io.ballerina.runtime.api.utils.StringUtils;
+import io.ballerina.runtime.api.values.BDecimal;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
-
-import java.math.BigDecimal;
 
 import static io.ballerina.lib.solace.config.ConfigUtils.decimalToMillis;
 
@@ -57,7 +56,7 @@ public record RetryConfig(
                 config.getIntValue(CONNECT_RETRIES).intValue(),
                 config.getIntValue(CONNECT_RETRIES_PER_HOST).intValue(),
                 config.getIntValue(RECONNECT_RETRIES).intValue(),
-                decimalToMillis((BigDecimal) config.get(RECONNECT_RETRY_WAIT))
+                decimalToMillis(((BDecimal) config.get(RECONNECT_RETRY_WAIT)).decimalValue())
         );
     }
 }
