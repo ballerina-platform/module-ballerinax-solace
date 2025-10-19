@@ -61,11 +61,11 @@ artifactId = "netty-common"
 version = "4.1.126.Final"
 path = "./lib/netty-common-4.1.126.Final.jar"
 
-# [[platform.java21.dependency]]
-# groupId = "io.netty"
-# artifactId = "netty-buffer"
-# version = "4.1.126.Final"
-# path = "./lib/netty-buffer-4.1.126.Final.jar"
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-buffer"
+version = "4.1.126.Final"
+path = "./lib/netty-buffer-4.1.126.Final.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
