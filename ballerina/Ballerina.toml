@@ -73,11 +73,11 @@ artifactId = "netty-transport"
 version = "4.1.126.Final"
 path = "./lib/netty-transport-4.1.126.Final.jar"
 
-# [[platform.java21.dependency]]
-# groupId = "io.netty"
-# artifactId = "netty-resolver"
-# version = "4.1.126.Final"
-# path = "./lib/netty-resolver-4.1.126.Final.jar"
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-resolver"
+version = "4.1.126.Final"
+path = "./lib/netty-resolver-4.1.126.Final.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
