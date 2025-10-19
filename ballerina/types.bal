@@ -1,0 +1,277 @@
+// Copyright (c) 2025 WSO2 LLC. (http://www.wso2.com).
+//
+// WSO2 LLC. licenses this file to you under the Apache License,
+// Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+import ballerina/constraint;
+
+public type ProducerConfiguration record {|
+    *ConnectionConfiguration;
+    boolean transacted = false;
+    Destination destination;
+|};
+
+public type Destination Topic|Queue;
+
+public type Topic record {|
+    string topicName;
+|};
+
+public type Queue record {|
+    string queueName;
+|};
+
+# Represents the configuration for establishing a connection to a Solace broker.
+public type ConnectionConfiguration record {|
+    // # The broker URL in the format `<scheme>://[username]:[password]@<host>[:port]`.
+    // # Supported schemes are `smf` (plain-text) and `smfs` (TLS/SSL).
+    // # Multiple hosts can be specified as a comma-separated list for failover support.
+    // # Default ports: 55555 (standard), 55003 (compression), 55443 (SSL)
+    // string url;
+    # The name of the message VPN to connect to
+    string messageVpn = "default";
+    # The client identifier. If not specified, a unique client ID is auto-generated
+    string clientId?;
+    # A description for the application client
+    string clientDescription = "JNDI";
+    # Specifies whether to allow the same client ID to be used across multiple connections
+    boolean allowDuplicateClientId = false;
+    # The local interface IP address to bind for outbound connections
+    string localhost?;
+    # The the maximum amount of time (in seconds) permitted for a JNDI connection attempt. 
+    # A value of 0 means wait indefinitely
+    decimal connectTimeout = 30.0;
+    # the maximum amount of time (in seconds) permitted for reading a JNDI lookup reply from the host
+    decimal readTimeout = 10.0;
+    # The configuration to enable and specify the ZLIB compression level.
+    # Valid range is 0-9, where 0 means no compression. Higher values provide better compression at the slower throughput
+    @constraint:Int {
+        minValue: {
+            value: 0,
+            message: "ZLIB compression level must be at least 0 (no compression)"
+        },
+        maxValue: {
+            value: 9,
+            message: "ZLIB compression level cannot exceed 9 (maximum compression)"
+        }
+    }
+    int compressionLevel = 0;
+    # The authentication configuration. Supports basic authentication, Kerberos, and OAuth2.
+    # For client certificate authentication, configure the `secureSocket.keyStore` field
+    BasicAuthConfig|KerberosConfig|OAuth2Config auth?;
+    # The retry configuration for connection and reconnection attempts
+    RetryConfig retryConfig?;
+    # The SSL/TLS configuration for secure connections
+    SecureSocket secureSocket?;
+|};
+
+# Represents the basic authentication credentials for connecting to a Solace broker.
+public type BasicAuthConfig record {|
+    # The username for authentication
+    @constraint:String {
+        maxLength: {
+            value: 32,
+            message: "Username cannot exceed 32 characters"
+        }
+    }
+    string username;
+    # The password for authentication
+    @constraint:String {
+        maxLength: {
+            value: 128,
+            message: "Password cannot exceed 128 characters"
+        }
+    }
+    string password?;
+|};
+
+# Represents the Kerberos (GSS-KRB) authentication configuration for connecting to a Solace broker
+public type KerberosConfig record {|
+    # Specifies whether to enable Kerberos mutual authentication
+    boolean mutualAuthentication = true;
+    # The Kerberos service name used during authentication
+    string serviceName = "solace";
+    # The JAAS login context name to use for authentication
+    string jaasLoginContext = "SolaceGSS";
+    # Specifies whether to enable automatic reload of the JAAS configuration file
+    boolean jaasConfigReloadEnabled = false;
+|};
+
+# Represents the OAuth 2.0 authentication configuration for connecting to a Solace broker
+public type OAuth2Config record {|
+    # The OAuth 2.0 issuer identifier URI
+    string issuer;
+    # The OAuth 2.0 access token for authentication
+    string accessToken?;
+    # The OpenID Connect (OIDC) ID token for authentication
+    string oidcToken?;
+|};
+
+# Represents the retry configuration for connection and reconnection attempts to a Solace broker
+public type RetryConfig record {|
+    # The number of times to retry connecting to the broker during initial connection.
+    # A value of -1 means retry forever, 0 means no retries (fail immediately on first failure)
+    int connectRetries = 0;
+    # The number of connection retries per host when multiple hosts are specified in the URL.
+    # This applies to each host in a comma-separated host list
+    int connectRetriesPerHost = 0;
+    # The number of times to retry reconnecting after an established connection is lost.
+    # A value of -1 means retry forever
+    int reconnectRetries = 20;
+    # The time to wait between reconnection attempts, in seconds
+    decimal reconnectRetryWait = 3.0;
+|};
+
+# SSL protocol version 3.0
+public const SSLv30 = "sslv3";
+# TLS protocol version 1.0
+public const TLSv10 = "tlsv1";
+# TLS protocol version 1.1
+public const TLSv11 = "tlsv11";
+# TLS protocol version 1.2
+public const TLSv12 = "tlsv12";
+
+# Represents the supported SSL/TLS protocol versions.
+public type Protocol SSLv30|TLSv10|TLSv11|TLSv12;
+
+# Cipher suite: TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384
+public const ECDHE_RSA_AES256_CBC_SHA384 = "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384";
+# Cipher suite: TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA
+public const ECDHE_RSA_AES256_CBC_SHA = "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA";
+# Cipher suite: TLS_RSA_WITH_AES_256_CBC_SHA256
+public const RSA_AES256_CBC_SHA256 = "TLS_RSA_WITH_AES_256_CBC_SHA256";
+# Cipher suite: TLS_RSA_WITH_AES_256_CBC_SHA
+public const RSA_AES256_CBC_SHA = "TLS_RSA_WITH_AES_256_CBC_SHA";
+# Cipher suite: TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA
+public const ECDHE_RSA_3DES_EDE_CBC_SHA = "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA";
+# Cipher suite: SSL_RSA_WITH_3DES_EDE_CBC_SHA
+public const RSA_3DES_EDE_CBC_SHA = "SSL_RSA_WITH_3DES_EDE_CBC_SHA";
+# Cipher suite: TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA
+public const ECDHE_RSA_AES128_CBC_SHA = "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA";
+# Cipher suite: TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
+public const ECDHE_RSA_AES128_CBC_SHA256 = "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256";
+# Cipher suite: TLS_RSA_WITH_AES_128_CBC_SHA256
+public const RSA_AES128_CBC_SHA256 = "TLS_RSA_WITH_AES_128_CBC_SHA256";
+# Cipher suite: TLS_RSA_WITH_AES_128_CBC_SHA
+public const RSA_AES128_CBC_SHA = "TLS_RSA_WITH_AES_128_CBC_SHA";
+
+# The SSL Cipher Suite to be used for secure communication with the Solace broker.
+public type SslCipherSuite ECDHE_RSA_AES256_CBC_SHA384|ECDHE_RSA_AES256_CBC_SHA|RSA_AES256_CBC_SHA256|RSA_AES256_CBC_SHA|
+    ECDHE_RSA_3DES_EDE_CBC_SHA|RSA_3DES_EDE_CBC_SHA|ECDHE_RSA_AES128_CBC_SHA|ECDHE_RSA_AES128_CBC_SHA256|RSA_AES128_CBC_SHA256|
+    RSA_AES128_CBC_SHA;
+
+# Represents the SSL/TLS configuration for secure connections to a Solace broker
+public type SecureSocket record {|
+    # The certificate validation settings
+    record {|
+        # Enable certificate validation
+        boolean enabled = true;
+        # Specifies whether to validate the certificate's expiration date
+        boolean validateDate = true;
+        # Specifies whether to validate that the certificate's common name matches the broker hostname
+        boolean validateHost = true;
+    |} validation = {};
+    # The trust store configuration containing trusted CA certificates
+    TrustStore trustStore?;
+    # The key store configuration containing the client's private key and certificate.
+    # When configured, enables client certificate authentication
+    KeyStore keyStore?;
+    # The list of SSL/TLS protocol versions to enable for the connection.
+    # It is recommended to use only TLSv12 or higher for security
+    Protocol[] protocols = [SSLv30, TLSv10, TLSv11, TLSv12];
+    # The list of cipher suites to enable for the connection.
+    # If not specified, the default cipher suites for the JVM are used
+    SslCipherSuite[] cipherSuites?;
+    # The list of acceptable common names for broker certificate validation.
+    # If specified, the broker certificate's common name must match one of these values
+    @constraint:Array {
+        maxLength: {
+            value: 16,
+            message: "Trusted common names list cannot exceed 16 entries"
+        }
+    }
+    string[] trustedCommonNames?;
+|};
+
+# Java KeyStore format
+public const JKS = "jks";
+# PKCS12 format
+public const PKCS12 = "pkcs12";
+
+# Represents the supported SSL store formats.
+public type SslStoreFormat JKS|PKCS12;
+
+# Represents a trust store containing trusted CA certificates.
+public type TrustStore record {|
+    # The URL or path of the truststore file
+    string location;
+    # The password for the trust store
+    string password;
+    # The format of the trust store file
+    SslStoreFormat format = JKS;
+|};
+
+# Represents a key store containing the client's private key and certificate.
+public type KeyStore record {|
+    # The URL or path of the keystore file
+    string location;
+    # The password for the key store
+    string password;
+    # The password for the private key within the key store.
+    # If not specified, the key store password is used
+    string keyPassword?;
+    # The alias of the private key to use from the key store.
+    # If not specified, the first private key found is used
+    string keyAlias?;
+    # The format of the key store file
+    SslStoreFormat format = JKS;
+|};
+
+# Represent the valid value types allowed in JMS message properties.
+public type Property boolean|int|byte|float|string;
+
+# Represents the allowed value types for entries in the map content of a JMS MapMessage.
+public type Value Property|byte[];
+
+# Represent the JMS Message used to send and receive content from the a JMS provider.
+#
+# + messageId - Unique identifier for a JMS message (Only set by the JMS provider)
+# + timestamp - Time a message was handed off to a provider to be sent (Only set by the JMS provider)
+# + correlationId - Id which can be used to correlate multiple messages 
+# + replyTo - JMS destination to which a reply to this message should be sent
+# + destination - JMS destination of this message (Only set by the JMS provider)
+# + deliveryMode - Delivery mode of this message (Only set by the JMS provider)
+# + redelivered - Indication of whether this message is being redelivered (Only set by the JMS provider)
+# + jmsType - Message type identifier supplied by the client when the message was sent  
+# + expiration - Message expiration time (Only set by the JMS provider)
+# + deliveredTime - The earliest time when a JMS provider may deliver the message to a consumer (Only set by the JMS provider)
+# + priority - Message priority level (Only set by the JMS provider)
+# + properties - Additional message properties
+# + content - Message content
+public type Message record {
+    string messageId?;
+    int timestamp?;
+    string correlationId?;
+    Destination replyTo?;
+    Destination destination?;
+    int deliveryMode?;
+    boolean redelivered?;
+    string jmsType?;
+    int expiration?;
+    int deliveredTime?;
+    int priority?;
+    map<Property> properties?;
+    string|map<Value>|byte[] content;
+};
+
