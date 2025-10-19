@@ -16,6 +16,7 @@
 
 // Solace broker connection details
 const string BROKER_URL = "smf://localhost:55554";
+const string BROKER_URL_COMPRESSED = "smf://localhost:55003";
 const string MESSAGE_VPN = "default";
 const string BROKER_USERNAME = "admin";
 const string BROKER_PASSWORD = "admin";

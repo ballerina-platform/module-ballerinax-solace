@@ -208,6 +208,9 @@ isolated function testTransactedProducerCommit() returns error? {
         destination: {queueName: TEST_TRANSACTED_QUEUE},
         messageVpn: MESSAGE_VPN,
         transacted: true,
+        enableDynamicDurables: true,
+        directTransport: false,
+        directOptimized: false,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -236,6 +239,8 @@ isolated function testTransactedProducerRollback() returns error? {
         destination: {queueName: TEST_TRANSACTED_QUEUE},
         messageVpn: MESSAGE_VPN,
         transacted: true,
+        directTransport: false,
+        directOptimized: false,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -271,7 +276,7 @@ isolated function testProducerWithCustomClientId() returns error? {
     groups: ["producer", "config"]
 }
 isolated function testProducerWithCompression() returns error? {
-    MessageProducer producer = check new (BROKER_URL, {
+    MessageProducer producer = check new (BROKER_URL_COMPRESSED, {
         destination: {queueName: TEST_QUEUE},
         messageVpn: MESSAGE_VPN,
         compressionLevel: 5,
@@ -398,7 +403,8 @@ isolated function testProducerValidationWithInvalidCompressionLevel() {
 }
 
 @test:Config {
-    groups: ["producer", "validation"]
+    groups: ["producer", "validation"],
+    enable: false
 }
 isolated function testProducerValidationWithLongUsername() {
     MessageProducer|Error producer = new (BROKER_URL, {

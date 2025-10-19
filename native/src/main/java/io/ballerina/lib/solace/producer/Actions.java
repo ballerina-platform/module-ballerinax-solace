@@ -70,6 +70,11 @@ public final class Actions {
             ConnectionConfiguration connConfig = producerConfig.connectionConfig();
             Hashtable<String, Object> connectionProps = buildConnectionProperties(url.getValue(), connConfig);
             SolConnectionFactory connectionFactory = SolJmsUtility.createConnectionFactory(connectionProps);
+
+            // Configure transport mode from connection configuration
+            connectionFactory.setDirectTransport(connConfig.directTransport());
+            connectionFactory.setDirectOptimized(connConfig.directOptimized());
+
             Connection connection = connectionFactory.createConnection();
             connection.start();
 
@@ -208,6 +213,7 @@ public final class Actions {
         Hashtable<String, Object> props = new Hashtable<>();
         props.put(Context.PROVIDER_URL, url);
         props.put(SupportedProperty.SOLACE_JMS_VPN, config.messageVpn());
+        props.put(SupportedProperty.SOLACE_JMS_DYNAMIC_DURABLES, config.enableDynamicDurables());
 
         if (config.clientId() != null) {
             props.put(SupportedProperty.SOLACE_JMS_JNDI_CLIENT_ID, config.clientId());

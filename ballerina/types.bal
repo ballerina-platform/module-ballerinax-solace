@@ -16,16 +16,6 @@
 
 import ballerina/constraint;
 
-# Represents the configuration for a Solace message producer.
-public type ProducerConfiguration record {|
-    *ConnectionConfiguration;
-    # Enables transacted messaging when set to `true`. In transacted mode, messages are sent and received 
-    # within a transaction context, requiring explicit commit or rollback
-    boolean transacted = false;
-    # The destination (Topic or Queue) where messages will be published
-    Destination destination;
-|};
-
 # Represents a message destination in Solace.
 # Can be either a Topic for publish/subscribe messaging or a Queue for point-to-point messaging.
 public type Destination Topic|Queue;
@@ -43,8 +33,8 @@ public type Queue record {|
     string queueName;
 |};
 
-# Represents the configuration for establishing a connection to a Solace broker.
-public type ConnectionConfiguration record {|
+# Represents the configuration for a Solace message producer.
+public type ProducerConfiguration record {|
     # The name of the message VPN to connect to
     string messageVpn = "default";
     # The client identifier. If not specified, a unique client ID is auto-generated
@@ -53,6 +43,15 @@ public type ConnectionConfiguration record {|
     string clientDescription = "JNDI";
     # Specifies whether to allow the same client ID to be used across multiple connections
     boolean allowDuplicateClientId = false;
+    # Enables automatic creation of durable queues and topic endpoints on the broker
+    boolean enableDynamicDurables = false;
+    # Enables direct transport mode for message delivery. When `true`, uses direct (at-most-once) delivery.
+    # When `false`, uses guaranteed (persistent) delivery mode. Direct transport must be disabled for
+    # transacted sessions and XA transactions.
+    boolean directTransport = true;
+    # Enables direct message optimization. When `true`, optimizes message delivery in direct transport mode
+    # by reducing protocol overhead. Only applicable when `directTransport` is `true`.
+    boolean directOptimized = true;
     # The local interface IP address to bind for outbound connections
     string localhost?;
     # The the maximum amount of time (in seconds) permitted for a JNDI connection attempt. 
@@ -80,6 +79,11 @@ public type ConnectionConfiguration record {|
     RetryConfig retryConfig?;
     # The SSL/TLS configuration for secure connections
     SecureSocket secureSocket?;
+    # Enables transacted messaging when set to `true`. In transacted mode, messages are sent and received 
+    # within a transaction context, requiring explicit commit or rollback
+    boolean transacted = false;
+    # The destination (Topic or Queue) where messages will be published
+    Destination destination;
 |};
 
 # Represents the basic authentication credentials for connecting to a Solace broker.

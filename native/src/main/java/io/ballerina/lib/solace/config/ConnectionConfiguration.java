@@ -40,6 +40,9 @@ import static io.ballerina.lib.solace.config.ConfigUtils.decimalToMillis;
  * @param clientId                client identifier, or {@code null} for auto-generated ID
  * @param clientDescription       description for application client
  * @param allowDuplicateClientId  {@code true} to allow same client ID across multiple connections
+ * @param enableDynamicDurables   {@code true} to automatically create queues/endpoints on the broker
+ * @param directTransport         {@code true} to use direct transport (at-most-once), {@code false} for guaranteed
+ * @param directOptimized         {@code true} to optimize direct transport delivery
  * @param localhost               local interface IP address to bind for outbound connections, or {@code null}
  * @param connectTimeout          maximum time in milliseconds permitted for connection attempt
  * @param readTimeout             maximum time in milliseconds permitted for reading replies
@@ -53,6 +56,9 @@ public record ConnectionConfiguration(
         String clientId,
         String clientDescription,
         boolean allowDuplicateClientId,
+        boolean enableDynamicDurables,
+        boolean directTransport,
+        boolean directOptimized,
         String localhost,
         long connectTimeout,
         long readTimeout,
@@ -66,6 +72,9 @@ public record ConnectionConfiguration(
     private static final BString CLIENT_ID = StringUtils.fromString("clientId");
     private static final BString CLIENT_DESCRIPTION = StringUtils.fromString("clientDescription");
     private static final BString ALLOW_DUPLICATE_CLIENT_ID = StringUtils.fromString("allowDuplicateClientId");
+    private static final BString ENABLE_DYNAMIC_DURABLES = StringUtils.fromString("enableDynamicDurables");
+    private static final BString DIRECT_TRANSPORT = StringUtils.fromString("directTransport");
+    private static final BString DIRECT_OPTIMIZED = StringUtils.fromString("directOptimized");
     private static final BString LOCALHOST = StringUtils.fromString("localhost");
     private static final BString CONNECT_TIMEOUT = StringUtils.fromString("connectTimeout");
     private static final BString READ_TIMEOUT = StringUtils.fromString("readTimeout");
@@ -85,6 +94,9 @@ public record ConnectionConfiguration(
                 config.containsKey(CLIENT_ID) ? config.getStringValue(CLIENT_ID).getValue() : null,
                 config.getStringValue(CLIENT_DESCRIPTION).getValue(),
                 config.getBooleanValue(ALLOW_DUPLICATE_CLIENT_ID),
+                config.getBooleanValue(ENABLE_DYNAMIC_DURABLES),
+                config.getBooleanValue(DIRECT_TRANSPORT),
+                config.getBooleanValue(DIRECT_OPTIMIZED),
                 config.containsKey(LOCALHOST) ? config.getStringValue(LOCALHOST).getValue() : null,
                 decimalToMillis(((BDecimal) config.get(CONNECT_TIMEOUT)).decimalValue()),
                 decimalToMillis(((BDecimal) config.get(READ_TIMEOUT)).decimalValue()),
