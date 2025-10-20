@@ -16,25 +16,31 @@
  *  under the License.
  */
 
-package io.ballerina.lib.solace.config;
+package io.ballerina.lib.solace;
 
 import com.solacesystems.jms.SupportedProperty;
+import io.ballerina.lib.solace.config.ConnectionConfiguration;
 import io.ballerina.lib.solace.config.auth.BasicAuthConfig;
 import io.ballerina.lib.solace.config.auth.KerberosConfig;
 import io.ballerina.lib.solace.config.auth.OAuth2Config;
 import io.ballerina.lib.solace.config.retry.RetryConfig;
 import io.ballerina.lib.solace.config.ssl.SecureSocketConfig;
+import io.ballerina.runtime.api.creators.ErrorCreator;
+import io.ballerina.runtime.api.utils.StringUtils;
+import io.ballerina.runtime.api.values.BError;
 
 import java.util.Hashtable;
 
 import javax.naming.Context;
 
 /**
- * Utility methods for connection configuration.
+ * Common utility methods for Solace connector.
  */
-public final class ConnectionUtils {
+public final class CommonUtils {
 
-    private ConnectionUtils() {}
+    private static final String SOLACE_ERROR = "Error";
+
+    private CommonUtils() {}
 
     /**
      * Builds Solace JNDI connection properties from connection configuration.
@@ -162,5 +168,28 @@ public final class ConnectionUtils {
         }
 
         return props;
+    }
+
+    /**
+     * Creates a Ballerina error with given message.
+     *
+     * @param message error message
+     * @return Ballerina error
+     */
+    public static BError createError(String message) {
+        return ErrorCreator.createError(ModuleUtils.getModule(), SOLACE_ERROR,
+                StringUtils.fromString(message), null, null);
+    }
+
+    /**
+     * Creates a Ballerina error with given message and cause.
+     *
+     * @param message error message
+     * @param cause   exception cause
+     * @return Ballerina error
+     */
+    public static BError createError(String message, Throwable cause) {
+        return ErrorCreator.createError(ModuleUtils.getModule(), SOLACE_ERROR,
+                StringUtils.fromString(message), ErrorCreator.createError(cause), null);
     }
 }

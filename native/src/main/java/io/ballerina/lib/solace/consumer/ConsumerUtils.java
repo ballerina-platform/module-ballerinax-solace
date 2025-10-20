@@ -18,11 +18,6 @@
 
 package io.ballerina.lib.solace.consumer;
 
-import io.ballerina.lib.solace.ModuleUtils;
-import io.ballerina.runtime.api.creators.ErrorCreator;
-import io.ballerina.runtime.api.utils.StringUtils;
-import io.ballerina.runtime.api.values.BError;
-
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
 import javax.jms.Queue;
@@ -35,29 +30,6 @@ import javax.jms.Topic;
 public final class ConsumerUtils {
 
     private ConsumerUtils() {}
-
-    /**
-     * Creates a Ballerina error with the given message.
-     *
-     * @param message error message
-     * @return Ballerina error
-     */
-    public static BError createError(String message) {
-        return ErrorCreator.createError(ModuleUtils.getModule(), "Error",
-                StringUtils.fromString(message), null, null);
-    }
-
-    /**
-     * Creates a Ballerina error with the given message and cause.
-     *
-     * @param message error message
-     * @param cause   throwable cause
-     * @return Ballerina error
-     */
-    public static BError createError(String message, Throwable cause) {
-        return ErrorCreator.createError(ModuleUtils.getModule(), "Error",
-                StringUtils.fromString(message), ErrorCreator.createError(cause), null);
-    }
 
     /**
      * Creates a JMS MessageConsumer based on subscription configuration.

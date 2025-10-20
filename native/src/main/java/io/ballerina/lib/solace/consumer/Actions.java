@@ -20,8 +20,8 @@ package io.ballerina.lib.solace.consumer;
 
 import com.solacesystems.jms.SolConnectionFactory;
 import com.solacesystems.jms.SolJmsUtility;
+import io.ballerina.lib.solace.CommonUtils;
 import io.ballerina.lib.solace.config.ConnectionConfiguration;
-import io.ballerina.lib.solace.config.ConnectionUtils;
 import io.ballerina.runtime.api.values.BDecimal;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
@@ -62,7 +62,7 @@ public final class Actions {
             ConnectionConfiguration connConfig = consumerConfig.connectionConfig();
             SubscriptionConfig subscriptionConfig = consumerConfig.subscriptionConfig();
 
-            Hashtable<String, Object> connectionProps = ConnectionUtils.buildConnectionProperties(
+            Hashtable<String, Object> connectionProps = CommonUtils.buildConnectionProperties(
                     url.getValue(), connConfig);
             SolConnectionFactory connectionFactory = SolJmsUtility.createConnectionFactory(connectionProps);
 
@@ -87,11 +87,11 @@ public final class Actions {
 
             return null;
         } catch (JMSException exception) {
-            return ConsumerUtils.createError(
+            return CommonUtils.createError(
                     String.format("Error occurred while initializing the Solace MessageConsumer: %s",
                             exception.getMessage()), exception);
         } catch (Exception exception) {
-            return ConsumerUtils.createError(
+            return CommonUtils.createError(
                     String.format("Unexpected error occurred during consumer initialization: %s",
                             exception.getMessage()), exception);
         }
@@ -121,11 +121,11 @@ public final class Actions {
                     future.complete(ballerinaMessage);
                 }
             } catch (JMSException exception) {
-                future.complete(ConsumerUtils.createError(
+                future.complete(CommonUtils.createError(
                         String.format("Error occurred while receiving message from Solace broker: %s",
                                 exception.getMessage()), exception));
             } catch (Exception exception) {
-                future.complete(ConsumerUtils.createError(
+                future.complete(CommonUtils.createError(
                         String.format("Unexpected error occurred while receiving message: %s",
                                 exception.getMessage()), exception));
             }
@@ -134,7 +134,7 @@ public final class Actions {
         try {
             return future.get();
         } catch (Exception exception) {
-            return ConsumerUtils.createError(
+            return CommonUtils.createError(
                     String.format("Error occurred while waiting for operation to complete: %s",
                             exception.getMessage()), exception);
         }
@@ -161,11 +161,11 @@ public final class Actions {
                     future.complete(ballerinaMessage);
                 }
             } catch (JMSException exception) {
-                future.complete(ConsumerUtils.createError(
+                future.complete(CommonUtils.createError(
                         String.format("Error occurred while receiving message from Solace broker: %s",
                                 exception.getMessage()), exception));
             } catch (Exception exception) {
-                future.complete(ConsumerUtils.createError(
+                future.complete(CommonUtils.createError(
                         String.format("Unexpected error occurred while receiving message: %s",
                                 exception.getMessage()), exception));
             }
@@ -174,7 +174,7 @@ public final class Actions {
         try {
             return future.get();
         } catch (Exception exception) {
-            return ConsumerUtils.createError(
+            return CommonUtils.createError(
                     String.format("Error occurred while waiting for operation to complete: %s",
                             exception.getMessage()), exception);
         }
@@ -191,7 +191,7 @@ public final class Actions {
             // Retrieve the native JMS message stored in the Ballerina message
             Message nativeMessage = (Message) message.getNativeData(MessageConverter.NATIVE_MESSAGE);
             if (nativeMessage == null) {
-                return ConsumerUtils.createError("Cannot acknowledge message: native message not found");
+                return CommonUtils.createError("Cannot acknowledge message: native message not found");
             }
 
             // Acknowledge the message (acknowledges all messages in the session for CLIENT_ACKNOWLEDGE mode)
@@ -199,7 +199,7 @@ public final class Actions {
 
             return null;
         } catch (JMSException exception) {
-            return ConsumerUtils.createError(
+            return CommonUtils.createError(
                     String.format("Error occurred while acknowledging the message: %s",
                             exception.getMessage()), exception);
         }
@@ -214,13 +214,13 @@ public final class Actions {
     public static Object commit(BObject consumer) {
         Session nativeSession = (Session) consumer.getNativeData(NATIVE_SESSION);
         if (nativeSession == null) {
-            return ConsumerUtils.createError("Cannot commit transaction: session is not initialized");
+            return CommonUtils.createError("Cannot commit transaction: session is not initialized");
         }
         try {
             nativeSession.commit();
             return null;
         } catch (JMSException exception) {
-            return ConsumerUtils.createError(
+            return CommonUtils.createError(
                     String.format("Error occurred while committing the transaction: %s",
                             exception.getMessage()), exception);
         }
@@ -235,13 +235,13 @@ public final class Actions {
     public static Object rollback(BObject consumer) {
         Session nativeSession = (Session) consumer.getNativeData(NATIVE_SESSION);
         if (nativeSession == null) {
-            return ConsumerUtils.createError("Cannot rollback transaction: session is not initialized");
+            return CommonUtils.createError("Cannot rollback transaction: session is not initialized");
         }
         try {
             nativeSession.rollback();
             return null;
         } catch (JMSException exception) {
-            return ConsumerUtils.createError(
+            return CommonUtils.createError(
                     String.format("Error occurred while rolling back the transaction: %s",
                             exception.getMessage()), exception);
         }
@@ -271,7 +271,7 @@ public final class Actions {
 
             return null;
         } catch (JMSException exception) {
-            return ConsumerUtils.createError(
+            return CommonUtils.createError(
                     String.format("Error occurred while closing the message consumer: %s",
                             exception.getMessage()), exception);
         }

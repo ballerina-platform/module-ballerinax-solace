@@ -20,8 +20,8 @@ package io.ballerina.lib.solace.producer;
 
 import com.solacesystems.jms.SolConnectionFactory;
 import com.solacesystems.jms.SolJmsUtility;
+import io.ballerina.lib.solace.CommonUtils;
 import io.ballerina.lib.solace.config.ConnectionConfiguration;
-import io.ballerina.lib.solace.config.ConnectionUtils;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
@@ -59,7 +59,7 @@ public final class Actions {
         try {
             ProducerConfiguration producerConfig = new ProducerConfiguration(config);
             ConnectionConfiguration connConfig = producerConfig.connectionConfig();
-            Hashtable<String, Object> connectionProps = ConnectionUtils.buildConnectionProperties(
+            Hashtable<String, Object> connectionProps = CommonUtils.buildConnectionProperties(
                     url.getValue(), connConfig);
             SolConnectionFactory connectionFactory = SolJmsUtility.createConnectionFactory(connectionProps);
 
@@ -71,7 +71,7 @@ public final class Actions {
             connection.start();
 
             Session session = connection.createSession(producerConfig.transacted(), Session.AUTO_ACKNOWLEDGE);
-            Destination destination = SolaceUtils.createDestination(session, producerConfig.destination());
+            Destination destination = createDestination(session, producerConfig.destination());
             MessageProducer jmsProducer = session.createProducer(destination);
 
             producer.addNativeData(NATIVE_PRODUCER, jmsProducer);
@@ -80,11 +80,11 @@ public final class Actions {
 
             return null;
         } catch (JMSException exception) {
-            return SolaceUtils.createError(
+            return CommonUtils.createError(
                     String.format("Error occurred while initializing the Solace MessageProducer: %s",
                             exception.getMessage()), exception);
         } catch (Exception exception) {
-            return SolaceUtils.createError(
+            return CommonUtils.createError(
                     String.format("Unexpected error occurred during producer initialization: %s",
                             exception.getMessage()), exception);
         }
@@ -108,11 +108,11 @@ public final class Actions {
                 nativeProducer.send(message);
                 future.complete(null);
             } catch (JMSException exception) {
-                future.complete(SolaceUtils.createError(
+                future.complete(CommonUtils.createError(
                         String.format("Error occurred while sending message to Solace broker: %s",
                                 exception.getMessage()), exception));
             } catch (Exception exception) {
-                future.complete(SolaceUtils.createError(
+                future.complete(CommonUtils.createError(
                         String.format("Unexpected error occurred while sending message: %s",
                                 exception.getMessage()), exception));
             }
@@ -121,7 +121,7 @@ public final class Actions {
         try {
             return future.get();
         } catch (Exception exception) {
-            return SolaceUtils.createError(
+            return CommonUtils.createError(
                     String.format("Error occurred while waiting for operation to complete: %s",
                             exception.getMessage()), exception);
         }
@@ -137,13 +137,13 @@ public final class Actions {
     public static Object commit(BObject producer) {
         Session nativeSession = (Session) producer.getNativeData(NATIVE_SESSION);
         if (nativeSession == null) {
-            return SolaceUtils.createError("Cannot commit transaction: session is not initialized");
+            return CommonUtils.createError("Cannot commit transaction: session is not initialized");
         }
         try {
             nativeSession.commit();
             return null;
         } catch (JMSException exception) {
-            return SolaceUtils.createError(
+            return CommonUtils.createError(
                     String.format("Error occurred while committing the transaction: %s",
                             exception.getMessage()), exception);
         }
@@ -159,13 +159,13 @@ public final class Actions {
     public static Object rollback(BObject producer) {
         Session nativeSession = (Session) producer.getNativeData(NATIVE_SESSION);
         if (nativeSession == null) {
-            return SolaceUtils.createError("Cannot rollback transaction: session is not initialized");
+            return CommonUtils.createError("Cannot rollback transaction: session is not initialized");
         }
         try {
             nativeSession.rollback();
             return null;
         } catch (JMSException exception) {
-            return SolaceUtils.createError(
+            return CommonUtils.createError(
                     String.format("Error occurred while rolling back the transaction: %s",
                             exception.getMessage()), exception);
         }
@@ -195,9 +195,20 @@ public final class Actions {
 
             return null;
         } catch (JMSException exception) {
-            return SolaceUtils.createError(
+            return CommonUtils.createError(
                     String.format("Error occurred while closing the message producer: %s",
                             exception.getMessage()), exception);
         }
+    }
+
+    private static Destination createDestination(Session session,
+                                                io.ballerina.lib.solace.producer.Destination destination)
+            throws JMSException {
+        if (destination instanceof Topic topic) {
+            return session.createTopic(topic.topicName());
+        } else if (destination instanceof Queue queue) {
+            return session.createQueue(queue.queueName());
+        }
+        throw new IllegalArgumentException("Unknown destination type: " + destination.getClass().getName());
     }
 }
