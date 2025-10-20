@@ -25,9 +25,7 @@ import java.math.BigDecimal;
  */
 public final class ConfigUtils {
 
-    private ConfigUtils() {
-        // Prevent instantiation
-    }
+    private ConfigUtils() {}
 
     /**
      * Converts decimal seconds to milliseconds for timeouts.

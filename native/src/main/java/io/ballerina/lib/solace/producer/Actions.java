@@ -47,14 +47,11 @@ import javax.naming.Context;
  */
 public final class Actions {
 
-    // Native object storage keys
     private static final String NATIVE_PRODUCER = "native.producer";
     private static final String NATIVE_SESSION = "native.session";
     private static final String NATIVE_CONNECTION = "native.connection";
 
-    private Actions() {
-        // Prevent instantiation
-    }
+    private Actions() {}
 
     /**
      * Creates a {@link javax.jms.MessageProducer} using the broker URL and producer configurations.

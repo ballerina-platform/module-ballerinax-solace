@@ -40,9 +40,7 @@ public final class MessageConverter {
     private static final BString CORRELATION_ID = StringUtils.fromString("correlationId");
     private static final BString JMS_TYPE = StringUtils.fromString("jmsType");
 
-    private MessageConverter() {
-        // Prevent instantiation
-    }
+    private MessageConverter() {}
 
     /**
      * Converts Ballerina message to JMS message.

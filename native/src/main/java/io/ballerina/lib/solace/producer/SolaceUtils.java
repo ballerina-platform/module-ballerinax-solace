@@ -34,9 +34,7 @@ public final class SolaceUtils {
 
     private static final String SOLACE_ERROR = "Error";
 
-    private SolaceUtils() {
-        // Prevent instantiation
-    }
+    private SolaceUtils() {}
 
     /**
      * Creates a Ballerina error with given message.
