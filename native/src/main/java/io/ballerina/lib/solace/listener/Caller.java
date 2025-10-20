@@ -1,0 +1,78 @@
+/*
+ * Copyright (c) 2025, WSO2 LLC. (http://www.wso2.org).
+ *
+ *  WSO2 LLC. licenses this file to you under the Apache License,
+ *  Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing,
+ *  software distributed under the License is distributed on an
+ *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations
+ *  under the License.
+ */
+
+package io.ballerina.lib.solace.listener;
+
+import io.ballerina.lib.solace.CommonUtils;
+import io.ballerina.runtime.api.values.BMap;
+import io.ballerina.runtime.api.values.BObject;
+import io.ballerina.runtime.api.values.BString;
+
+import java.util.Objects;
+
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.Session;
+
+/**
+ * Native class for the Ballerina Solace Caller.
+ */
+public class Caller {
+    static final String NATIVE_MESSAGE = "native.message";
+    static final String NATIVE_SESSION = "native.session";
+
+    private Caller() {
+    }
+
+    public static Object commit(BObject caller) {
+        Session nativeSession = (Session) caller.getNativeData(NATIVE_SESSION);
+        try {
+            nativeSession.commit();
+        } catch (JMSException exception) {
+            return CommonUtils.createError(
+                    String.format("Error while committing the transaction: %s", exception.getMessage()), exception);
+        }
+        return null;
+    }
+
+    public static Object rollback(BObject caller) {
+        Session nativeSession = (Session) caller.getNativeData(NATIVE_SESSION);
+        try {
+            nativeSession.rollback();
+        } catch (JMSException exception) {
+            return CommonUtils.createError(
+                    String.format("Error while rolling back the transaction: %s", exception.getMessage()),
+                    exception);
+        }
+        return null;
+    }
+
+    public static Object acknowledge(BMap<BString, Object> message) {
+        try {
+            Object nativeMessage = message.getNativeData(NATIVE_MESSAGE);
+            if (Objects.nonNull(nativeMessage)) {
+                ((Message) nativeMessage).acknowledge();
+            }
+        } catch (JMSException exception) {
+            return CommonUtils.createError(
+                    String.format("Error occurred while sending acknowledgement for the message: %s",
+                            exception.getMessage()), exception);
+        }
+        return null;
+    }
+}
