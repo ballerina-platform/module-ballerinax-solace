@@ -14,8 +14,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-import ballerina/test;
 import ballerina/lang.runtime;
+import ballerina/test;
 
 @test:Config {groups: ["consumer", "transacted", "consumerFix"]}
 isolated function testTransactedSessionWithCommit() returns error? {
@@ -101,7 +101,7 @@ isolated function testTransactedSessionWithRollback() returns error? {
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
         directTransport: false,
-        directOptimized: false,        
+        directOptimized: false,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -127,7 +127,7 @@ isolated function testTransactedSessionWithRollback() returns error? {
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
         directTransport: false,
-        directOptimized: false,        
+        directOptimized: false,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -169,7 +169,7 @@ isolated function testTransactedSessionMultipleMessagesCommit() returns error? {
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
         directTransport: false,
-        directOptimized: false,        
+        directOptimized: false,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -205,7 +205,7 @@ isolated function testTransactedSessionMultipleMessagesCommit() returns error? {
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
         directTransport: false,
-        directOptimized: false,        
+        directOptimized: false,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -242,7 +242,7 @@ isolated function testTransactedSessionMultipleMessagesRollback() returns error?
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
         directTransport: false,
-        directOptimized: false,        
+        directOptimized: false,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -271,7 +271,7 @@ isolated function testTransactedSessionMultipleMessagesRollback() returns error?
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
         directTransport: false,
-        directOptimized: false,        
+        directOptimized: false,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD

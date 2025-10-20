@@ -14,8 +14,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-import ballerina/test;
 import ballerina/lang.runtime;
+import ballerina/test;
 
 @test:Config {groups: ["consumer"]}
 isolated function testConsumerInitWithQueue() returns error? {
@@ -83,7 +83,7 @@ isolated function testReceiveWithQueue() returns error? {
     test:assertTrue(receivedMessage is Message, "Should receive a message");
     if receivedMessage is Message {
         test:assertEquals(receivedMessage.content, TEXT_MESSAGE_CONTENT,
-            "Message content should match");
+                "Message content should match");
     }
     check consumer->close();
 }
@@ -139,7 +139,7 @@ isolated function testReceiveNoWaitWithQueue() returns error? {
     test:assertTrue(receivedMessage is Message, "Should receive a message");
     if receivedMessage is Message {
         test:assertEquals(receivedMessage.content, TEXT_MESSAGE_CONTENT_2,
-            "Message content should match");
+                "Message content should match");
     }
     check consumer2->close();
 }
@@ -180,7 +180,7 @@ isolated function testReceiveWithTopic() returns error? {
     test:assertTrue(receivedMessage is Message, "Should receive a message from topic");
     if receivedMessage is Message {
         test:assertEquals(receivedMessage.content, "Topic message content",
-            "Message content should match");
+                "Message content should match");
     }
     check consumer->close();
 }

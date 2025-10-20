@@ -14,8 +14,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-import ballerina/test;
 import ballerina/lang.runtime;
+import ballerina/test;
 
 @test:Config {groups: ["consumer", "client_ack"]}
 isolated function testClientAckWithQueue() returns error? {
