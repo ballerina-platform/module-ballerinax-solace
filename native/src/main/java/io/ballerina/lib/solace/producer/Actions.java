@@ -20,13 +20,8 @@ package io.ballerina.lib.solace.producer;
 
 import com.solacesystems.jms.SolConnectionFactory;
 import com.solacesystems.jms.SolJmsUtility;
-import com.solacesystems.jms.SupportedProperty;
 import io.ballerina.lib.solace.config.ConnectionConfiguration;
-import io.ballerina.lib.solace.config.auth.BasicAuthConfig;
-import io.ballerina.lib.solace.config.auth.KerberosConfig;
-import io.ballerina.lib.solace.config.auth.OAuth2Config;
-import io.ballerina.lib.solace.config.retry.RetryConfig;
-import io.ballerina.lib.solace.config.ssl.SecureSocketConfig;
+import io.ballerina.lib.solace.config.ConnectionUtils;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
@@ -40,7 +35,6 @@ import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
-import javax.naming.Context;
 
 /**
  * Actions class for {@link javax.jms.MessageProducer} with utility methods to invoke as inter-op functions.
@@ -65,7 +59,8 @@ public final class Actions {
         try {
             ProducerConfiguration producerConfig = new ProducerConfiguration(config);
             ConnectionConfiguration connConfig = producerConfig.connectionConfig();
-            Hashtable<String, Object> connectionProps = buildConnectionProperties(url.getValue(), connConfig);
+            Hashtable<String, Object> connectionProps = ConnectionUtils.buildConnectionProperties(
+                    url.getValue(), connConfig);
             SolConnectionFactory connectionFactory = SolJmsUtility.createConnectionFactory(connectionProps);
 
             // Configure transport mode from connection configuration
@@ -204,126 +199,5 @@ public final class Actions {
                     String.format("Error occurred while closing the message producer: %s",
                             exception.getMessage()), exception);
         }
-    }
-
-    private static Hashtable<String, Object> buildConnectionProperties(String url, ConnectionConfiguration config) {
-        Hashtable<String, Object> props = new Hashtable<>();
-        props.put(Context.PROVIDER_URL, url);
-        props.put(SupportedProperty.SOLACE_JMS_VPN, config.messageVpn());
-        props.put(SupportedProperty.SOLACE_JMS_DYNAMIC_DURABLES, config.enableDynamicDurables());
-
-        if (config.clientId() != null) {
-            props.put(SupportedProperty.SOLACE_JMS_JNDI_CLIENT_ID, config.clientId());
-        }
-        if (config.clientDescription() != null && !config.clientDescription().isEmpty()) {
-            props.put(SupportedProperty.SOLACE_JMS_JNDI_CLIENT_DESCRIPTION, config.clientDescription());
-        }
-
-        props.put(SupportedProperty.SOLACE_JMS_JNDI_CONNECT_TIMEOUT, Math.toIntExact(config.connectTimeout()));
-        props.put(SupportedProperty.SOLACE_JMS_JNDI_READ_TIMEOUT, Math.toIntExact(config.readTimeout()));
-        props.put(SupportedProperty.SOLACE_JMS_COMPRESSION_LEVEL, config.compressionLevel());
-
-        if (config.localhost() != null) {
-            props.put(SupportedProperty.SOLACE_JMS_LOCALHOST, config.localhost());
-        }
-
-        if (config.retryConfig() != null) {
-            RetryConfig retryConfig = config.retryConfig();
-            props.put(SupportedProperty.SOLACE_JMS_JNDI_CONNECT_RETRIES, retryConfig.connectRetries());
-            props.put(SupportedProperty.SOLACE_JMS_JNDI_CONNECT_RETRIES_PER_HOST,
-                    retryConfig.connectRetriesPerHost());
-            props.put(SupportedProperty.SOLACE_JMS_JNDI_RECONNECT_RETRIES, retryConfig.reconnectRetries());
-            props.put(SupportedProperty.SOLACE_JMS_JNDI_RECONNECT_RETRY_WAIT,
-                    Math.toIntExact(retryConfig.reconnectRetryWait()));
-        }
-
-        // Authentication priority: explicit auth config > client certificate (keyStore) > basic auth (default)
-        if (config.auth() != null) {
-            switch (config.auth()) {
-                case BasicAuthConfig basic -> {
-                    props.put(SupportedProperty.SOLACE_JMS_AUTHENTICATION_SCHEME,
-                            SupportedProperty.AUTHENTICATION_SCHEME_BASIC);
-                    props.put(Context.SECURITY_PRINCIPAL, basic.username());
-                    if (basic.password() != null) {
-                        props.put(Context.SECURITY_CREDENTIALS, basic.password());
-                    }
-                }
-                case KerberosConfig kerberos -> {
-                    props.put(SupportedProperty.SOLACE_JMS_AUTHENTICATION_SCHEME,
-                            SupportedProperty.AUTHENTICATION_SCHEME_GSS_KRB);
-                    props.put(SupportedProperty.SOLACE_JMS_KRB_MUTUAL_AUTHENTICATION,
-                            kerberos.mutualAuthentication());
-                    props.put(SupportedProperty.SOLACE_JMS_KRB_SERVICE_NAME, kerberos.serviceName());
-                    if (kerberos.jaasLoginContext() != null) {
-                        props.put(SupportedProperty.SOLACE_JMS_JAAS_LOGIN_CONTEXT, kerberos.jaasLoginContext());
-                    }
-                }
-                case OAuth2Config oauth -> {
-                    props.put(SupportedProperty.SOLACE_JMS_AUTHENTICATION_SCHEME,
-                            SupportedProperty.AUTHENTICATION_SCHEME_OAUTH2);
-                    props.put(SupportedProperty.SOLACE_JMS_OAUTH2_ISSUER_IDENTIFIER, oauth.issuer());
-                    if (oauth.accessToken() != null) {
-                        props.put(SupportedProperty.SOLACE_JMS_OAUTH2_ACCESS_TOKEN, oauth.accessToken());
-                    }
-                    if (oauth.oidcToken() != null) {
-                        props.put(SupportedProperty.SOLACE_JMS_OIDC_ID_TOKEN, oauth.oidcToken());
-                    }
-                }
-            }
-        } else {
-            props.put(SupportedProperty.SOLACE_JMS_AUTHENTICATION_SCHEME,
-                    SupportedProperty.AUTHENTICATION_SCHEME_BASIC);
-        }
-
-        if (config.secureSocket() != null) {
-            SecureSocketConfig sslConfig = config.secureSocket();
-
-            if (sslConfig.trustStore() != null) {
-                var trustStore = sslConfig.trustStore();
-                props.put(SupportedProperty.SOLACE_JMS_SSL_TRUST_STORE, trustStore.location());
-                props.put(SupportedProperty.SOLACE_JMS_SSL_TRUST_STORE_PASSWORD, trustStore.password());
-                props.put(SupportedProperty.SOLACE_JMS_SSL_TRUST_STORE_FORMAT, trustStore.format());
-            }
-
-            if (sslConfig.keyStore() != null) {
-                // Override to client certificate auth when keyStore is present without explicit auth config
-                if (config.auth() == null) {
-                    props.put(SupportedProperty.SOLACE_JMS_AUTHENTICATION_SCHEME,
-                            SupportedProperty.AUTHENTICATION_SCHEME_CLIENT_CERTIFICATE);
-                }
-                var keyStore = sslConfig.keyStore();
-                props.put(SupportedProperty.SOLACE_JMS_SSL_KEY_STORE, keyStore.location());
-                props.put(SupportedProperty.SOLACE_JMS_SSL_KEY_STORE_PASSWORD, keyStore.password());
-                props.put(SupportedProperty.SOLACE_JMS_SSL_KEY_STORE_FORMAT, keyStore.format());
-                if (keyStore.keyPassword() != null) {
-                    props.put(SupportedProperty.SOLACE_JMS_SSL_PRIVATE_KEY_PASSWORD, keyStore.keyPassword());
-                }
-                if (keyStore.keyAlias() != null) {
-                    props.put(SupportedProperty.SOLACE_JMS_SSL_PRIVATE_KEY_ALIAS, keyStore.keyAlias());
-                }
-            }
-
-            props.put(SupportedProperty.SOLACE_JMS_SSL_VALIDATE_CERTIFICATE, sslConfig.validation().enabled());
-            props.put(SupportedProperty.SOLACE_JMS_SSL_VALIDATE_CERTIFICATE_DATE,
-                    sslConfig.validation().validateDate());
-            props.put(SupportedProperty.SOLACE_JMS_SSL_VALIDATE_CERTIFICATE_HOST,
-                    sslConfig.validation().validateHost());
-
-            if (sslConfig.protocols() != null && !sslConfig.protocols().isEmpty()) {
-                props.put(SupportedProperty.SOLACE_JMS_SSL_PROTOCOL, String.join(",", sslConfig.protocols()));
-            }
-
-            if (sslConfig.cipherSuites() != null && !sslConfig.cipherSuites().isEmpty()) {
-                props.put(SupportedProperty.SOLACE_JMS_SSL_CIPHER_SUITES,
-                        String.join(",", sslConfig.cipherSuites()));
-            }
-
-            if (sslConfig.trustedCommonNames() != null && !sslConfig.trustedCommonNames().isEmpty()) {
-                props.put(SupportedProperty.SOLACE_JMS_SSL_TRUSTED_COMMON_NAME_LIST,
-                        String.join(",", sslConfig.trustedCommonNames()));
-            }
-        }
-
-        return props;
     }
 }
