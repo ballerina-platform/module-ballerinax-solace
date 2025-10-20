@@ -83,17 +83,14 @@ public final class MessageConverter {
 
     private static Message createMessageByContentType(Session session, Object content) throws JMSException {
         if (content instanceof BString bString) {
-            // Text message
             TextMessage message = session.createTextMessage();
             message.setText(bString.getValue());
             return message;
         } else if (content instanceof BArray bArray) {
-            // Bytes message
             BytesMessage message = session.createBytesMessage();
             message.writeBytes(bArray.getBytes());
             return message;
         } else if (content instanceof BMap<?, ?> bMap) {
-            // Map message
             MapMessage message = session.createMapMessage();
             setMapMessageFields(message, (BMap<BString, Object>) bMap);
             return message;

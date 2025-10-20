@@ -18,18 +18,23 @@
 
 package io.ballerina.lib.solace.consumer;
 
+import io.ballerina.lib.solace.BallerinaSolaceException;
 import io.ballerina.lib.solace.ModuleUtils;
 import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.types.ArrayType;
 import io.ballerina.runtime.api.types.MapType;
 import io.ballerina.runtime.api.types.PredefinedTypes;
+import io.ballerina.runtime.api.types.Type;
 import io.ballerina.runtime.api.types.UnionType;
 import io.ballerina.runtime.api.utils.StringUtils;
+import io.ballerina.runtime.api.utils.TypeUtils;
+import io.ballerina.runtime.api.utils.ValueUtils;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
 
 import java.util.Enumeration;
+import java.util.Iterator;
 
 import javax.jms.BytesMessage;
 import javax.jms.Destination;
@@ -76,7 +81,8 @@ public final class MessageConverter {
 
     public static final String NATIVE_MESSAGE = "native.message";
 
-    private MessageConverter() {}
+    private MessageConverter() {
+    }
 
     /**
      * Converts JMS message to Ballerina message.
@@ -85,7 +91,8 @@ public final class MessageConverter {
      * @return Ballerina message map
      * @throws JMSException if message conversion fails
      */
-    public static BMap<BString, Object> toBallerinaMessage(Message jmsMessage) throws JMSException {
+    public static BMap<BString, Object> toBallerinaMessage(Message jmsMessage)
+            throws JMSException, BallerinaSolaceException {
         BMap<BString, Object> ballerinaMessage = ValueCreator.createRecordValue(ModuleUtils.getModule(),
                 MESSAGE_RECORD_NAME);
 
@@ -144,7 +151,7 @@ public final class MessageConverter {
         }
 
         // Set message payload based on message type
-        Object payload = extractContent(jmsMessage);
+        Object payload = extractPayload(jmsMessage);
         ballerinaMessage.put(PAYLOAD, payload);
 
         return ballerinaMessage;
@@ -160,75 +167,60 @@ public final class MessageConverter {
         return destMap;
     }
 
-    private static BMap<BString, Object> extractProperties(Message jmsMessage) throws JMSException {
-        BMap<BString, Object> properties = ValueCreator.createMapValue(BALLERINA_MSG_PROPERTY_TYPE);
-        Enumeration<?> propertyNames = jmsMessage.getPropertyNames();
-
-        while (propertyNames.hasMoreElements()) {
-            String propertyName = (String) propertyNames.nextElement();
-            BString key = StringUtils.fromString(propertyName);
-            Object value = jmsMessage.getObjectProperty(propertyName);
-
-            if (value instanceof String s) {
-                properties.put(key, StringUtils.fromString(s));
-            } else if (value instanceof Integer i) {
-                properties.put(key, i.longValue());
-            } else if (value instanceof Long l) {
-                properties.put(key, l);
-            } else if (value instanceof Double d) {
-                properties.put(key, d);
-            } else if (value instanceof Float f) {
-                properties.put(key, f.doubleValue());
-            } else if (value instanceof Boolean b) {
-                properties.put(key, b);
-            } else if (value instanceof Byte b) {
-                properties.put(key, b.longValue());
-            }
+    private static BMap<BString, Object> extractProperties(Message message)
+            throws JMSException, BallerinaSolaceException {
+        BMap<BString, Object> messageProperties = ValueCreator.createMapValue(BALLERINA_MSG_PROPERTY_TYPE);
+        Enumeration<String> propertyNames = message.getPropertyNames();
+        Iterator<String> iterator = propertyNames.asIterator();
+        while (iterator.hasNext()) {
+            String key = iterator.next();
+            Object value = message.getObjectProperty(key);
+            messageProperties.put(StringUtils.fromString(key), getMapValue(value));
         }
-
-        return properties;
+        return messageProperties;
     }
 
-    private static Object extractContent(Message jmsMessage) throws JMSException {
-        if (jmsMessage instanceof TextMessage textMessage) {
+    private static Object extractPayload(Message message) throws JMSException, BallerinaSolaceException {
+        if (message instanceof TextMessage textMessage) {
             String text = textMessage.getText();
             return text != null ? StringUtils.fromString(text) : StringUtils.fromString("");
-        } else if (jmsMessage instanceof BytesMessage bytesMessage) {
+        } else if (message instanceof BytesMessage bytesMessage) {
             long bodyLength = bytesMessage.getBodyLength();
             byte[] bytes = new byte[(int) bodyLength];
             bytesMessage.readBytes(bytes);
             return ValueCreator.createArrayValue(bytes);
-        } else if (jmsMessage instanceof MapMessage mapMessage) {
-            BMap<BString, Object> map = ValueCreator.createMapValue(BALLERINA_MAP_MSG_TYPE);
-            Enumeration<?> mapNames = mapMessage.getMapNames();
-
-            while (mapNames.hasMoreElements()) {
-                String name = (String) mapNames.nextElement();
-                BString key = StringUtils.fromString(name);
-                Object value = mapMessage.getObject(name);
-
-                if (value instanceof String s) {
-                    map.put(key, StringUtils.fromString(s));
-                } else if (value instanceof Integer i) {
-                    map.put(key, i.longValue());
-                } else if (value instanceof Long l) {
-                    map.put(key, l);
-                } else if (value instanceof Double d) {
-                    map.put(key, d);
-                } else if (value instanceof Float f) {
-                    map.put(key, f.doubleValue());
-                } else if (value instanceof Boolean b) {
-                    map.put(key, b);
-                } else if (value instanceof Byte b) {
-                    map.put(key, b.longValue());
-                } else if (value instanceof byte[] byteArray) {
-                    map.put(key, ValueCreator.createArrayValue(byteArray));
-                }
+        } else if (message instanceof MapMessage mapMessage) {
+            BMap<BString, Object> payload = ValueCreator.createMapValue(BALLERINA_MAP_MSG_TYPE);
+            Enumeration<String> mapNames = mapMessage.getMapNames();
+            Iterator<String> iterator = mapNames.asIterator();
+            while (iterator.hasNext()) {
+                String key = iterator.next();
+                Object value = mapMessage.getObject(key);
+                payload.put(StringUtils.fromString(key), getMapValue(value));
             }
-            return map;
+            return payload;
         }
+        throw new BallerinaSolaceException(
+                String.format("Unsupported message type: %s", message.getClass().getTypeName()));
+    }
 
-        // For other message types, return empty string as fallback
-        return StringUtils.fromString("");
+    private static Object getMapValue(Object value) throws BallerinaSolaceException {
+        if (isPrimitive(value)) {
+            Type type = TypeUtils.getType(value);
+            return ValueUtils.convert(value, type);
+        }
+        if (value instanceof String) {
+            return StringUtils.fromString((String) value);
+        }
+        if (value instanceof byte[]) {
+            return ValueCreator.createArrayValue((byte[]) value);
+        }
+        throw new BallerinaSolaceException(
+                String.format("Unidentified map value type: %s", value.getClass().getTypeName()));
+    }
+
+    private static boolean isPrimitive(Object value) {
+        return value instanceof Boolean || value instanceof Byte || value instanceof Character ||
+                value instanceof Integer || value instanceof Long || value instanceof Float || value instanceof Double;
     }
 }
