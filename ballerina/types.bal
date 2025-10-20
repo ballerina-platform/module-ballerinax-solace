@@ -382,7 +382,7 @@ public type Value Property|byte[];
 # + redelivered - Indication of whether this message is being redelivered (Only set by the JMS provider)
 # + jmsType - Message type identifier supplied by the client when the message was sent  
 # + expiration - Message expiration time (Only set by the JMS provider)
-# + deliveredTime - The earliest time when a JMS provider may deliver the message to a consumer (Only set by the JMS provider)
+// # + deliveredTime - The earliest time when a JMS provider may deliver the message to a consumer (Only set by the JMS provider)
 # + priority - Message priority level (Only set by the JMS provider)
 # + properties - Additional message properties
 # + content - Message content
@@ -396,7 +396,7 @@ public type Message record {
     boolean redelivered?;
     string jmsType?;
     int expiration?;
-    int deliveredTime?;
+    // int deliveredTime?;
     int priority?;
     map<Property> properties?;
     string|map<Value>|byte[] content;

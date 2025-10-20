@@ -18,7 +18,13 @@
 
 package io.ballerina.lib.solace.consumer;
 
+import io.ballerina.lib.solace.ModuleUtils;
+import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
+import io.ballerina.runtime.api.types.ArrayType;
+import io.ballerina.runtime.api.types.MapType;
+import io.ballerina.runtime.api.types.PredefinedTypes;
+import io.ballerina.runtime.api.types.UnionType;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
@@ -41,6 +47,7 @@ import static io.ballerina.runtime.api.creators.ValueCreator.createMapValue;
  */
 public final class MessageConverter {
 
+    private static final String MESSAGE_RECORD_NAME = "Message";
     private static final BString MESSAGE_ID = StringUtils.fromString("messageId");
     private static final BString TIMESTAMP = StringUtils.fromString("timestamp");
     private static final BString CORRELATION_ID = StringUtils.fromString("correlationId");
@@ -50,13 +57,22 @@ public final class MessageConverter {
     private static final BString REDELIVERED = StringUtils.fromString("redelivered");
     private static final BString JMS_TYPE = StringUtils.fromString("jmsType");
     private static final BString EXPIRATION = StringUtils.fromString("expiration");
-    private static final BString DELIVERED_TIME = StringUtils.fromString("deliveredTime");
     private static final BString PRIORITY = StringUtils.fromString("priority");
     private static final BString PROPERTIES = StringUtils.fromString("properties");
     private static final BString CONTENT = StringUtils.fromString("content");
 
     private static final BString QUEUE_NAME = StringUtils.fromString("queueName");
     private static final BString TOPIC_NAME = StringUtils.fromString("topicName");
+
+    private static final UnionType MSG_PROPERTY_TYPE = TypeCreator.createUnionType(
+            PredefinedTypes.TYPE_BOOLEAN, PredefinedTypes.TYPE_INT, PredefinedTypes.TYPE_BYTE,
+            PredefinedTypes.TYPE_FLOAT, PredefinedTypes.TYPE_STRING);
+    private static final ArrayType BYTE_ARR_TYPE = TypeCreator.createArrayType(PredefinedTypes.TYPE_BYTE);
+    private static final UnionType MSG_VALUE_TYPE = TypeCreator.createUnionType(MSG_PROPERTY_TYPE, BYTE_ARR_TYPE);
+    private static final MapType BALLERINA_MSG_PROPERTY_TYPE = TypeCreator.createMapType(
+            "Property", MSG_PROPERTY_TYPE, ModuleUtils.getModule());
+    private static final MapType BALLERINA_MAP_MSG_TYPE = TypeCreator.createMapType(
+            "Value", MSG_VALUE_TYPE, ModuleUtils.getModule());
 
     public static final String NATIVE_MESSAGE = "native.message";
 
@@ -70,7 +86,8 @@ public final class MessageConverter {
      * @throws JMSException if message conversion fails
      */
     public static BMap<BString, Object> toBallerinaMessage(Message jmsMessage) throws JMSException {
-        BMap<BString, Object> ballerinaMessage = createMapValue();
+        BMap<BString, Object> ballerinaMessage = ValueCreator.createRecordValue(ModuleUtils.getModule(),
+                MESSAGE_RECORD_NAME);
 
         // Store the native JMS message for later acknowledgement
         ballerinaMessage.addNativeData(NATIVE_MESSAGE, jmsMessage);
@@ -117,11 +134,6 @@ public final class MessageConverter {
             ballerinaMessage.put(EXPIRATION, expiration);
         }
 
-        long deliveredTime = jmsMessage.getJMSDeliveryTime();
-        if (deliveredTime > 0) {
-            ballerinaMessage.put(DELIVERED_TIME, deliveredTime);
-        }
-
         int priority = jmsMessage.getJMSPriority();
         ballerinaMessage.put(PRIORITY, (long) priority);
 
@@ -149,7 +161,7 @@ public final class MessageConverter {
     }
 
     private static BMap<BString, Object> extractProperties(Message jmsMessage) throws JMSException {
-        BMap<BString, Object> properties = createMapValue();
+        BMap<BString, Object> properties = ValueCreator.createMapValue(BALLERINA_MSG_PROPERTY_TYPE);
         Enumeration<?> propertyNames = jmsMessage.getPropertyNames();
 
         while (propertyNames.hasMoreElements()) {
@@ -187,7 +199,7 @@ public final class MessageConverter {
             bytesMessage.readBytes(bytes);
             return ValueCreator.createArrayValue(bytes);
         } else if (jmsMessage instanceof MapMessage mapMessage) {
-            BMap<BString, Object> map = createMapValue();
+            BMap<BString, Object> map = ValueCreator.createMapValue(BALLERINA_MAP_MSG_TYPE);
             Enumeration<?> mapNames = mapMessage.getMapNames();
 
             while (mapNames.hasMoreElements()) {

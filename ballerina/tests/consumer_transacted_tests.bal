@@ -1,0 +1,526 @@
+// Copyright (c) 2025 WSO2 LLC. (http://www.wso2.com).
+//
+// WSO2 LLC. licenses this file to you under the Apache License,
+// Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+import ballerina/test;
+import ballerina/lang.runtime;
+
+// Test SESSION_TRANSACTED with commit
+@test:Config {groups: ["consumer", "transacted"]}
+isolated function testTransactedSessionWithCommit() returns error? {
+    MessageProducer producer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        destination: {queueName: TEST_QUEUE}
+    });
+
+    Message message = {
+        content: "Transacted commit test"
+    };
+    check producer->send(message);
+    check producer->close();
+
+    // Consume with SESSION_TRANSACTED and commit
+    MessageConsumer consumer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        directTransport: false,
+        directOptimized: false,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        subscriptionConfig: {
+            queueName: TEST_QUEUE,
+            sessionAckMode: SESSION_TRANSACTED
+        }
+    });
+
+    Message? receivedMessage = check consumer->receive(5.0);
+    test:assertTrue(receivedMessage is Message, "Should receive a message");
+    if receivedMessage is Message {
+        test:assertEquals(receivedMessage.content, "Transacted commit test");
+    }
+
+    // Commit the transaction
+    check consumer->'commit();
+    check consumer->close();
+
+    // Verify message is not redelivered
+    MessageConsumer consumer2 = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        directTransport: false,
+        directOptimized: false,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        subscriptionConfig: {
+            queueName: TEST_QUEUE,
+            sessionAckMode: SESSION_TRANSACTED
+        }
+    });
+
+    Message? shouldBeNull = check consumer2->receive(1.0);
+    test:assertTrue(shouldBeNull is (), "Message should not be redelivered after commit");
+    check consumer2->close();
+}
+
+// Test SESSION_TRANSACTED with rollback
+@test:Config {groups: ["consumer", "transacted"]}
+isolated function testTransactedSessionWithRollback() returns error? {
+    MessageProducer producer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        destination: {queueName: TEST_QUEUE}
+    });
+
+    Message message = {
+        content: "Transacted rollback test"
+    };
+    check producer->send(message);
+    check producer->close();
+
+    // Consume with SESSION_TRANSACTED and rollback
+    MessageConsumer consumer1 = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        directTransport: false,
+        directOptimized: false,        
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        subscriptionConfig: {
+            queueName: TEST_QUEUE,
+            sessionAckMode: SESSION_TRANSACTED
+        }
+    });
+
+    Message? receivedMessage1 = check consumer1->receive(5.0);
+    test:assertTrue(receivedMessage1 is Message, "Should receive a message");
+    if receivedMessage1 is Message {
+        test:assertEquals(receivedMessage1.content, "Transacted rollback test");
+    }
+
+    // Rollback the transaction
+    check consumer1->'rollback();
+    check consumer1->close();
+
+    // Small delay to allow message to return to queue
+    runtime:sleep(1.0);
+
+    // Verify message is redelivered
+    MessageConsumer consumer2 = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        directTransport: false,
+        directOptimized: false,        
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        subscriptionConfig: {
+            queueName: TEST_QUEUE,
+            sessionAckMode: SESSION_TRANSACTED
+        }
+    });
+
+    Message? receivedMessage2 = check consumer2->receive(5.0);
+    test:assertTrue(receivedMessage2 is Message, "Message should be redelivered after rollback");
+    if receivedMessage2 is Message {
+        test:assertEquals(receivedMessage2.content, "Transacted rollback test");
+    }
+
+    // Commit this time
+    check consumer2->'commit();
+    check consumer2->close();
+}
+
+// Test SESSION_TRANSACTED with multiple messages and commit
+@test:Config {groups: ["consumer", "transacted"]}
+isolated function testTransactedSessionMultipleMessagesCommit() returns error? {
+    // Send multiple messages
+    MessageProducer producer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        destination: {queueName: TEST_QUEUE}
+    });
+
+    check producer->send({content: "Transacted message 1"});
+    check producer->send({content: "Transacted message 2"});
+    check producer->send({content: "Transacted message 3"});
+    check producer->close();
+
+    // Consume with SESSION_TRANSACTED
+    MessageConsumer consumer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        directTransport: false,
+        directOptimized: false,        
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        subscriptionConfig: {
+            queueName: TEST_QUEUE,
+            sessionAckMode: SESSION_TRANSACTED
+        }
+    });
+
+    // Receive all messages
+    Message? msg1 = check consumer->receive(5.0);
+    test:assertTrue(msg1 is Message);
+    if msg1 is Message {
+        test:assertEquals(msg1.content, "Transacted message 1");
+    }
+
+    Message? msg2 = check consumer->receive(5.0);
+    test:assertTrue(msg2 is Message);
+    if msg2 is Message {
+        test:assertEquals(msg2.content, "Transacted message 2");
+    }
+
+    Message? msg3 = check consumer->receive(5.0);
+    test:assertTrue(msg3 is Message);
+    if msg3 is Message {
+        test:assertEquals(msg3.content, "Transacted message 3");
+    }
+
+    // Commit all at once
+    check consumer->'commit();
+    check consumer->close();
+
+    // Verify no messages are redelivered
+    MessageConsumer consumer2 = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        directTransport: false,
+        directOptimized: false,        
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        subscriptionConfig: {
+            queueName: TEST_QUEUE,
+            sessionAckMode: SESSION_TRANSACTED
+        }
+    });
+
+    Message? shouldBeNull = check consumer2->receive(1.0);
+    test:assertTrue(shouldBeNull is (), "No messages should be redelivered after commit");
+    check consumer2->close();
+}
+
+// Test SESSION_TRANSACTED with multiple messages and rollback
+@test:Config {groups: ["consumer", "transacted"]}
+isolated function testTransactedSessionMultipleMessagesRollback() returns error? {
+    // Send multiple messages
+    MessageProducer producer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        destination: {queueName: TEST_QUEUE}
+    });
+
+    check producer->send({content: "Rollback message 1"});
+    check producer->send({content: "Rollback message 2"});
+    check producer->send({content: "Rollback message 3"});
+    check producer->close();
+
+    // First consumer - receive but rollback
+    MessageConsumer consumer1 = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        directTransport: false,
+        directOptimized: false,        
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        subscriptionConfig: {
+            queueName: TEST_QUEUE,
+            sessionAckMode: SESSION_TRANSACTED
+        }
+    });
+
+    // Receive all messages
+    Message? msg1 = check consumer1->receive(5.0);
+    test:assertTrue(msg1 is Message);
+
+    Message? msg2 = check consumer1->receive(5.0);
+    test:assertTrue(msg2 is Message);
+
+    Message? msg3 = check consumer1->receive(5.0);
+    test:assertTrue(msg3 is Message);
+
+    // Rollback all
+    check consumer1->'rollback();
+    check consumer1->close();
+
+    // Small delay to allow messages to return to queue
+    runtime:sleep(1.0);
+
+    // Second consumer - should receive all messages again
+    MessageConsumer consumer2 = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        directTransport: false,
+        directOptimized: false,        
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        subscriptionConfig: {
+            queueName: TEST_QUEUE,
+            sessionAckMode: SESSION_TRANSACTED
+        }
+    });
+
+    Message? redelivered1 = check consumer2->receive(5.0);
+    test:assertTrue(redelivered1 is Message, "First message should be redelivered");
+    if redelivered1 is Message {
+        test:assertEquals(redelivered1.content, "Rollback message 1");
+    }
+
+    Message? redelivered2 = check consumer2->receive(5.0);
+    test:assertTrue(redelivered2 is Message, "Second message should be redelivered");
+    if redelivered2 is Message {
+        test:assertEquals(redelivered2.content, "Rollback message 2");
+    }
+
+    Message? redelivered3 = check consumer2->receive(5.0);
+    test:assertTrue(redelivered3 is Message, "Third message should be redelivered");
+    if redelivered3 is Message {
+        test:assertEquals(redelivered3.content, "Rollback message 3");
+    }
+
+    // Commit this time
+    check consumer2->'commit();
+    check consumer2->close();
+}
+
+@test:Config {groups: ["consumer", "transacted"]}
+isolated function testTransactedSessionWithTopic() returns error? {
+    MessageConsumer consumer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        directTransport: false,
+        directOptimized: false,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        subscriptionConfig: {
+            topicName: TEST_TOPIC,
+            sessionAckMode: SESSION_TRANSACTED
+        }
+    });
+
+    runtime:sleep(0.5);
+
+    MessageProducer producer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        directTransport: false,
+        directOptimized: false,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        destination: {topicName: TEST_TOPIC}
+    });
+
+    Message message = {
+        content: "Transacted topic message"
+    };
+    check producer->send(message);
+    check producer->close();
+
+    Message? receivedMessage = check consumer->receive(5.0);
+    test:assertTrue(receivedMessage is Message, "Should receive message from topic");
+    if receivedMessage is Message {
+        test:assertEquals(receivedMessage.content, "Transacted topic message");
+    }
+
+    check consumer->'commit();
+    check consumer->close();
+}
+
+@test:Config {groups: ["consumer", "transacted"]}
+isolated function testTransactedSessionMixedCommitRollback() returns error? {
+    MessageProducer producer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        destination: {queueName: TEST_QUEUE}
+    });
+
+    check producer->send({content: "Mixed test message 1"});
+    check producer->send({content: "Mixed test message 2"});
+    check producer->send({content: "Mixed test message 3"});
+    check producer->close();
+
+    MessageConsumer consumer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        directTransport: false,
+        directOptimized: false,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        subscriptionConfig: {
+            queueName: TEST_QUEUE,
+            sessionAckMode: SESSION_TRANSACTED
+        }
+    });
+
+    Message? msg1 = check consumer->receive(5.0);
+    test:assertTrue(msg1 is Message);
+    if msg1 is Message {
+        test:assertEquals(msg1.content, "Mixed test message 1");
+    }
+    check consumer->'commit();
+
+    Message? msg2 = check consumer->receive(5.0);
+    test:assertTrue(msg2 is Message);
+    if msg2 is Message {
+        test:assertEquals(msg2.content, "Mixed test message 2");
+    }
+    check consumer->'rollback();
+
+    runtime:sleep(1.0);
+
+    Message? msg2Again = check consumer->receive(5.0);
+    test:assertTrue(msg2Again is Message);
+    if msg2Again is Message {
+        test:assertEquals(msg2Again.content, "Mixed test message 2");
+    }
+
+    Message? msg3 = check consumer->receive(5.0);
+    test:assertTrue(msg3 is Message);
+    if msg3 is Message {
+        test:assertEquals(msg3.content, "Mixed test message 3");
+    }
+
+    check consumer->'commit();
+    check consumer->close();
+}
+
+@test:Config {groups: ["consumer", "transacted"]}
+isolated function testTransactedSessionWithDifferentMessageTypes() returns error? {
+    MessageProducer producer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        destination: {queueName: TEST_QUEUE}
+    });
+
+    check producer->send({content: "Transacted text"});
+    check producer->send({content: [10, 20, 30]});
+    check producer->send({content: {"status": "active", "count": 100}});
+    check producer->close();
+
+    MessageConsumer consumer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        directTransport: false,
+        directOptimized: false,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        subscriptionConfig: {
+            queueName: TEST_QUEUE,
+            sessionAckMode: SESSION_TRANSACTED
+        }
+    });
+
+    Message? msg1 = check consumer->receive(5.0);
+    test:assertTrue(msg1 is Message);
+    if msg1 is Message {
+        test:assertTrue(msg1.content is string);
+        test:assertEquals(msg1.content, "Transacted text");
+    }
+
+    Message? msg2 = check consumer->receive(5.0);
+    test:assertTrue(msg2 is Message);
+    if msg2 is Message {
+        test:assertTrue(msg2.content is byte[]);
+    }
+
+    Message? msg3 = check consumer->receive(5.0);
+    test:assertTrue(msg3 is Message);
+    if msg3 is Message {
+        test:assertTrue(msg3.content is map<Value>);
+    }
+
+    check consumer->'commit();
+    check consumer->close();
+}
+
+@test:Config {groups: ["consumer", "transacted"]}
+isolated function testTransactedProducerAndConsumer() returns error? {
+    MessageProducer producer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        directTransport: false,
+        directOptimized: false,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        destination: {queueName: TEST_QUEUE},
+        transacted: true
+    });
+
+    check producer->send({content: "Transacted producer message 1"});
+    check producer->send({content: "Transacted producer message 2"});
+    check producer->commit();
+    check producer->close();
+
+    MessageConsumer consumer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        directTransport: false,
+        directOptimized: false,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        subscriptionConfig: {
+            queueName: TEST_QUEUE,
+            sessionAckMode: SESSION_TRANSACTED
+        }
+    });
+
+    Message? msg1 = check consumer->receive(5.0);
+    test:assertTrue(msg1 is Message);
+    if msg1 is Message {
+        test:assertEquals(msg1.content, "Transacted producer message 1");
+    }
+
+    Message? msg2 = check consumer->receive(5.0);
+    test:assertTrue(msg2 is Message);
+    if msg2 is Message {
+        test:assertEquals(msg2.content, "Transacted producer message 2");
+    }
+
+    check consumer->commit();
+    check consumer->close();
+}
