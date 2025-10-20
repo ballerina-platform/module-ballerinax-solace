@@ -17,7 +17,6 @@
 import ballerina/test;
 import ballerina/lang.runtime;
 
-// Test SESSION_TRANSACTED with commit
 @test:Config {groups: ["consumer", "transacted", "consumerFix"]}
 isolated function testTransactedSessionWithCommit() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
@@ -36,7 +35,6 @@ isolated function testTransactedSessionWithCommit() returns error? {
     check producer->send(message);
     check producer->close();
 
-    // Consume with SESSION_TRANSACTED and commit
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
@@ -58,11 +56,9 @@ isolated function testTransactedSessionWithCommit() returns error? {
         test:assertEquals(receivedMessage.content, "Transacted commit test");
     }
 
-    // Commit the transaction
     check consumer->'commit();
     check consumer->close();
 
-    // Verify message is not redelivered
     MessageConsumer consumer2 = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
@@ -83,7 +79,6 @@ isolated function testTransactedSessionWithCommit() returns error? {
     check consumer2->close();
 }
 
-// Test SESSION_TRANSACTED with rollback
 @test:Config {groups: ["consumer", "transacted"], dependsOn: [testTransactedSessionWithCommit]}
 isolated function testTransactedSessionWithRollback() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
@@ -102,7 +97,6 @@ isolated function testTransactedSessionWithRollback() returns error? {
     check producer->send(message);
     check producer->close();
 
-    // Consume with SESSION_TRANSACTED and rollback
     MessageConsumer consumer1 = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
@@ -124,14 +118,11 @@ isolated function testTransactedSessionWithRollback() returns error? {
         test:assertEquals(receivedMessage1.content, "Transacted rollback test");
     }
 
-    // Rollback the transaction
     check consumer1->'rollback();
     check consumer1->close();
 
-    // Small delay to allow message to return to queue
     runtime:sleep(1.0);
 
-    // Verify message is redelivered
     MessageConsumer consumer2 = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
@@ -153,15 +144,12 @@ isolated function testTransactedSessionWithRollback() returns error? {
         test:assertEquals(receivedMessage2.content, "Transacted rollback test");
     }
 
-    // Commit this time
     check consumer2->'commit();
     check consumer2->close();
 }
 
-// Test SESSION_TRANSACTED with multiple messages and commit
 @test:Config {groups: ["consumer", "transacted"], dependsOn: [testTransactedSessionWithRollback]}
 isolated function testTransactedSessionMultipleMessagesCommit() returns error? {
-    // Send multiple messages
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
@@ -177,7 +165,6 @@ isolated function testTransactedSessionMultipleMessagesCommit() returns error? {
     check producer->send({content: "Transacted message 3"});
     check producer->close();
 
-    // Consume with SESSION_TRANSACTED
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
@@ -193,7 +180,6 @@ isolated function testTransactedSessionMultipleMessagesCommit() returns error? {
         }
     });
 
-    // Receive all messages
     Message? msg1 = check consumer->receive(5.0);
     test:assertTrue(msg1 is Message);
     if msg1 is Message {
@@ -212,11 +198,9 @@ isolated function testTransactedSessionMultipleMessagesCommit() returns error? {
         test:assertEquals(msg3.content, "Transacted message 3");
     }
 
-    // Commit all at once
     check consumer->'commit();
     check consumer->close();
 
-    // Verify no messages are redelivered
     MessageConsumer consumer2 = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
@@ -237,10 +221,8 @@ isolated function testTransactedSessionMultipleMessagesCommit() returns error? {
     check consumer2->close();
 }
 
-// Test SESSION_TRANSACTED with multiple messages and rollback
 @test:Config {groups: ["consumer", "transacted"], dependsOn: [testTransactedSessionMultipleMessagesCommit]}
 isolated function testTransactedSessionMultipleMessagesRollback() returns error? {
-    // Send multiple messages
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
@@ -256,7 +238,6 @@ isolated function testTransactedSessionMultipleMessagesRollback() returns error?
     check producer->send({content: "Rollback message 3"});
     check producer->close();
 
-    // First consumer - receive but rollback
     MessageConsumer consumer1 = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
@@ -272,7 +253,6 @@ isolated function testTransactedSessionMultipleMessagesRollback() returns error?
         }
     });
 
-    // Receive all messages
     Message? msg1 = check consumer1->receive(5.0);
     test:assertTrue(msg1 is Message);
 
@@ -282,14 +262,11 @@ isolated function testTransactedSessionMultipleMessagesRollback() returns error?
     Message? msg3 = check consumer1->receive(5.0);
     test:assertTrue(msg3 is Message);
 
-    // Rollback all
     check consumer1->'rollback();
     check consumer1->close();
 
-    // Small delay to allow messages to return to queue
     runtime:sleep(1.0);
 
-    // Second consumer - should receive all messages again
     MessageConsumer consumer2 = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
@@ -323,7 +300,6 @@ isolated function testTransactedSessionMultipleMessagesRollback() returns error?
         test:assertEquals(redelivered3.content, "Rollback message 3");
     }
 
-    // Commit this time
     check consumer2->'commit();
     check consumer2->close();
 }

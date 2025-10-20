@@ -16,9 +16,7 @@
 
 import ballerina/test;
 import ballerina/lang.runtime;
-import ballerina/io;
 
-// Test consumer initialization with queue
 @test:Config {groups: ["consumer"]}
 isolated function testConsumerInitWithQueue() returns error? {
     MessageConsumer consumer = check new (BROKER_URL, {
@@ -35,7 +33,6 @@ isolated function testConsumerInitWithQueue() returns error? {
     check consumer->close();
 }
 
-// Test consumer initialization with topic
 @test:Config {groups: ["consumer"]}
 isolated function testConsumerInitWithTopic() returns error? {
     MessageConsumer consumer = check new (BROKER_URL, {
@@ -52,10 +49,8 @@ isolated function testConsumerInitWithTopic() returns error? {
     check consumer->close();
 }
 
-// Test receive with queue
 @test:Config {groups: ["consumer"]}
 isolated function testReceiveWithQueue() returns error? {
-    // Send a message first
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
@@ -72,7 +67,6 @@ isolated function testReceiveWithQueue() returns error? {
     check producer->send(message);
     check producer->close();
 
-    // Receive the message
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
@@ -94,10 +88,8 @@ isolated function testReceiveWithQueue() returns error? {
     check consumer->close();
 }
 
-// Test receiveNoWait with queue
 @test:Config {groups: ["consumer", "consumerFix"], dependsOn: [testReceiveWithQueue], enable: false}
 isolated function testReceiveNoWaitWithQueue() returns error? {
-    // Check no message available
     MessageConsumer consumer1 = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
@@ -114,7 +106,6 @@ isolated function testReceiveNoWaitWithQueue() returns error? {
     test:assertTrue(emptyMessage is (), "Should not receive message when queue is empty");
     check consumer1->close();
 
-    // Send a message
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
@@ -129,7 +120,6 @@ isolated function testReceiveNoWaitWithQueue() returns error? {
         content: TEXT_MESSAGE_CONTENT_2
     };
 
-    // Receive the message
     MessageConsumer consumer2 = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
@@ -154,10 +144,8 @@ isolated function testReceiveNoWaitWithQueue() returns error? {
     check consumer2->close();
 }
 
-// Test receive with topic
 @test:Config {groups: ["consumer"], dependsOn: [testReceiveWithQueue]}
 isolated function testReceiveWithTopic() returns error? {
-    // Create consumer first to ensure subscription is active
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
@@ -170,10 +158,8 @@ isolated function testReceiveWithTopic() returns error? {
         }
     });
 
-    // Small delay to ensure subscription is established
     runtime:sleep(0.5);
 
-    // Send a message to topic
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
@@ -190,7 +176,6 @@ isolated function testReceiveWithTopic() returns error? {
     check producer->send(message);
     check producer->close();
 
-    // Receive the message
     Message? receivedMessage = check consumer->receive(5.0);
     test:assertTrue(receivedMessage is Message, "Should receive a message from topic");
     if receivedMessage is Message {
@@ -200,7 +185,6 @@ isolated function testReceiveWithTopic() returns error? {
     check consumer->close();
 }
 
-// Test receive text message
 @test:Config {groups: ["consumer"], dependsOn: [testReceiveWithTopic]}
 isolated function testReceiveTextMessage() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
@@ -240,7 +224,6 @@ isolated function testReceiveTextMessage() returns error? {
     check consumer->close();
 }
 
-// Test receive bytes message
 @test:Config {groups: ["consumer"], dependsOn: [testReceiveTextMessage]}
 isolated function testReceiveBytesMessage() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
@@ -275,15 +258,12 @@ isolated function testReceiveBytesMessage() returns error? {
     Message? receivedMessage = check consumer->receive(5.0);
     test:assertTrue(receivedMessage is Message, "Should receive a bytes message");
     if receivedMessage is Message {
-        var content = receivedMessage.content;
-        io:println(content, " ", typeof content);
         test:assertTrue(receivedMessage.content is byte[], "Content should be byte array");
         test:assertEquals(receivedMessage.content, byteContent);
     }
     check consumer->close();
 }
 
-// Test receive map message
 @test:Config {groups: ["consumer"], dependsOn: [testReceiveBytesMessage]}
 isolated function testReceiveMapMessage() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
@@ -333,7 +313,6 @@ isolated function testReceiveMapMessage() returns error? {
     check consumer->close();
 }
 
-// Test receive message with properties
 @test:Config {groups: ["consumer"], dependsOn: [testReceiveMapMessage]}
 isolated function testReceiveMessageWithProperties() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
@@ -383,7 +362,6 @@ isolated function testReceiveMessageWithProperties() returns error? {
     check consumer->close();
 }
 
-// Test receive message with correlation ID
 @test:Config {groups: ["consumer"], dependsOn: [testReceiveMessageWithProperties]}
 isolated function testReceiveMessageWithCorrelationId() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
@@ -423,7 +401,6 @@ isolated function testReceiveMessageWithCorrelationId() returns error? {
     check consumer->close();
 }
 
-// Test receive timeout
 @test:Config {groups: ["consumer"], dependsOn: [testReceiveMessageWithCorrelationId]}
 isolated function testReceiveTimeout() returns error? {
     MessageConsumer consumer = check new (BROKER_URL, {
@@ -438,16 +415,13 @@ isolated function testReceiveTimeout() returns error? {
         }
     });
 
-    // Try to receive from empty queue with short timeout
     Message? receivedMessage = check consumer->receive(1.0);
     test:assertTrue(receivedMessage is (), "Should return null when no message available");
     check consumer->close();
 }
 
-// Test message selector with queue
 @test:Config {groups: ["consumer"], dependsOn: [testReceiveTimeout]}
 isolated function testMessageSelectorWithQueue() returns error? {
-    // Send two messages with different properties
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
@@ -471,7 +445,6 @@ isolated function testMessageSelectorWithQueue() returns error? {
     check producer->send(message2);
     check producer->close();
 
-    // Consumer with message selector for high priority only
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
         enableDynamicDurables: true,
