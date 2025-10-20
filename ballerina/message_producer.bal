@@ -14,8 +14,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-import ballerina/jballerina.java;
 import ballerina/constraint;
+import ballerina/jballerina.java;
 
 # Solace Message Producer to send messages to both queues and topics.
 public isolated client class MessageProducer {
@@ -29,9 +29,9 @@ public isolated client class MessageProducer {
     # ```
     #
     # + url - The Solace broker URL in the format `<scheme>://[username]:[password]@<host>[:port]`.
-    #         Supported schemes are `smf` (plain-text) and `smfs` (TLS/SSL).
-    #         Multiple hosts can be specified as a comma-separated list for failover support.
-    #         Default ports: 55555 (standard), 55003 (compression), 55443 (SSL)
+    # Supported schemes are `smf` (plain-text) and `smfs` (TLS/SSL).
+    # Multiple hosts can be specified as a comma-separated list for failover support.
+    # Default ports: 55555 (standard), 55003 (compression), 55443 (SSL)
     # + config - Producer configuration including connection settings and destination
     # + return - A `solace:Error` if initialization fails or else `()`
     public isolated function init(string url, ProducerConfiguration config) returns Error? {
@@ -91,5 +91,5 @@ public isolated client class MessageProducer {
     # + return - A `solace:Error` if there is an error or else `()`
     isolated remote function close() returns Error? = @java:Method {
         'class: "io.ballerina.lib.solace.producer.Actions"
-    } external;    
+    } external;
 }

@@ -399,7 +399,7 @@ isolated function testProducerValidationWithInvalidCompressionLevel() {
     test:assertTrue(producer is Error, "Expected validation error for compression level > 9");
     if producer is Error {
         test:assertTrue(producer.message().toLowerAscii().includes("compression"),
-            "Error message should mention compression");
+                "Error message should mention compression");
     }
 }
 
@@ -419,6 +419,6 @@ isolated function testProducerValidationWithLongUsername() {
     test:assertTrue(producer is Error, "Expected validation error for username > 32 chars");
     if producer is Error {
         test:assertTrue(producer.message().toLowerAscii().includes("username"),
-            "Error message should mention username");
+                "Error message should mention username");
     }
 }
