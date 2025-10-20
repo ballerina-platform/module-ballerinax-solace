@@ -60,7 +60,6 @@ public record ProducerConfiguration(
      * @return Destination instance (Topic or Queue)
      */
     private static Destination getDestination(BMap<BString, Object> destinationMap) {
-        // Check which type of destination by inspecting fields
         if (destinationMap.containsKey(StringUtils.fromString("topicName"))) {
             return new Topic(destinationMap);
         } else if (destinationMap.containsKey(StringUtils.fromString("queueName"))) {

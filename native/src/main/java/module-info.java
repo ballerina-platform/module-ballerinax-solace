@@ -21,6 +21,7 @@ module io.ballerina.lib.solace {
     requires io.ballerina.lang.value;
     requires javax.jms.api;
     requires sol.jms;
+    requires java.naming;
 
     exports io.ballerina.lib.solace;
 }

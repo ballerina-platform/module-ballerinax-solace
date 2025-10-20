@@ -57,9 +57,27 @@ path = "./lib/org.osgi.annotation-@osgi.annotation.version@.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
+artifactId = "netty-common"
+version = "@netty.version@"
+path = "./lib/netty-common-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-buffer"
+version = "@netty.version@"
+path = "./lib/netty-buffer-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
 artifactId = "netty-transport"
 version = "@netty.version@"
 path = "./lib/netty-transport-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-resolver"
+version = "@netty.version@"
+path = "./lib/netty-resolver-@netty.version@.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
@@ -75,24 +93,48 @@ path = "./lib/netty-codec-@netty.version@.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
-artifactId = "netty-buffer"
+artifactId = "netty-codec-http"
 version = "@netty.version@"
-path = "./lib/netty-buffer-@netty.version@.jar"
+path = "./lib/netty-codec-http-@netty.version@.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
-artifactId = "netty-common"
+artifactId = "netty-handler-proxy"
 version = "@netty.version@"
-path = "./lib/netty-common-@netty.version@.jar"
+path = "./lib/netty-handler-proxy-@netty.version@.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
-artifactId = "netty-resolver"
+artifactId = "netty-transport-native-epoll"
 version = "@netty.version@"
-path = "./lib/netty-resolver-@netty.version@.jar"
+path = "./lib/netty-transport-native-epoll-@netty.version@.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
-artifactId = "netty-tcnative-boringssl-static"
-version = "@netty.tcnative.boringssl.static.version@"
-path = "./lib/netty-tcnative-boringssl-static-@netty.tcnative.boringssl.static.version@.jar"
+artifactId = "netty-transport-classes-epoll"
+version = "@netty.version@"
+path = "./lib/netty-transport-classes-epoll-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/netty-transport-native-epoll-@netty.version@-linux-x86_64.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/netty-transport-native-epoll-@netty.version@-linux-aarch_64.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport-native-kqueue"
+version = "@netty.version@"
+path = "./lib/netty-transport-native-kqueue-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport-classes-kqueue"
+version = "@netty.version@"
+path = "./lib/netty-transport-classes-kqueue-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/netty-transport-native-kqueue-@netty.version@-osx-x86_64.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/netty-transport-native-kqueue-@netty.version@-osx-aarch_64.jar"
