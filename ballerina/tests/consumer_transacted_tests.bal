@@ -18,15 +18,16 @@ import ballerina/test;
 import ballerina/lang.runtime;
 
 // Test SESSION_TRANSACTED with commit
-@test:Config {groups: ["consumer", "transacted"]}
+@test:Config {groups: ["consumer", "transacted", "consumerFix"]}
 isolated function testTransactedSessionWithCommit() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
-        destination: {queueName: TEST_QUEUE}
+        destination: {queueName: TRANSACTED_COMMIT_QUEUE}
     });
 
     Message message = {
@@ -38,6 +39,7 @@ isolated function testTransactedSessionWithCommit() returns error? {
     // Consume with SESSION_TRANSACTED and commit
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         directTransport: false,
         directOptimized: false,
         auth: {
@@ -45,7 +47,7 @@ isolated function testTransactedSessionWithCommit() returns error? {
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE,
+            queueName: TRANSACTED_COMMIT_QUEUE,
             sessionAckMode: SESSION_TRANSACTED
         }
     });
@@ -63,6 +65,7 @@ isolated function testTransactedSessionWithCommit() returns error? {
     // Verify message is not redelivered
     MessageConsumer consumer2 = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         directTransport: false,
         directOptimized: false,
         auth: {
@@ -70,7 +73,7 @@ isolated function testTransactedSessionWithCommit() returns error? {
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE,
+            queueName: TRANSACTED_COMMIT_QUEUE,
             sessionAckMode: SESSION_TRANSACTED
         }
     });
@@ -81,15 +84,16 @@ isolated function testTransactedSessionWithCommit() returns error? {
 }
 
 // Test SESSION_TRANSACTED with rollback
-@test:Config {groups: ["consumer", "transacted"]}
+@test:Config {groups: ["consumer", "transacted"], dependsOn: [testTransactedSessionWithCommit]}
 isolated function testTransactedSessionWithRollback() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
-        destination: {queueName: TEST_QUEUE}
+        destination: {queueName: TRANSACTED_ROLLBACK_QUEUE}
     });
 
     Message message = {
@@ -101,6 +105,7 @@ isolated function testTransactedSessionWithRollback() returns error? {
     // Consume with SESSION_TRANSACTED and rollback
     MessageConsumer consumer1 = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         directTransport: false,
         directOptimized: false,        
         auth: {
@@ -108,7 +113,7 @@ isolated function testTransactedSessionWithRollback() returns error? {
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE,
+            queueName: TRANSACTED_ROLLBACK_QUEUE,
             sessionAckMode: SESSION_TRANSACTED
         }
     });
@@ -129,6 +134,7 @@ isolated function testTransactedSessionWithRollback() returns error? {
     // Verify message is redelivered
     MessageConsumer consumer2 = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         directTransport: false,
         directOptimized: false,        
         auth: {
@@ -136,7 +142,7 @@ isolated function testTransactedSessionWithRollback() returns error? {
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE,
+            queueName: TRANSACTED_ROLLBACK_QUEUE,
             sessionAckMode: SESSION_TRANSACTED
         }
     });
@@ -153,16 +159,17 @@ isolated function testTransactedSessionWithRollback() returns error? {
 }
 
 // Test SESSION_TRANSACTED with multiple messages and commit
-@test:Config {groups: ["consumer", "transacted"]}
+@test:Config {groups: ["consumer", "transacted"], dependsOn: [testTransactedSessionWithRollback]}
 isolated function testTransactedSessionMultipleMessagesCommit() returns error? {
     // Send multiple messages
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
-        destination: {queueName: TEST_QUEUE}
+        destination: {queueName: TRANSACTED_MULTIPLE_COMMIT_QUEUE}
     });
 
     check producer->send({content: "Transacted message 1"});
@@ -173,6 +180,7 @@ isolated function testTransactedSessionMultipleMessagesCommit() returns error? {
     // Consume with SESSION_TRANSACTED
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         directTransport: false,
         directOptimized: false,        
         auth: {
@@ -180,7 +188,7 @@ isolated function testTransactedSessionMultipleMessagesCommit() returns error? {
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE,
+            queueName: TRANSACTED_MULTIPLE_COMMIT_QUEUE,
             sessionAckMode: SESSION_TRANSACTED
         }
     });
@@ -211,6 +219,7 @@ isolated function testTransactedSessionMultipleMessagesCommit() returns error? {
     // Verify no messages are redelivered
     MessageConsumer consumer2 = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         directTransport: false,
         directOptimized: false,        
         auth: {
@@ -218,7 +227,7 @@ isolated function testTransactedSessionMultipleMessagesCommit() returns error? {
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE,
+            queueName: TRANSACTED_MULTIPLE_COMMIT_QUEUE,
             sessionAckMode: SESSION_TRANSACTED
         }
     });
@@ -229,16 +238,17 @@ isolated function testTransactedSessionMultipleMessagesCommit() returns error? {
 }
 
 // Test SESSION_TRANSACTED with multiple messages and rollback
-@test:Config {groups: ["consumer", "transacted"]}
+@test:Config {groups: ["consumer", "transacted"], dependsOn: [testTransactedSessionMultipleMessagesCommit]}
 isolated function testTransactedSessionMultipleMessagesRollback() returns error? {
     // Send multiple messages
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
-        destination: {queueName: TEST_QUEUE}
+        destination: {queueName: TRANSACTED_MULTIPLE_ROLLBACK_QUEUE}
     });
 
     check producer->send({content: "Rollback message 1"});
@@ -249,6 +259,7 @@ isolated function testTransactedSessionMultipleMessagesRollback() returns error?
     // First consumer - receive but rollback
     MessageConsumer consumer1 = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         directTransport: false,
         directOptimized: false,        
         auth: {
@@ -256,7 +267,7 @@ isolated function testTransactedSessionMultipleMessagesRollback() returns error?
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE,
+            queueName: TRANSACTED_MULTIPLE_ROLLBACK_QUEUE,
             sessionAckMode: SESSION_TRANSACTED
         }
     });
@@ -281,6 +292,7 @@ isolated function testTransactedSessionMultipleMessagesRollback() returns error?
     // Second consumer - should receive all messages again
     MessageConsumer consumer2 = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         directTransport: false,
         directOptimized: false,        
         auth: {
@@ -288,7 +300,7 @@ isolated function testTransactedSessionMultipleMessagesRollback() returns error?
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE,
+            queueName: TRANSACTED_MULTIPLE_ROLLBACK_QUEUE,
             sessionAckMode: SESSION_TRANSACTED
         }
     });
@@ -316,10 +328,11 @@ isolated function testTransactedSessionMultipleMessagesRollback() returns error?
     check consumer2->close();
 }
 
-@test:Config {groups: ["consumer", "transacted"]}
+@test:Config {groups: ["consumer", "transacted"], dependsOn: [testTransactedSessionMultipleMessagesRollback]}
 isolated function testTransactedSessionWithTopic() returns error? {
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         directTransport: false,
         directOptimized: false,
         auth: {
@@ -327,7 +340,7 @@ isolated function testTransactedSessionWithTopic() returns error? {
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            topicName: TEST_TOPIC,
+            topicName: TRANSACTED_TOPIC,
             sessionAckMode: SESSION_TRANSACTED
         }
     });
@@ -336,13 +349,14 @@ isolated function testTransactedSessionWithTopic() returns error? {
 
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         directTransport: false,
         directOptimized: false,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
-        destination: {topicName: TEST_TOPIC}
+        destination: {topicName: TRANSACTED_TOPIC}
     });
 
     Message message = {
@@ -361,15 +375,16 @@ isolated function testTransactedSessionWithTopic() returns error? {
     check consumer->close();
 }
 
-@test:Config {groups: ["consumer", "transacted"]}
+@test:Config {groups: ["consumer", "transacted"], dependsOn: [testTransactedSessionWithTopic]}
 isolated function testTransactedSessionMixedCommitRollback() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
-        destination: {queueName: TEST_QUEUE}
+        destination: {queueName: TRANSACTED_MIXED_QUEUE}
     });
 
     check producer->send({content: "Mixed test message 1"});
@@ -379,6 +394,7 @@ isolated function testTransactedSessionMixedCommitRollback() returns error? {
 
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         directTransport: false,
         directOptimized: false,
         auth: {
@@ -386,7 +402,7 @@ isolated function testTransactedSessionMixedCommitRollback() returns error? {
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE,
+            queueName: TRANSACTED_MIXED_QUEUE,
             sessionAckMode: SESSION_TRANSACTED
         }
     });
@@ -423,15 +439,16 @@ isolated function testTransactedSessionMixedCommitRollback() returns error? {
     check consumer->close();
 }
 
-@test:Config {groups: ["consumer", "transacted"]}
+@test:Config {groups: ["consumer", "transacted"], dependsOn: [testTransactedSessionMixedCommitRollback]}
 isolated function testTransactedSessionWithDifferentMessageTypes() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
-        destination: {queueName: TEST_QUEUE}
+        destination: {queueName: TRANSACTED_MSG_TYPES_QUEUE}
     });
 
     check producer->send({content: "Transacted text"});
@@ -441,6 +458,7 @@ isolated function testTransactedSessionWithDifferentMessageTypes() returns error
 
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         directTransport: false,
         directOptimized: false,
         auth: {
@@ -448,7 +466,7 @@ isolated function testTransactedSessionWithDifferentMessageTypes() returns error
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE,
+            queueName: TRANSACTED_MSG_TYPES_QUEUE,
             sessionAckMode: SESSION_TRANSACTED
         }
     });
@@ -476,17 +494,18 @@ isolated function testTransactedSessionWithDifferentMessageTypes() returns error
     check consumer->close();
 }
 
-@test:Config {groups: ["consumer", "transacted"]}
+@test:Config {groups: ["consumer", "transacted"], dependsOn: [testTransactedSessionWithDifferentMessageTypes]}
 isolated function testTransactedProducerAndConsumer() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         directTransport: false,
         directOptimized: false,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
-        destination: {queueName: TEST_QUEUE},
+        destination: {queueName: TRANSACTED_PRODUCER_CONSUMER_QUEUE},
         transacted: true
     });
 
@@ -497,6 +516,7 @@ isolated function testTransactedProducerAndConsumer() returns error? {
 
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         directTransport: false,
         directOptimized: false,
         auth: {
@@ -504,7 +524,7 @@ isolated function testTransactedProducerAndConsumer() returns error? {
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE,
+            queueName: TRANSACTED_PRODUCER_CONSUMER_QUEUE,
             sessionAckMode: SESSION_TRANSACTED
         }
     });

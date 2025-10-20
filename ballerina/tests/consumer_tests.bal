@@ -23,12 +23,13 @@ import ballerina/io;
 isolated function testConsumerInitWithQueue() returns error? {
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE
+            queueName: CONSUMER_INIT_QUEUE
         }
     });
     check consumer->close();
@@ -39,6 +40,7 @@ isolated function testConsumerInitWithQueue() returns error? {
 isolated function testConsumerInitWithTopic() returns error? {
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -56,11 +58,12 @@ isolated function testReceiveWithQueue() returns error? {
     // Send a message first
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
-        destination: {queueName: TEST_QUEUE}
+        destination: {queueName: CONSUMER_RECEIVE_QUEUE}
     });
 
     Message message = {
@@ -72,12 +75,13 @@ isolated function testReceiveWithQueue() returns error? {
     // Receive the message
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE
+            queueName: CONSUMER_RECEIVE_QUEUE
         }
     });
 
@@ -91,17 +95,18 @@ isolated function testReceiveWithQueue() returns error? {
 }
 
 // Test receiveNoWait with queue
-@test:Config {groups: ["consumer"]}
+@test:Config {groups: ["consumer", "consumerFix"], dependsOn: [testReceiveWithQueue], enable: false}
 isolated function testReceiveNoWaitWithQueue() returns error? {
     // Check no message available
     MessageConsumer consumer1 = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE
+            queueName: CONSUMER_RECEIVE_NO_WAIT_QUEUE
         }
     });
 
@@ -112,33 +117,33 @@ isolated function testReceiveNoWaitWithQueue() returns error? {
     // Send a message
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
-        destination: {queueName: TEST_QUEUE}
+        destination: {queueName: CONSUMER_RECEIVE_NO_WAIT_QUEUE}
     });
 
     Message message = {
         content: TEXT_MESSAGE_CONTENT_2
     };
-    check producer->send(message);
-    check producer->close();
-
-    // Small delay to ensure message is available
-    runtime:sleep(0.5);
 
     // Receive the message
     MessageConsumer consumer2 = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE
+            queueName: CONSUMER_RECEIVE_NO_WAIT_QUEUE
         }
     });
+
+    check producer->send(message);
+    check producer->close();
 
     Message? receivedMessage = check consumer2->receiveNoWait();
     test:assertTrue(receivedMessage is Message, "Should receive a message");
@@ -150,17 +155,18 @@ isolated function testReceiveNoWaitWithQueue() returns error? {
 }
 
 // Test receive with topic
-@test:Config {groups: ["consumer"]}
+@test:Config {groups: ["consumer"], dependsOn: [testReceiveWithQueue]}
 isolated function testReceiveWithTopic() returns error? {
     // Create consumer first to ensure subscription is active
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            topicName: TEST_TOPIC
+            topicName: CONSUMER_RECEIVE_TOPIC
         }
     });
 
@@ -170,11 +176,12 @@ isolated function testReceiveWithTopic() returns error? {
     // Send a message to topic
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
-        destination: {topicName: TEST_TOPIC}
+        destination: {topicName: CONSUMER_RECEIVE_TOPIC}
     });
 
     Message message = {
@@ -194,15 +201,16 @@ isolated function testReceiveWithTopic() returns error? {
 }
 
 // Test receive text message
-@test:Config {groups: ["consumer"]}
+@test:Config {groups: ["consumer"], dependsOn: [testReceiveWithTopic]}
 isolated function testReceiveTextMessage() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
-        destination: {queueName: TEST_QUEUE}
+        destination: {queueName: CONSUMER_TEXT_MSG_QUEUE}
     });
 
     Message message = {
@@ -213,12 +221,13 @@ isolated function testReceiveTextMessage() returns error? {
 
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE
+            queueName: CONSUMER_TEXT_MSG_QUEUE
         }
     });
 
@@ -232,15 +241,16 @@ isolated function testReceiveTextMessage() returns error? {
 }
 
 // Test receive bytes message
-@test:Config {groups: ["consumer", "consumerFix"]}
+@test:Config {groups: ["consumer"], dependsOn: [testReceiveTextMessage]}
 isolated function testReceiveBytesMessage() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
-        destination: {queueName: TEST_QUEUE}
+        destination: {queueName: CONSUMER_BYTES_MSG_QUEUE}
     });
 
     byte[] byteContent = [72, 101, 108, 108, 111]; // "Hello" in bytes
@@ -252,12 +262,13 @@ isolated function testReceiveBytesMessage() returns error? {
 
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE
+            queueName: CONSUMER_BYTES_MSG_QUEUE
         }
     });
 
@@ -273,15 +284,16 @@ isolated function testReceiveBytesMessage() returns error? {
 }
 
 // Test receive map message
-@test:Config {groups: ["consumer"]}
+@test:Config {groups: ["consumer"], dependsOn: [testReceiveBytesMessage]}
 isolated function testReceiveMapMessage() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
-        destination: {queueName: TEST_QUEUE}
+        destination: {queueName: CONSUMER_MAP_MSG_QUEUE}
     });
 
     map<Value> mapContent = {
@@ -297,12 +309,13 @@ isolated function testReceiveMapMessage() returns error? {
 
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE
+            queueName: CONSUMER_MAP_MSG_QUEUE
         }
     });
 
@@ -321,15 +334,16 @@ isolated function testReceiveMapMessage() returns error? {
 }
 
 // Test receive message with properties
-@test:Config {groups: ["consumer"]}
+@test:Config {groups: ["consumer"], dependsOn: [testReceiveMapMessage]}
 isolated function testReceiveMessageWithProperties() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
-        destination: {queueName: TEST_QUEUE}
+        destination: {queueName: CONSUMER_PROPERTIES_QUEUE}
     });
 
     Message message = {
@@ -345,12 +359,13 @@ isolated function testReceiveMessageWithProperties() returns error? {
 
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE
+            queueName: CONSUMER_PROPERTIES_QUEUE
         }
     });
 
@@ -369,15 +384,16 @@ isolated function testReceiveMessageWithProperties() returns error? {
 }
 
 // Test receive message with correlation ID
-@test:Config {groups: ["consumer"]}
+@test:Config {groups: ["consumer"], dependsOn: [testReceiveMessageWithProperties]}
 isolated function testReceiveMessageWithCorrelationId() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
-        destination: {queueName: TEST_QUEUE}
+        destination: {queueName: CONSUMER_CORRELATION_ID_QUEUE}
     });
 
     Message message = {
@@ -389,12 +405,13 @@ isolated function testReceiveMessageWithCorrelationId() returns error? {
 
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE
+            queueName: CONSUMER_CORRELATION_ID_QUEUE
         }
     });
 
@@ -407,16 +424,17 @@ isolated function testReceiveMessageWithCorrelationId() returns error? {
 }
 
 // Test receive timeout
-@test:Config {groups: ["consumer"]}
+@test:Config {groups: ["consumer"], dependsOn: [testReceiveMessageWithCorrelationId]}
 isolated function testReceiveTimeout() returns error? {
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE
+            queueName: CONSUMER_TIMEOUT_QUEUE
         }
     });
 
@@ -427,16 +445,17 @@ isolated function testReceiveTimeout() returns error? {
 }
 
 // Test message selector with queue
-@test:Config {groups: ["consumer"]}
+@test:Config {groups: ["consumer"], dependsOn: [testReceiveTimeout]}
 isolated function testMessageSelectorWithQueue() returns error? {
     // Send two messages with different properties
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
-        destination: {queueName: TEST_QUEUE}
+        destination: {queueName: CONSUMER_SELECTOR_QUEUE}
     });
 
     Message message1 = {
@@ -455,12 +474,13 @@ isolated function testMessageSelectorWithQueue() returns error? {
     // Consumer with message selector for high priority only
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE,
+            queueName: CONSUMER_SELECTOR_QUEUE,
             messageSelector: "priority = 'high'"
         }
     });

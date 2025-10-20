@@ -23,11 +23,12 @@ isolated function testClientAckWithQueue() returns error? {
     // Send a message
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
-        destination: {queueName: TEST_QUEUE}
+        destination: {queueName: CLIENT_ACK_QUEUE}
     });
 
     Message message = {
@@ -39,12 +40,13 @@ isolated function testClientAckWithQueue() returns error? {
     // Consume with CLIENT_ACKNOWLEDGE
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE,
+            queueName: CLIENT_ACK_QUEUE,
             sessionAckMode: CLIENT_ACKNOWLEDGE
         }
     });
@@ -62,16 +64,17 @@ isolated function testClientAckWithQueue() returns error? {
 }
 
 // Test multiple messages with CLIENT_ACKNOWLEDGE
-@test:Config {groups: ["consumer", "client_ack"]}
+@test:Config {groups: ["consumer", "client_ack"], dependsOn: [testClientAckWithQueue]}
 isolated function testClientAckMultipleMessages() returns error? {
     // Send multiple messages
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
-        destination: {queueName: TEST_QUEUE}
+        destination: {queueName: CLIENT_ACK_MULTIPLE_QUEUE}
     });
 
     check producer->send({content: "Message 1"});
@@ -82,12 +85,13 @@ isolated function testClientAckMultipleMessages() returns error? {
     // Consume with CLIENT_ACKNOWLEDGE
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE,
+            queueName: CLIENT_ACK_MULTIPLE_QUEUE,
             sessionAckMode: CLIENT_ACKNOWLEDGE
         }
     });
@@ -119,16 +123,17 @@ isolated function testClientAckMultipleMessages() returns error? {
 }
 
 // Test CLIENT_ACKNOWLEDGE without acknowledging (message should be redelivered)
-@test:Config {groups: ["consumer", "client_ack"]}
+@test:Config {groups: ["consumer", "client_ack"], dependsOn: [testClientAckMultipleMessages]}
 isolated function testClientAckWithoutAcknowledge() returns error? {
     // Send a message
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
-        destination: {queueName: TEST_QUEUE}
+        destination: {queueName: CLIENT_ACK_NO_ACK_QUEUE}
     });
 
     Message message = {
@@ -140,12 +145,13 @@ isolated function testClientAckWithoutAcknowledge() returns error? {
     // First consumer - receive but don't acknowledge
     MessageConsumer consumer1 = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE,
+            queueName: CLIENT_ACK_NO_ACK_QUEUE,
             sessionAckMode: CLIENT_ACKNOWLEDGE
         }
     });
@@ -164,12 +170,13 @@ isolated function testClientAckWithoutAcknowledge() returns error? {
     // Second consumer - should receive the same message
     MessageConsumer consumer2 = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE,
+            queueName: CLIENT_ACK_NO_ACK_QUEUE,
             sessionAckMode: CLIENT_ACKNOWLEDGE
         }
     });
@@ -185,17 +192,18 @@ isolated function testClientAckWithoutAcknowledge() returns error? {
 }
 
 // Test CLIENT_ACKNOWLEDGE with topic
-@test:Config {groups: ["consumer", "client_ack"]}
+@test:Config {groups: ["consumer", "client_ack"], dependsOn: [testClientAckWithoutAcknowledge]}
 isolated function testClientAckWithTopic() returns error? {
     // Create consumer first to ensure subscription is active
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            topicName: TEST_TOPIC,
+            topicName: CLIENT_ACK_TOPIC,
             sessionAckMode: CLIENT_ACKNOWLEDGE
         }
     });
@@ -206,11 +214,12 @@ isolated function testClientAckWithTopic() returns error? {
     // Send a message to topic
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
-        destination: {topicName: TEST_TOPIC}
+        destination: {topicName: CLIENT_ACK_TOPIC}
     });
 
     Message message = {
@@ -229,15 +238,16 @@ isolated function testClientAckWithTopic() returns error? {
     check consumer->close();
 }
 
-@test:Config {groups: ["consumer", "client_ack"]}
+@test:Config {groups: ["consumer", "client_ack"], dependsOn: [testClientAckWithTopic]}
 isolated function testClientAckWithDifferentMessageTypes() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
-        destination: {queueName: TEST_QUEUE}
+        destination: {queueName: CLIENT_ACK_MSG_TYPES_QUEUE}
     });
 
     // Send different message types
@@ -248,12 +258,13 @@ isolated function testClientAckWithDifferentMessageTypes() returns error? {
 
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE,
+            queueName: CLIENT_ACK_MSG_TYPES_QUEUE,
             sessionAckMode: CLIENT_ACKNOWLEDGE
         }
     });
@@ -286,15 +297,16 @@ isolated function testClientAckWithDifferentMessageTypes() returns error? {
 }
 
 // Test CLIENT_ACKNOWLEDGE with message properties
-@test:Config {groups: ["consumer", "client_ack"]}
+@test:Config {groups: ["consumer", "client_ack"], dependsOn: [testClientAckWithDifferentMessageTypes]}
 isolated function testClientAckWithMessageProperties() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
-        destination: {queueName: TEST_QUEUE}
+        destination: {queueName: CLIENT_ACK_PROPERTIES_QUEUE}
     });
 
     Message message = {
@@ -310,12 +322,13 @@ isolated function testClientAckWithMessageProperties() returns error? {
 
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
         },
         subscriptionConfig: {
-            queueName: TEST_QUEUE,
+            queueName: CLIENT_ACK_PROPERTIES_QUEUE,
             sessionAckMode: CLIENT_ACKNOWLEDGE
         }
     });
