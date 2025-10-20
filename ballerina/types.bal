@@ -253,6 +253,7 @@ public type ConsumerConfiguration record {|
     RetryConfig retryConfig?;
 |};
 
+# Represents the listener configuration for Ballerina Solace listener.
 public type ListenerConfiguration record {|
     # The name of the message VPN to connect to
     string messageVpn = "default";
@@ -468,7 +469,7 @@ public type Property boolean|int|byte|float|string;
 # Represents the allowed value types for entries in the map content of a JMS MapMessage.
 public type Value Property|byte[];
 
-# Represent the JMS Message used to send and receive content from the a JMS provider.
+# Represent the Message used to send and receive content from the Solace broker.
 public type Message record {|
     # Message payload (can be text, binary, or structured map data)
     string|map<Value>|byte[] payload;
