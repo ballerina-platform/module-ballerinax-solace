@@ -279,11 +279,3 @@ isolated function testServiceDetach() returns error? {
     runtime:sleep(2);
     check solaceListener.detach(consumerSvc);
 }
-
-// @test:AfterGroups {
-//     value: ["service", "validations"]
-// }
-// isolated function afterMessageListenerTests() returns error? {
-//     check queueProducer->close();
-//     check topicProducer->close();
-// }
