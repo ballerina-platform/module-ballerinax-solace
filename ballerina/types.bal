@@ -16,6 +16,17 @@
 
 import ballerina/constraint;
 
+# The Solace service type.
+public type Service distinct service object {
+    // remote function onMessage(soalce:Message message, soalce:Caller caller) returns error?;
+};
+
+# The service configuration type for the `solace:Service`.
+public type ServiceConfiguration QueueServiceConfig|TopicServiceConfig;
+
+# Annotation to configure the `solace:Service`.
+public annotation ServiceConfiguration ServiceConfig on service;
+
 # Defines the JMS session acknowledgement modes.
 public enum AcknowledgementMode {
     # Indicates that the session will use a local transaction which may subsequently 
@@ -62,6 +73,12 @@ public type QueueConfig record {|
     string messageSelector?;
 |};
 
+public type QueueServiceConfig record {|
+    *QueueConfig;
+    decimal pollingInterval = 10;
+    decimal receiveTimeout = 5;
+|};
+
 # Represents configurations for JMS topic subscription.
 #
 # + topicName - The name of the topic to subscribe to
@@ -81,6 +98,12 @@ public type TopicConfig record {|
     string subscriberName?;
     string messageSelector?;
     boolean noLocal = false;
+|};
+
+public type TopicServiceConfig record {|
+    *TopicConfig;
+    decimal pollingInterval = 10;
+    decimal receiveTimeout = 5;
 |};
 
 # Represents a message destination in Solace.
@@ -157,6 +180,53 @@ public type ProducerConfiguration record {|
 public type ConsumerConfiguration record {|
     # The subscription configuration specifying either a queue or topic to consume messages from
     QueueConfig|TopicConfig subscriptionConfig;
+    # The name of the message VPN to connect to
+    string messageVpn = "default";
+    # The authentication configuration. Supports basic authentication, Kerberos, and OAuth2.
+    # For client certificate authentication, configure the `secureSocket.keyStore` field
+    BasicAuthConfig|KerberosConfig|OAuth2Config auth?;
+    # The SSL/TLS configuration for secure connections
+    SecureSocket secureSocket?;
+    # The client identifier. If not specified, a unique client ID is auto-generated
+    string clientId?;
+    # A description for the application client
+    string clientDescription = "JNDI";
+    # Specifies whether to allow the same client ID to be used across multiple connections
+    boolean allowDuplicateClientId = false;
+    # Enables automatic creation of durable queues and topic endpoints on the broker
+    boolean enableDynamicDurables = false;
+    # Enables direct transport mode for message delivery. When `true`, uses direct (at-most-once) delivery.
+    # When `false`, uses guaranteed (persistent) delivery mode. Direct transport must be disabled for
+    # transacted sessions and XA transactions.
+    boolean directTransport = true;
+    # Enables direct message optimization. When `true`, optimizes message delivery in direct transport mode
+    # by reducing protocol overhead. Only applicable when `directTransport` is `true`.
+    boolean directOptimized = true;
+    # The local interface IP address to bind for outbound connections
+    string localhost?;
+    # The the maximum amount of time (in seconds) permitted for a JNDI connection attempt.
+    # A value of 0 means wait indefinitely
+    decimal connectTimeout = 30.0;
+    # the maximum amount of time (in seconds) permitted for reading a JNDI lookup reply from the host
+    decimal readTimeout = 10.0;
+    # The configuration to enable and specify the ZLIB compression level.
+    # Valid range is 0-9, where 0 means no compression. Higher values provide better compression at the slower throughput
+    @constraint:Int {
+        minValue: {
+            value: 0,
+            message: "ZLIB compression level must be at least 0 (no compression)"
+        },
+        maxValue: {
+            value: 9,
+            message: "ZLIB compression level cannot exceed 9 (maximum compression)"
+        }
+    }
+    int compressionLevel = 0;
+    # The retry configuration for connection and reconnection attempts
+    RetryConfig retryConfig?;
+|};
+
+public type ListenerConfiguration record {|
     # The name of the message VPN to connect to
     string messageVpn = "default";
     # The authentication configuration. Supports basic authentication, Kerberos, and OAuth2.
