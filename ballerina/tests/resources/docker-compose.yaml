@@ -5,32 +5,12 @@ services:
     ports:
       - '55554:55555'  # SMF - default messaging (55555 is Solace internal port, 55554 for Mac compatibility)
       - '55003:55003'  # SMF - compressed messaging
-      - '55443:55443'  # SMFS - SSL/TLS secured messaging
-      - '8080:8080'    # Web transport / SEMP
-      - '943:943'      # SEMP over TLS
+      - '8080:8080'    # Web transport
     environment:
       - username_admin_globalaccesslevel=admin
       - username_admin_password=admin
-      # Enable SSL/TLS debugging (optional)
-      - tls_server_cert_max_chain_depth=3
-      - tls_server_cert_validate_date=on
-    volumes:
-      # Mount SSL certificates (read-only)
-      - ./certs:/etc/solace/certs:ro
-      # Mount configuration scripts (read-only)
-      - ./docker-entrypoint.sh:/docker-entrypoint.sh:ro
-      - ./solace-config.cli:/solace-config.cli:ro
-    # Custom entrypoint to configure SSL automatically
-    # Comment out the next line to use standard Solace entrypoint
-    entrypoint: ["/docker-entrypoint.sh"]
     shm_size: 1g
     ulimits:
       nofile:
         soft: 2448
         hard: 1048576
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health-check/guaranteed-active"]
-      interval: 10s
-      timeout: 5s
-      retries: 30
-      start_period: 60s
