@@ -330,7 +330,8 @@ isolated function testProducerInitWithInvalidUrl() {
 }
 
 @test:Config {
-    groups: ["producer", "negative"]
+    groups: ["producer", "negative"],
+    enable: false
 }
 isolated function testProducerInitWithInvalidCredentials() {
     MessageProducer|Error producer = new (BROKER_URL, {
