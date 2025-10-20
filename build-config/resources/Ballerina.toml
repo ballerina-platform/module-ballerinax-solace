@@ -138,25 +138,3 @@ path = "./lib/netty-transport-native-kqueue-@netty.version@-osx-x86_64.jar"
 
 [[platform.java21.dependency]]
 path = "./lib/netty-transport-native-kqueue-@netty.version@-osx-aarch_64.jar"
-
-
-# [[platform.java21.dependency]]
-# groupId = "io.netty"
-# artifactId = "netty-tcnative-boringssl-static"
-# version = "@netty.tcnative.boringssl.static.version@"
-# path = "./lib/netty-tcnative-boringssl-static-@netty.tcnative.boringssl.static.version@.jar"
-
-# [[platform.java21.dependency]]
-# path = "./lib/netty-tcnative-boringssl-static-@netty.tcnative.boringssl.static.version@-windows-x86_64.jar"
-
-# [[platform.java21.dependency]]
-# path = "./lib/netty-tcnative-boringssl-static-@netty.tcnative.boringssl.static.version@-linux-aarch_64.jar"
-
-# [[platform.java21.dependency]]
-# path = "./lib/netty-tcnative-boringssl-static-@netty.tcnative.boringssl.static.version@-linux-x86_64.jar"
-
-# [[platform.java21.dependency]]
-# path = "./lib/netty-tcnative-boringssl-static-@netty.tcnative.boringssl.static.version@-osx-aarch_64.jar"
-
-# [[platform.java21.dependency]]
-# path = "./lib/netty-tcnative-boringssl-static-@netty.tcnative.boringssl.static.version@-osx-x86_64.jar"
