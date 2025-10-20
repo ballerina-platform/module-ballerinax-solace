@@ -62,7 +62,7 @@ isolated function testReceiveWithQueue() returns error? {
     });
 
     Message message = {
-        content: TEXT_MESSAGE_CONTENT
+        payload: TEXT_MESSAGE_CONTENT
     };
     check producer->send(message);
     check producer->close();
@@ -82,7 +82,7 @@ isolated function testReceiveWithQueue() returns error? {
     Message? receivedMessage = check consumer->receive(5.0);
     test:assertTrue(receivedMessage is Message, "Should receive a message");
     if receivedMessage is Message {
-        test:assertEquals(receivedMessage.content, TEXT_MESSAGE_CONTENT,
+        test:assertEquals(receivedMessage.payload, TEXT_MESSAGE_CONTENT,
                 "Message content should match");
     }
     check consumer->close();
@@ -117,7 +117,7 @@ isolated function testReceiveNoWaitWithQueue() returns error? {
     });
 
     Message message = {
-        content: TEXT_MESSAGE_CONTENT_2
+        payload: TEXT_MESSAGE_CONTENT_2
     };
 
     MessageConsumer consumer2 = check new (BROKER_URL, {
@@ -138,7 +138,7 @@ isolated function testReceiveNoWaitWithQueue() returns error? {
     Message? receivedMessage = check consumer2->receiveNoWait();
     test:assertTrue(receivedMessage is Message, "Should receive a message");
     if receivedMessage is Message {
-        test:assertEquals(receivedMessage.content, TEXT_MESSAGE_CONTENT_2,
+        test:assertEquals(receivedMessage.payload, TEXT_MESSAGE_CONTENT_2,
                 "Message content should match");
     }
     check consumer2->close();
@@ -171,7 +171,7 @@ isolated function testReceiveWithTopic() returns error? {
     });
 
     Message message = {
-        content: "Topic message content"
+        payload: "Topic message content"
     };
     check producer->send(message);
     check producer->close();
@@ -179,7 +179,7 @@ isolated function testReceiveWithTopic() returns error? {
     Message? receivedMessage = check consumer->receive(5.0);
     test:assertTrue(receivedMessage is Message, "Should receive a message from topic");
     if receivedMessage is Message {
-        test:assertEquals(receivedMessage.content, "Topic message content",
+        test:assertEquals(receivedMessage.payload, "Topic message content",
                 "Message content should match");
     }
     check consumer->close();
@@ -198,7 +198,7 @@ isolated function testReceiveTextMessage() returns error? {
     });
 
     Message message = {
-        content: "Text message test"
+        payload: "Text message test"
     };
     check producer->send(message);
     check producer->close();
@@ -218,8 +218,8 @@ isolated function testReceiveTextMessage() returns error? {
     Message? receivedMessage = check consumer->receive(5.0);
     test:assertTrue(receivedMessage is Message, "Should receive a text message");
     if receivedMessage is Message {
-        test:assertTrue(receivedMessage.content is string, "Content should be string");
-        test:assertEquals(receivedMessage.content, "Text message test");
+        test:assertTrue(receivedMessage.payload is string, "Content should be string");
+        test:assertEquals(receivedMessage.payload, "Text message test");
     }
     check consumer->close();
 }
@@ -238,7 +238,7 @@ isolated function testReceiveBytesMessage() returns error? {
 
     byte[] byteContent = [72, 101, 108, 108, 111]; // "Hello" in bytes
     Message message = {
-        content: byteContent
+        payload: byteContent
     };
     check producer->send(message);
     check producer->close();
@@ -258,8 +258,8 @@ isolated function testReceiveBytesMessage() returns error? {
     Message? receivedMessage = check consumer->receive(5.0);
     test:assertTrue(receivedMessage is Message, "Should receive a bytes message");
     if receivedMessage is Message {
-        test:assertTrue(receivedMessage.content is byte[], "Content should be byte array");
-        test:assertEquals(receivedMessage.content, byteContent);
+        test:assertTrue(receivedMessage.payload is byte[], "Content should be byte array");
+        test:assertEquals(receivedMessage.payload, byteContent);
     }
     check consumer->close();
 }
@@ -282,7 +282,7 @@ isolated function testReceiveMapMessage() returns error? {
         "active": true
     };
     Message message = {
-        content: mapContent
+        payload: mapContent
     };
     check producer->send(message);
     check producer->close();
@@ -302,7 +302,7 @@ isolated function testReceiveMapMessage() returns error? {
     Message? receivedMessage = check consumer->receive(5.0);
     test:assertTrue(receivedMessage is Message, "Should receive a map message");
     if receivedMessage is Message {
-        var content = receivedMessage.content;
+        var content = receivedMessage.payload;
         test:assertTrue(content is map<Value>, "Content should be map");
         if content is map<Value> {
             test:assertEquals(content["name"], "John");
@@ -326,7 +326,7 @@ isolated function testReceiveMessageWithProperties() returns error? {
     });
 
     Message message = {
-        content: "Message with properties",
+        payload: "Message with properties",
         properties: {
             "priority": "high",
             "timestamp": 123456789,
@@ -351,7 +351,7 @@ isolated function testReceiveMessageWithProperties() returns error? {
     Message? receivedMessage = check consumer->receive(5.0);
     test:assertTrue(receivedMessage is Message, "Should receive a message with properties");
     if receivedMessage is Message {
-        test:assertEquals(receivedMessage.content, "Message with properties");
+        test:assertEquals(receivedMessage.payload, "Message with properties");
         test:assertTrue(receivedMessage.properties is map<Property>, "Should have properties");
         if receivedMessage.properties is map<Property> {
             test:assertEquals(receivedMessage.properties["priority"], "high");
@@ -375,7 +375,7 @@ isolated function testReceiveMessageWithCorrelationId() returns error? {
     });
 
     Message message = {
-        content: "Correlated message",
+        payload: "Correlated message",
         correlationId: "CORR-123-456"
     };
     check producer->send(message);
@@ -433,13 +433,13 @@ isolated function testMessageSelectorWithQueue() returns error? {
     });
 
     Message message1 = {
-        content: "Low priority message",
+        payload: "Low priority message",
         properties: {"priority": "low"}
     };
     check producer->send(message1);
 
     Message message2 = {
-        content: "High priority message",
+        payload: "High priority message",
         properties: {"priority": "high"}
     };
     check producer->send(message2);
@@ -461,7 +461,7 @@ isolated function testMessageSelectorWithQueue() returns error? {
     Message? receivedMessage = check consumer->receive(5.0);
     test:assertTrue(receivedMessage is Message, "Should receive high priority message");
     if receivedMessage is Message {
-        test:assertEquals(receivedMessage.content, "High priority message");
+        test:assertEquals(receivedMessage.payload, "High priority message");
     }
     check consumer->close();
 }

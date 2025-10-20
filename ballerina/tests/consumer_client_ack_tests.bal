@@ -30,7 +30,7 @@ isolated function testClientAckWithQueue() returns error? {
     });
 
     Message message = {
-        content: "Client ack test message"
+        payload: "Client ack test message"
     };
     check producer->send(message);
     check producer->close();
@@ -52,7 +52,7 @@ isolated function testClientAckWithQueue() returns error? {
     test:assertTrue(receivedMessage is Message, "Should receive a message");
 
     if receivedMessage is Message {
-        test:assertEquals(receivedMessage.content, "Client ack test message");
+        test:assertEquals(receivedMessage.payload, "Client ack test message");
         check consumer->acknowledge(receivedMessage);
     }
 
@@ -71,9 +71,9 @@ isolated function testClientAckMultipleMessages() returns error? {
         destination: {queueName: CLIENT_ACK_MULTIPLE_QUEUE}
     });
 
-    check producer->send({content: "Message 1"});
-    check producer->send({content: "Message 2"});
-    check producer->send({content: "Message 3"});
+    check producer->send({payload: "Message 1"});
+    check producer->send({payload: "Message 2"});
+    check producer->send({payload: "Message 3"});
     check producer->close();
 
     MessageConsumer consumer = check new (BROKER_URL, {
@@ -93,21 +93,21 @@ isolated function testClientAckMultipleMessages() returns error? {
     Message? msg1 = check consumer->receive(5.0);
     test:assertTrue(msg1 is Message, "Should receive first message");
     if msg1 is Message {
-        test:assertEquals(msg1.content, "Message 1");
+        test:assertEquals(msg1.payload, "Message 1");
     }
 
     // Receive second message
     Message? msg2 = check consumer->receive(5.0);
     test:assertTrue(msg2 is Message, "Should receive second message");
     if msg2 is Message {
-        test:assertEquals(msg2.content, "Message 2");
+        test:assertEquals(msg2.payload, "Message 2");
     }
 
     // Receive third message
     Message? msg3 = check consumer->receive(5.0);
     test:assertTrue(msg3 is Message, "Should receive third message");
     if msg3 is Message {
-        test:assertEquals(msg3.content, "Message 3");
+        test:assertEquals(msg3.payload, "Message 3");
         // Acknowledge all messages (acknowledging the last one acknowledges all)
         check consumer->acknowledge(msg3);
     }
@@ -128,7 +128,7 @@ isolated function testClientAckWithoutAcknowledge() returns error? {
     });
 
     Message message = {
-        content: "Unacknowledged message"
+        payload: "Unacknowledged message"
     };
     check producer->send(message);
     check producer->close();
@@ -149,7 +149,7 @@ isolated function testClientAckWithoutAcknowledge() returns error? {
     Message? receivedMessage1 = check consumer1->receive(5.0);
     test:assertTrue(receivedMessage1 is Message, "Should receive message");
     if receivedMessage1 is Message {
-        test:assertEquals(receivedMessage1.content, "Unacknowledged message");
+        test:assertEquals(receivedMessage1.payload, "Unacknowledged message");
     }
     check consumer1->close();
 
@@ -171,7 +171,7 @@ isolated function testClientAckWithoutAcknowledge() returns error? {
     Message? receivedMessage2 = check consumer2->receive(5.0);
     test:assertTrue(receivedMessage2 is Message, "Should receive redelivered message");
     if receivedMessage2 is Message {
-        test:assertEquals(receivedMessage2.content, "Unacknowledged message");
+        test:assertEquals(receivedMessage2.payload, "Unacknowledged message");
         check consumer2->acknowledge(receivedMessage2);
     }
     check consumer2->close();
@@ -205,7 +205,7 @@ isolated function testClientAckWithTopic() returns error? {
     });
 
     Message message = {
-        content: "Topic client ack message"
+        payload: "Topic client ack message"
     };
     check producer->send(message);
     check producer->close();
@@ -214,7 +214,7 @@ isolated function testClientAckWithTopic() returns error? {
     Message? receivedMessage = check consumer->receive(5.0);
     test:assertTrue(receivedMessage is Message, "Should receive message from topic");
     if receivedMessage is Message {
-        test:assertEquals(receivedMessage.content, "Topic client ack message");
+        test:assertEquals(receivedMessage.payload, "Topic client ack message");
         check consumer->acknowledge(receivedMessage);
     }
     check consumer->close();
@@ -232,9 +232,9 @@ isolated function testClientAckWithDifferentMessageTypes() returns error? {
         destination: {queueName: CLIENT_ACK_MSG_TYPES_QUEUE}
     });
 
-    check producer->send({content: "Text message"});
-    check producer->send({content: [1, 2, 3, 4, 5]});
-    check producer->send({content: {"key": "value", "number": 42}});
+    check producer->send({payload: "Text message"});
+    check producer->send({payload: [1, 2, 3, 4, 5]});
+    check producer->send({payload: {"key": "value", "number": 42}});
     check producer->close();
 
     MessageConsumer consumer = check new (BROKER_URL, {
@@ -253,21 +253,21 @@ isolated function testClientAckWithDifferentMessageTypes() returns error? {
     Message? msg1 = check consumer->receive(5.0);
     test:assertTrue(msg1 is Message);
     if msg1 is Message {
-        test:assertTrue(msg1.content is string);
+        test:assertTrue(msg1.payload is string);
         check consumer->acknowledge(msg1);
     }
 
     Message? msg2 = check consumer->receive(5.0);
     test:assertTrue(msg2 is Message);
     if msg2 is Message {
-        test:assertTrue(msg2.content is byte[]);
+        test:assertTrue(msg2.payload is byte[]);
         check consumer->acknowledge(msg2);
     }
 
     Message? msg3 = check consumer->receive(5.0);
     test:assertTrue(msg3 is Message);
     if msg3 is Message {
-        test:assertTrue(msg3.content is map<Value>);
+        test:assertTrue(msg3.payload is map<Value>);
         check consumer->acknowledge(msg3);
     }
 
@@ -287,7 +287,7 @@ isolated function testClientAckWithMessageProperties() returns error? {
     });
 
     Message message = {
-        content: "Message with properties",
+        payload: "Message with properties",
         properties: {
             "priority": "high",
             "region": "us-west",
@@ -313,7 +313,7 @@ isolated function testClientAckWithMessageProperties() returns error? {
     Message? receivedMessage = check consumer->receive(5.0);
     test:assertTrue(receivedMessage is Message);
     if receivedMessage is Message {
-        test:assertEquals(receivedMessage.content, "Message with properties");
+        test:assertEquals(receivedMessage.payload, "Message with properties");
         test:assertTrue(receivedMessage.properties is map<Property>);
         if receivedMessage.properties is map<Property> {
             test:assertEquals(receivedMessage.properties["priority"], "high");

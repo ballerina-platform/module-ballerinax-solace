@@ -30,7 +30,7 @@ isolated function testTransactedSessionWithCommit() returns error? {
     });
 
     Message message = {
-        content: "Transacted commit test"
+        payload: "Transacted commit test"
     };
     check producer->send(message);
     check producer->close();
@@ -53,7 +53,7 @@ isolated function testTransactedSessionWithCommit() returns error? {
     Message? receivedMessage = check consumer->receive(5.0);
     test:assertTrue(receivedMessage is Message, "Should receive a message");
     if receivedMessage is Message {
-        test:assertEquals(receivedMessage.content, "Transacted commit test");
+        test:assertEquals(receivedMessage.payload, "Transacted commit test");
     }
 
     check consumer->'commit();
@@ -92,7 +92,7 @@ isolated function testTransactedSessionWithRollback() returns error? {
     });
 
     Message message = {
-        content: "Transacted rollback test"
+        payload: "Transacted rollback test"
     };
     check producer->send(message);
     check producer->close();
@@ -115,7 +115,7 @@ isolated function testTransactedSessionWithRollback() returns error? {
     Message? receivedMessage1 = check consumer1->receive(5.0);
     test:assertTrue(receivedMessage1 is Message, "Should receive a message");
     if receivedMessage1 is Message {
-        test:assertEquals(receivedMessage1.content, "Transacted rollback test");
+        test:assertEquals(receivedMessage1.payload, "Transacted rollback test");
     }
 
     check consumer1->'rollback();
@@ -141,7 +141,7 @@ isolated function testTransactedSessionWithRollback() returns error? {
     Message? receivedMessage2 = check consumer2->receive(5.0);
     test:assertTrue(receivedMessage2 is Message, "Message should be redelivered after rollback");
     if receivedMessage2 is Message {
-        test:assertEquals(receivedMessage2.content, "Transacted rollback test");
+        test:assertEquals(receivedMessage2.payload, "Transacted rollback test");
     }
 
     check consumer2->'commit();
@@ -160,9 +160,9 @@ isolated function testTransactedSessionMultipleMessagesCommit() returns error? {
         destination: {queueName: TRANSACTED_MULTIPLE_COMMIT_QUEUE}
     });
 
-    check producer->send({content: "Transacted message 1"});
-    check producer->send({content: "Transacted message 2"});
-    check producer->send({content: "Transacted message 3"});
+    check producer->send({payload: "Transacted message 1"});
+    check producer->send({payload: "Transacted message 2"});
+    check producer->send({payload: "Transacted message 3"});
     check producer->close();
 
     MessageConsumer consumer = check new (BROKER_URL, {
@@ -183,19 +183,19 @@ isolated function testTransactedSessionMultipleMessagesCommit() returns error? {
     Message? msg1 = check consumer->receive(5.0);
     test:assertTrue(msg1 is Message);
     if msg1 is Message {
-        test:assertEquals(msg1.content, "Transacted message 1");
+        test:assertEquals(msg1.payload, "Transacted message 1");
     }
 
     Message? msg2 = check consumer->receive(5.0);
     test:assertTrue(msg2 is Message);
     if msg2 is Message {
-        test:assertEquals(msg2.content, "Transacted message 2");
+        test:assertEquals(msg2.payload, "Transacted message 2");
     }
 
     Message? msg3 = check consumer->receive(5.0);
     test:assertTrue(msg3 is Message);
     if msg3 is Message {
-        test:assertEquals(msg3.content, "Transacted message 3");
+        test:assertEquals(msg3.payload, "Transacted message 3");
     }
 
     check consumer->'commit();
@@ -233,9 +233,9 @@ isolated function testTransactedSessionMultipleMessagesRollback() returns error?
         destination: {queueName: TRANSACTED_MULTIPLE_ROLLBACK_QUEUE}
     });
 
-    check producer->send({content: "Rollback message 1"});
-    check producer->send({content: "Rollback message 2"});
-    check producer->send({content: "Rollback message 3"});
+    check producer->send({payload: "Rollback message 1"});
+    check producer->send({payload: "Rollback message 2"});
+    check producer->send({payload: "Rollback message 3"});
     check producer->close();
 
     MessageConsumer consumer1 = check new (BROKER_URL, {
@@ -285,19 +285,19 @@ isolated function testTransactedSessionMultipleMessagesRollback() returns error?
     Message? redelivered1 = check consumer2->receive(5.0);
     test:assertTrue(redelivered1 is Message, "First message should be redelivered");
     if redelivered1 is Message {
-        test:assertEquals(redelivered1.content, "Rollback message 1");
+        test:assertEquals(redelivered1.payload, "Rollback message 1");
     }
 
     Message? redelivered2 = check consumer2->receive(5.0);
     test:assertTrue(redelivered2 is Message, "Second message should be redelivered");
     if redelivered2 is Message {
-        test:assertEquals(redelivered2.content, "Rollback message 2");
+        test:assertEquals(redelivered2.payload, "Rollback message 2");
     }
 
     Message? redelivered3 = check consumer2->receive(5.0);
     test:assertTrue(redelivered3 is Message, "Third message should be redelivered");
     if redelivered3 is Message {
-        test:assertEquals(redelivered3.content, "Rollback message 3");
+        test:assertEquals(redelivered3.payload, "Rollback message 3");
     }
 
     check consumer2->'commit();
@@ -336,7 +336,7 @@ isolated function testTransactedSessionWithTopic() returns error? {
     });
 
     Message message = {
-        content: "Transacted topic message"
+        payload: "Transacted topic message"
     };
     check producer->send(message);
     check producer->close();
@@ -344,7 +344,7 @@ isolated function testTransactedSessionWithTopic() returns error? {
     Message? receivedMessage = check consumer->receive(5.0);
     test:assertTrue(receivedMessage is Message, "Should receive message from topic");
     if receivedMessage is Message {
-        test:assertEquals(receivedMessage.content, "Transacted topic message");
+        test:assertEquals(receivedMessage.payload, "Transacted topic message");
     }
 
     check consumer->'commit();
@@ -363,9 +363,9 @@ isolated function testTransactedSessionMixedCommitRollback() returns error? {
         destination: {queueName: TRANSACTED_MIXED_QUEUE}
     });
 
-    check producer->send({content: "Mixed test message 1"});
-    check producer->send({content: "Mixed test message 2"});
-    check producer->send({content: "Mixed test message 3"});
+    check producer->send({payload: "Mixed test message 1"});
+    check producer->send({payload: "Mixed test message 2"});
+    check producer->send({payload: "Mixed test message 3"});
     check producer->close();
 
     MessageConsumer consumer = check new (BROKER_URL, {
@@ -386,14 +386,14 @@ isolated function testTransactedSessionMixedCommitRollback() returns error? {
     Message? msg1 = check consumer->receive(5.0);
     test:assertTrue(msg1 is Message);
     if msg1 is Message {
-        test:assertEquals(msg1.content, "Mixed test message 1");
+        test:assertEquals(msg1.payload, "Mixed test message 1");
     }
     check consumer->'commit();
 
     Message? msg2 = check consumer->receive(5.0);
     test:assertTrue(msg2 is Message);
     if msg2 is Message {
-        test:assertEquals(msg2.content, "Mixed test message 2");
+        test:assertEquals(msg2.payload, "Mixed test message 2");
     }
     check consumer->'rollback();
 
@@ -402,13 +402,13 @@ isolated function testTransactedSessionMixedCommitRollback() returns error? {
     Message? msg2Again = check consumer->receive(5.0);
     test:assertTrue(msg2Again is Message);
     if msg2Again is Message {
-        test:assertEquals(msg2Again.content, "Mixed test message 2");
+        test:assertEquals(msg2Again.payload, "Mixed test message 2");
     }
 
     Message? msg3 = check consumer->receive(5.0);
     test:assertTrue(msg3 is Message);
     if msg3 is Message {
-        test:assertEquals(msg3.content, "Mixed test message 3");
+        test:assertEquals(msg3.payload, "Mixed test message 3");
     }
 
     check consumer->'commit();
@@ -427,9 +427,9 @@ isolated function testTransactedSessionWithDifferentMessageTypes() returns error
         destination: {queueName: TRANSACTED_MSG_TYPES_QUEUE}
     });
 
-    check producer->send({content: "Transacted text"});
-    check producer->send({content: [10, 20, 30]});
-    check producer->send({content: {"status": "active", "count": 100}});
+    check producer->send({payload: "Transacted text"});
+    check producer->send({payload: [10, 20, 30]});
+    check producer->send({payload: {"status": "active", "count": 100}});
     check producer->close();
 
     MessageConsumer consumer = check new (BROKER_URL, {
@@ -450,20 +450,20 @@ isolated function testTransactedSessionWithDifferentMessageTypes() returns error
     Message? msg1 = check consumer->receive(5.0);
     test:assertTrue(msg1 is Message);
     if msg1 is Message {
-        test:assertTrue(msg1.content is string);
-        test:assertEquals(msg1.content, "Transacted text");
+        test:assertTrue(msg1.payload is string);
+        test:assertEquals(msg1.payload, "Transacted text");
     }
 
     Message? msg2 = check consumer->receive(5.0);
     test:assertTrue(msg2 is Message);
     if msg2 is Message {
-        test:assertTrue(msg2.content is byte[]);
+        test:assertTrue(msg2.payload is byte[]);
     }
 
     Message? msg3 = check consumer->receive(5.0);
     test:assertTrue(msg3 is Message);
     if msg3 is Message {
-        test:assertTrue(msg3.content is map<Value>);
+        test:assertTrue(msg3.payload is map<Value>);
     }
 
     check consumer->'commit();
@@ -485,8 +485,8 @@ isolated function testTransactedProducerAndConsumer() returns error? {
         transacted: true
     });
 
-    check producer->send({content: "Transacted producer message 1"});
-    check producer->send({content: "Transacted producer message 2"});
+    check producer->send({payload: "Transacted producer message 1"});
+    check producer->send({payload: "Transacted producer message 2"});
     check producer->commit();
     check producer->close();
 
@@ -508,13 +508,13 @@ isolated function testTransactedProducerAndConsumer() returns error? {
     Message? msg1 = check consumer->receive(5.0);
     test:assertTrue(msg1 is Message);
     if msg1 is Message {
-        test:assertEquals(msg1.content, "Transacted producer message 1");
+        test:assertEquals(msg1.payload, "Transacted producer message 1");
     }
 
     Message? msg2 = check consumer->receive(5.0);
     test:assertTrue(msg2 is Message);
     if msg2 is Message {
-        test:assertEquals(msg2.content, "Transacted producer message 2");
+        test:assertEquals(msg2.payload, "Transacted producer message 2");
     }
 
     check consumer->commit();

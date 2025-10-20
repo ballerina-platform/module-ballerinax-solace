@@ -60,7 +60,7 @@ isolated function testSendTextMessage() returns error? {
     });
 
     Message message = {
-        content: TEXT_MESSAGE_CONTENT
+        payload: TEXT_MESSAGE_CONTENT
     };
     check producer->send(message);
     check producer->close();
@@ -81,7 +81,7 @@ isolated function testSendBytesMessage() returns error? {
 
     byte[] byteContent = TEXT_MESSAGE_CONTENT.toBytes();
     Message message = {
-        content: byteContent
+        payload: byteContent
     };
     check producer->send(message);
     check producer->close();
@@ -107,7 +107,7 @@ isolated function testSendMapMessage() returns error? {
         "salary": 75000.50
     };
     Message message = {
-        content: mapContent
+        payload: mapContent
     };
     check producer->send(message);
     check producer->close();
@@ -127,7 +127,7 @@ isolated function testSendMessageWithProperties() returns error? {
     });
 
     Message message = {
-        content: TEXT_MESSAGE_CONTENT,
+        payload: TEXT_MESSAGE_CONTENT,
         properties: {
             "priority": 5,
             "source": "ballerina-test",
@@ -152,7 +152,7 @@ isolated function testSendMessageWithCorrelationId() returns error? {
     });
 
     Message message = {
-        content: TEXT_MESSAGE_CONTENT,
+        payload: TEXT_MESSAGE_CONTENT,
         correlationId: "test-correlation-id-12345"
     };
     check producer->send(message);
@@ -173,7 +173,7 @@ isolated function testSendMessageWithJmsType() returns error? {
     });
 
     Message message = {
-        content: TEXT_MESSAGE_CONTENT,
+        payload: TEXT_MESSAGE_CONTENT,
         jmsType: "OrderMessage"
     };
     check producer->send(message);
@@ -194,7 +194,7 @@ isolated function testSendToTopic() returns error? {
     });
 
     Message message = {
-        content: TEXT_MESSAGE_CONTENT
+        payload: TEXT_MESSAGE_CONTENT
     };
     check producer->send(message);
     check producer->close();
@@ -218,12 +218,12 @@ isolated function testTransactedProducerCommit() returns error? {
     });
 
     Message message1 = {
-        content: TEXT_MESSAGE_CONTENT
+        payload: TEXT_MESSAGE_CONTENT
     };
     check producer->send(message1);
 
     Message message2 = {
-        content: TEXT_MESSAGE_CONTENT_2
+        payload: TEXT_MESSAGE_CONTENT_2
     };
     check producer->send(message2);
 
@@ -248,7 +248,7 @@ isolated function testTransactedProducerRollback() returns error? {
     });
 
     Message message = {
-        content: TEXT_MESSAGE_CONTENT
+        payload: TEXT_MESSAGE_CONTENT
     };
     check producer->send(message);
 
@@ -287,7 +287,7 @@ isolated function testProducerWithCompression() returns error? {
     });
 
     Message message = {
-        content: TEXT_MESSAGE_CONTENT
+        payload: TEXT_MESSAGE_CONTENT
     };
     check producer->send(message);
     check producer->close();

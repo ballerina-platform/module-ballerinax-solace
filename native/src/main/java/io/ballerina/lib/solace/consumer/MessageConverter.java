@@ -59,7 +59,7 @@ public final class MessageConverter {
     private static final BString EXPIRATION = StringUtils.fromString("expiration");
     private static final BString PRIORITY = StringUtils.fromString("priority");
     private static final BString PROPERTIES = StringUtils.fromString("properties");
-    private static final BString CONTENT = StringUtils.fromString("content");
+    private static final BString PAYLOAD = StringUtils.fromString("payload");
 
     private static final BString QUEUE_NAME = StringUtils.fromString("queueName");
     private static final BString TOPIC_NAME = StringUtils.fromString("topicName");
@@ -143,9 +143,9 @@ public final class MessageConverter {
             ballerinaMessage.put(PROPERTIES, properties);
         }
 
-        // Set message content based on message type
-        Object content = extractContent(jmsMessage);
-        ballerinaMessage.put(CONTENT, content);
+        // Set message payload based on message type
+        Object payload = extractContent(jmsMessage);
+        ballerinaMessage.put(PAYLOAD, payload);
 
         return ballerinaMessage;
     }
