@@ -50,37 +50,37 @@ public enum ConsumerType {
 
 # Represents configurations for a JMS queue subscription.
 #
-# + sessionAckMode - Configuration indicating how messages received by the session will be acknowledged
 # + queueName - The name of the queue to consume messages from
-# + messageSelector - Only messages with properties matching the message selector expression are delivered. 
+# + sessionAckMode - Configuration indicating how messages received by the session will be acknowledged
+# + messageSelector - Only messages with properties matching the message selector expression are delivered.
 # If this value is not set that indicates that there is no message selector for the message consumer
 # For example, to only receive messages with a property `priority` set to `'high'`, use:
 # `"priority = 'high'"`. If this value is not set, all messages in the queue will be delivered.
 public type QueueConfig record {|
-    AcknowledgementMode sessionAckMode = AUTO_ACKNOWLEDGE;
     string queueName;
+    AcknowledgementMode sessionAckMode = AUTO_ACKNOWLEDGE;
     string messageSelector?;
 |};
 
 # Represents configurations for JMS topic subscription.
 #
-# + sessionAckMode - Configuration indicating how messages received by the session will be acknowledged
 # + topicName - The name of the topic to subscribe to
-# + messageSelector - Only messages with properties matching the message selector expression are delivered. 
+# + sessionAckMode - Configuration indicating how messages received by the session will be acknowledged
+# + consumerType - The message consumer type
+# + subscriberName - the name used to identify the subscription
+# + messageSelector - Only messages with properties matching the message selector expression are delivered.
 # If this value is not set that indicates that there is no message selector for the message consumer
 # For example, to only receive messages with a property `priority` set to `'high'`, use:
 # `"priority = 'high'"`. If this value is not set, all messages in the queue will be delivered.
-# + noLocal - If true then any messages published to the topic using this session's connection, or any other connection 
+# + noLocal - If true then any messages published to the topic using this session's connection, or any other connection
 # with the same client identifier, will not be added to the durable subscription.
-# + consumerType - The message consumer type
-# + subscriberName - the name used to identify the subscription
 public type TopicConfig record {|
-    AcknowledgementMode sessionAckMode = AUTO_ACKNOWLEDGE;
     string topicName;
-    string messageSelector?;
-    boolean noLocal = false;
+    AcknowledgementMode sessionAckMode = AUTO_ACKNOWLEDGE;
     ConsumerType consumerType = DEFAULT;
     string subscriberName?;
+    string messageSelector?;
+    boolean noLocal = false;
 |};
 
 # Represents a message destination in Solace.
@@ -102,61 +102,18 @@ public type Queue record {|
 
 # Represents the configuration for a Solace message producer.
 public type ProducerConfiguration record {|
-    # The name of the message VPN to connect to
-    string messageVpn = "default";
-    # The client identifier. If not specified, a unique client ID is auto-generated
-    string clientId?;
-    # A description for the application client
-    string clientDescription = "JNDI";
-    # Specifies whether to allow the same client ID to be used across multiple connections
-    boolean allowDuplicateClientId = false;
-    # Enables automatic creation of durable queues and topic endpoints on the broker
-    boolean enableDynamicDurables = false;
-    # Enables direct transport mode for message delivery. When `true`, uses direct (at-most-once) delivery.
-    # When `false`, uses guaranteed (persistent) delivery mode. Direct transport must be disabled for
-    # transacted sessions and XA transactions.
-    boolean directTransport = true;
-    # Enables direct message optimization. When `true`, optimizes message delivery in direct transport mode
-    # by reducing protocol overhead. Only applicable when `directTransport` is `true`.
-    boolean directOptimized = true;
-    # The local interface IP address to bind for outbound connections
-    string localhost?;
-    # The the maximum amount of time (in seconds) permitted for a JNDI connection attempt. 
-    # A value of 0 means wait indefinitely
-    decimal connectTimeout = 30.0;
-    # the maximum amount of time (in seconds) permitted for reading a JNDI lookup reply from the host
-    decimal readTimeout = 10.0;
-    # The configuration to enable and specify the ZLIB compression level.
-    # Valid range is 0-9, where 0 means no compression. Higher values provide better compression at the slower throughput
-    @constraint:Int {
-        minValue: {
-            value: 0,
-            message: "ZLIB compression level must be at least 0 (no compression)"
-        },
-        maxValue: {
-            value: 9,
-            message: "ZLIB compression level cannot exceed 9 (maximum compression)"
-        }
-    }
-    int compressionLevel = 0;
-    # The authentication configuration. Supports basic authentication, Kerberos, and OAuth2.
-    # For client certificate authentication, configure the `secureSocket.keyStore` field
-    BasicAuthConfig|KerberosConfig|OAuth2Config auth?;
-    # The retry configuration for connection and reconnection attempts
-    RetryConfig retryConfig?;
-    # The SSL/TLS configuration for secure connections
-    SecureSocket secureSocket?;
-    # Enables transacted messaging when set to `true`. In transacted mode, messages are sent and received 
-    # within a transaction context, requiring explicit commit or rollback
-    boolean transacted = false;
     # The destination (Topic or Queue) where messages will be published
     Destination destination;
-|};
-
-# Represents the configuration for a Solace message producer.
-public type ConsumerConfiguration record {|
     # The name of the message VPN to connect to
     string messageVpn = "default";
+    # The authentication configuration. Supports basic authentication, Kerberos, and OAuth2.
+    # For client certificate authentication, configure the `secureSocket.keyStore` field
+    BasicAuthConfig|KerberosConfig|OAuth2Config auth?;
+    # The SSL/TLS configuration for secure connections
+    SecureSocket secureSocket?;
+    # Enables transacted messaging when set to `true`. In transacted mode, messages are sent and received
+    # within a transaction context, requiring explicit commit or rollback
+    boolean transacted = false;
     # The client identifier. If not specified, a unique client ID is auto-generated
     string clientId?;
     # A description for the application client
@@ -174,7 +131,7 @@ public type ConsumerConfiguration record {|
     boolean directOptimized = true;
     # The local interface IP address to bind for outbound connections
     string localhost?;
-    # The the maximum amount of time (in seconds) permitted for a JNDI connection attempt. 
+    # The the maximum amount of time (in seconds) permitted for a JNDI connection attempt.
     # A value of 0 means wait indefinitely
     decimal connectTimeout = 30.0;
     # the maximum amount of time (in seconds) permitted for reading a JNDI lookup reply from the host
@@ -192,15 +149,58 @@ public type ConsumerConfiguration record {|
         }
     }
     int compressionLevel = 0;
+    # The retry configuration for connection and reconnection attempts
+    RetryConfig retryConfig?;
+|};
+
+# Represents the configuration for a Solace message consumer.
+public type ConsumerConfiguration record {|
+    # The subscription configuration specifying either a queue or topic to consume messages from
+    QueueConfig|TopicConfig subscriptionConfig;
+    # The name of the message VPN to connect to
+    string messageVpn = "default";
     # The authentication configuration. Supports basic authentication, Kerberos, and OAuth2.
     # For client certificate authentication, configure the `secureSocket.keyStore` field
     BasicAuthConfig|KerberosConfig|OAuth2Config auth?;
-    # The retry configuration for connection and reconnection attempts
-    RetryConfig retryConfig?;
     # The SSL/TLS configuration for secure connections
     SecureSocket secureSocket?;
-    # The subscription configuration specifying either a queue or topic to consume messages from
-    QueueConfig|TopicConfig subscriptionConfig;
+    # The client identifier. If not specified, a unique client ID is auto-generated
+    string clientId?;
+    # A description for the application client
+    string clientDescription = "JNDI";
+    # Specifies whether to allow the same client ID to be used across multiple connections
+    boolean allowDuplicateClientId = false;
+    # Enables automatic creation of durable queues and topic endpoints on the broker
+    boolean enableDynamicDurables = false;
+    # Enables direct transport mode for message delivery. When `true`, uses direct (at-most-once) delivery.
+    # When `false`, uses guaranteed (persistent) delivery mode. Direct transport must be disabled for
+    # transacted sessions and XA transactions.
+    boolean directTransport = true;
+    # Enables direct message optimization. When `true`, optimizes message delivery in direct transport mode
+    # by reducing protocol overhead. Only applicable when `directTransport` is `true`.
+    boolean directOptimized = true;
+    # The local interface IP address to bind for outbound connections
+    string localhost?;
+    # The the maximum amount of time (in seconds) permitted for a JNDI connection attempt.
+    # A value of 0 means wait indefinitely
+    decimal connectTimeout = 30.0;
+    # the maximum amount of time (in seconds) permitted for reading a JNDI lookup reply from the host
+    decimal readTimeout = 10.0;
+    # The configuration to enable and specify the ZLIB compression level.
+    # Valid range is 0-9, where 0 means no compression. Higher values provide better compression at the slower throughput
+    @constraint:Int {
+        minValue: {
+            value: 0,
+            message: "ZLIB compression level must be at least 0 (no compression)"
+        },
+        maxValue: {
+            value: 9,
+            message: "ZLIB compression level cannot exceed 9 (maximum compression)"
+        }
+    }
+    int compressionLevel = 0;
+    # The retry configuration for connection and reconnection attempts
+    RetryConfig retryConfig?;
 |};
 
 # Represents the basic authentication credentials for connecting to a Solace broker.
@@ -225,12 +225,12 @@ public type BasicAuthConfig record {|
 
 # Represents the Kerberos (GSS-KRB) authentication configuration for connecting to a Solace broker
 public type KerberosConfig record {|
-    # Specifies whether to enable Kerberos mutual authentication
-    boolean mutualAuthentication = true;
     # The Kerberos service name used during authentication
     string serviceName = "solace";
     # The JAAS login context name to use for authentication
     string jaasLoginContext = "SolaceGSS";
+    # Specifies whether to enable Kerberos mutual authentication
+    boolean mutualAuthentication = true;
     # Specifies whether to enable automatic reload of the JAAS configuration file
     boolean jaasConfigReloadEnabled = false;
 |};
@@ -300,15 +300,6 @@ public type SslCipherSuite ECDHE_RSA_AES256_CBC_SHA384|ECDHE_RSA_AES256_CBC_SHA|
 
 # Represents the SSL/TLS configuration for secure connections to a Solace broker
 public type SecureSocket record {|
-    # The certificate validation settings
-    record {|
-        # Enable certificate validation
-        boolean enabled = true;
-        # Specifies whether to validate the certificate's expiration date
-        boolean validateDate = true;
-        # Specifies whether to validate that the certificate's common name matches the broker hostname
-        boolean validateHost = true;
-    |} validation = {};
     # The trust store configuration containing trusted CA certificates
     TrustStore trustStore?;
     # The key store configuration containing the client's private key and certificate.
@@ -329,6 +320,15 @@ public type SecureSocket record {|
         }
     }
     string[] trustedCommonNames?;
+    # The certificate validation settings
+    record {|
+        # Enable certificate validation
+        boolean enabled = true;
+        # Specifies whether to validate the certificate's expiration date
+        boolean validateDate = true;
+        # Specifies whether to validate that the certificate's common name matches the broker hostname
+        boolean validateHost = true;
+    |} validation = {};
 |};
 
 # Java KeyStore format
@@ -372,31 +372,30 @@ public type Property boolean|int|byte|float|string;
 public type Value Property|byte[];
 
 # Represent the JMS Message used to send and receive content from the a JMS provider.
-#
-# + messageId - Unique identifier for a JMS message (Only set by the JMS provider)
-# + timestamp - Time a message was handed off to a provider to be sent (Only set by the JMS provider)
-# + correlationId - Id which can be used to correlate multiple messages 
-# + replyTo - JMS destination to which a reply to this message should be sent
-# + destination - JMS destination of this message (Only set by the JMS provider)
-# + deliveryMode - Delivery mode of this message (Only set by the JMS provider)
-# + redelivered - Indication of whether this message is being redelivered (Only set by the JMS provider)
-# + jmsType - Message type identifier supplied by the client when the message was sent  
-# + expiration - Message expiration time (Only set by the JMS provider)
-# + priority - Message priority level (Only set by the JMS provider)
-# + properties - Additional message properties
-# + payload - Message payload
-public type Message record {
-    string messageId?;
-    int timestamp?;
-    string correlationId?;
-    Destination replyTo?;
-    Destination destination?;
-    int deliveryMode?;
-    boolean redelivered?;
-    string jmsType?;
-    int expiration?;
-    int priority?;
-    map<Property> properties?;
+public type Message record {|
+    # Message payload (can be text, binary, or structured map data)
     string|map<Value>|byte[] payload;
-};
+    # Id which can be used to correlate multiple messages
+    string correlationId?;
+    # JMS destination to which a reply to this message should be sent
+    Destination replyTo?;
+    # Additional message properties
+    map<Property> properties?;
+    # Unique identifier for a JMS message (Only set by the JMS provider)
+    string messageId?;
+    # Time a message was handed off to a provider to be sent (Only set by the JMS provider)
+    int timestamp?;
+    # JMS destination of this message (Only set by the JMS provider)
+    Destination destination?;
+    # Delivery mode of this message (Only set by the JMS provider)
+    int deliveryMode?;
+    # Indication of whether this message is being redelivered (Only set by the JMS provider)
+    boolean redelivered?;
+    # Message type identifier supplied by the client when the message was sent
+    string jmsType?;
+    # Message expiration time (Only set by the JMS provider)
+    int expiration?;
+    # Message priority level (Only set by the JMS provider)
+    int priority?;
+|};
 
