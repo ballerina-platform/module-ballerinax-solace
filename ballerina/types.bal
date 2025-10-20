@@ -16,6 +16,73 @@
 
 import ballerina/constraint;
 
+# Defines the JMS session acknowledgement modes.
+public enum AcknowledgementMode {
+    # Indicates that the session will use a local transaction which may subsequently 
+    # be committed or rolled back by calling the session's `commit` or `rollback` methods. 
+    SESSION_TRANSACTED = "SESSION_TRANSACTED",
+    # Indicates that the session automatically acknowledges a client's receipt of a message 
+    # either when the session has successfully returned from a call to `receive` or when 
+    # the message listener the session has called to process the message successfully returns.
+    AUTO_ACKNOWLEDGE = "AUTO_ACKNOWLEDGE",
+    # Indicates that the client acknowledges a consumed message by calling the 
+    # MessageConsumer's or Caller's `acknowledge` method. Acknowledging a consumed message 
+    # acknowledges all messages that the session has consumed.
+    CLIENT_ACKNOWLEDGE = "CLIENT_ACKNOWLEDGE",
+    # Indicates that the session to lazily acknowledge the delivery of messages. 
+    # This is likely to result in the delivery of some duplicate messages if the JMS provider fails, 
+    # so it should only be used by consumers that can tolerate duplicate messages. 
+    # Use of this mode can reduce session overhead by minimizing the work the session does to prevent duplicates.
+    DUPS_OK_ACKNOWLEDGE = "DUPS_OK_ACKNOWLEDGE"
+}
+
+# Defines the supported JMS message consumer types.
+public enum ConsumerType {
+    # Represents JMS durable subscriber
+    DURABLE = "DURABLE",
+    # Represents JMS shared consumer
+    SHARED = "SHARED",
+    # Represents JMS shared durable subscriber
+    SHARED_DURABLE = "SHARED_DURABLE",
+    # Represents JMS default consumer
+    DEFAULT = "DEFAULT"
+}
+
+# Represents configurations for a JMS queue subscription.
+#
+# + sessionAckMode - Configuration indicating how messages received by the session will be acknowledged
+# + queueName - The name of the queue to consume messages from
+# + messageSelector - Only messages with properties matching the message selector expression are delivered. 
+# If this value is not set that indicates that there is no message selector for the message consumer
+# For example, to only receive messages with a property `priority` set to `'high'`, use:
+# `"priority = 'high'"`. If this value is not set, all messages in the queue will be delivered.
+public type QueueConfig record {|
+    AcknowledgementMode sessionAckMode = AUTO_ACKNOWLEDGE;
+    string queueName;
+    string messageSelector?;
+|};
+
+# Represents configurations for JMS topic subscription.
+#
+# + sessionAckMode - Configuration indicating how messages received by the session will be acknowledged
+# + topicName - The name of the topic to subscribe to
+# + messageSelector - Only messages with properties matching the message selector expression are delivered. 
+# If this value is not set that indicates that there is no message selector for the message consumer
+# For example, to only receive messages with a property `priority` set to `'high'`, use:
+# `"priority = 'high'"`. If this value is not set, all messages in the queue will be delivered.
+# + noLocal - If true then any messages published to the topic using this session's connection, or any other connection 
+# with the same client identifier, will not be added to the durable subscription.
+# + consumerType - The message consumer type
+# + subscriberName - the name used to identify the subscription
+public type TopicConfig record {|
+    AcknowledgementMode sessionAckMode = AUTO_ACKNOWLEDGE;
+    string topicName;
+    string messageSelector?;
+    boolean noLocal = false;
+    ConsumerType consumerType = DEFAULT;
+    string subscriberName?;
+|};
+
 # Represents a message destination in Solace.
 # Can be either a Topic for publish/subscribe messaging or a Queue for point-to-point messaging.
 public type Destination Topic|Queue;
@@ -84,6 +151,56 @@ public type ProducerConfiguration record {|
     boolean transacted = false;
     # The destination (Topic or Queue) where messages will be published
     Destination destination;
+|};
+
+# Represents the configuration for a Solace message producer.
+public type ConsumerConfiguration record {|
+    # The name of the message VPN to connect to
+    string messageVpn = "default";
+    # The client identifier. If not specified, a unique client ID is auto-generated
+    string clientId?;
+    # A description for the application client
+    string clientDescription = "JNDI";
+    # Specifies whether to allow the same client ID to be used across multiple connections
+    boolean allowDuplicateClientId = false;
+    # Enables automatic creation of durable queues and topic endpoints on the broker
+    boolean enableDynamicDurables = false;
+    # Enables direct transport mode for message delivery. When `true`, uses direct (at-most-once) delivery.
+    # When `false`, uses guaranteed (persistent) delivery mode. Direct transport must be disabled for
+    # transacted sessions and XA transactions.
+    boolean directTransport = true;
+    # Enables direct message optimization. When `true`, optimizes message delivery in direct transport mode
+    # by reducing protocol overhead. Only applicable when `directTransport` is `true`.
+    boolean directOptimized = true;
+    # The local interface IP address to bind for outbound connections
+    string localhost?;
+    # The the maximum amount of time (in seconds) permitted for a JNDI connection attempt. 
+    # A value of 0 means wait indefinitely
+    decimal connectTimeout = 30.0;
+    # the maximum amount of time (in seconds) permitted for reading a JNDI lookup reply from the host
+    decimal readTimeout = 10.0;
+    # The configuration to enable and specify the ZLIB compression level.
+    # Valid range is 0-9, where 0 means no compression. Higher values provide better compression at the slower throughput
+    @constraint:Int {
+        minValue: {
+            value: 0,
+            message: "ZLIB compression level must be at least 0 (no compression)"
+        },
+        maxValue: {
+            value: 9,
+            message: "ZLIB compression level cannot exceed 9 (maximum compression)"
+        }
+    }
+    int compressionLevel = 0;
+    # The authentication configuration. Supports basic authentication, Kerberos, and OAuth2.
+    # For client certificate authentication, configure the `secureSocket.keyStore` field
+    BasicAuthConfig|KerberosConfig|OAuth2Config auth?;
+    # The retry configuration for connection and reconnection attempts
+    RetryConfig retryConfig?;
+    # The SSL/TLS configuration for secure connections
+    SecureSocket secureSocket?;
+    # The subscription configuration specifying either a queue or topic to consume messages from
+    QueueConfig|TopicConfig subscriptionConfig;
 |};
 
 # Represents the basic authentication credentials for connecting to a Solace broker.
@@ -265,10 +382,9 @@ public type Value Property|byte[];
 # + redelivered - Indication of whether this message is being redelivered (Only set by the JMS provider)
 # + jmsType - Message type identifier supplied by the client when the message was sent  
 # + expiration - Message expiration time (Only set by the JMS provider)
-# + deliveredTime - The earliest time when a JMS provider may deliver the message to a consumer (Only set by the JMS provider)
 # + priority - Message priority level (Only set by the JMS provider)
 # + properties - Additional message properties
-# + content - Message content
+# + payload - Message payload
 public type Message record {
     string messageId?;
     int timestamp?;
@@ -279,9 +395,8 @@ public type Message record {
     boolean redelivered?;
     string jmsType?;
     int expiration?;
-    int deliveredTime?;
     int priority?;
     map<Property> properties?;
-    string|map<Value>|byte[] content;
+    string|map<Value>|byte[] payload;
 };
 

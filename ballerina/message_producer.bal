@@ -34,7 +34,7 @@ public isolated client class MessageProducer {
     # Default ports: 55555 (standard), 55003 (compression), 55443 (SSL)
     # + config - Producer configuration including connection settings and destination
     # + return - A `solace:Error` if initialization fails or else `()`
-    public isolated function init(string url, ProducerConfiguration config) returns Error? {
+    public isolated function init(string url, *ProducerConfiguration config) returns Error? {
         ProducerConfiguration|constraint:Error validated = constraint:validate(config);
         if validated is constraint:Error {
             return error Error(

@@ -35,7 +35,7 @@ import javax.jms.TextMessage;
  */
 public final class MessageConverter {
 
-    private static final BString CONTENT = StringUtils.fromString("content");
+    private static final BString PAYLOAD = StringUtils.fromString("payload");
     private static final BString PROPERTIES = StringUtils.fromString("properties");
     private static final BString CORRELATION_ID = StringUtils.fromString("correlationId");
     private static final BString JMS_TYPE = StringUtils.fromString("jmsType");
@@ -51,8 +51,8 @@ public final class MessageConverter {
      * @throws JMSException if message conversion fails
      */
     public static Message toJmsMessage(Session session, BMap<BString, Object> bMessage) throws JMSException {
-        Object content = bMessage.get(CONTENT);
-        Message jmsMessage = createMessageByContentType(session, content);
+        Object payload = bMessage.get(PAYLOAD);
+        Message jmsMessage = createMessageByContentType(session, payload);
 
         // Set correlation ID if present
         if (bMessage.containsKey(CORRELATION_ID)) {
@@ -83,17 +83,14 @@ public final class MessageConverter {
 
     private static Message createMessageByContentType(Session session, Object content) throws JMSException {
         if (content instanceof BString bString) {
-            // Text message
             TextMessage message = session.createTextMessage();
             message.setText(bString.getValue());
             return message;
         } else if (content instanceof BArray bArray) {
-            // Bytes message
             BytesMessage message = session.createBytesMessage();
             message.writeBytes(bArray.getBytes());
             return message;
         } else if (content instanceof BMap<?, ?> bMap) {
-            // Map message
             MapMessage message = session.createMapMessage();
             setMapMessageFields(message, (BMap<BString, Object>) bMap);
             return message;
