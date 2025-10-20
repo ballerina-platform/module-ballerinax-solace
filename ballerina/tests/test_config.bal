@@ -17,9 +17,17 @@
 // Solace broker connection details
 const string BROKER_URL = "smf://localhost:55554";
 const string BROKER_URL_COMPRESSED = "smf://localhost:55003";
+const string BROKER_URL_SSL = "smfs://localhost:55443";
 const string MESSAGE_VPN = "default";
 const string BROKER_USERNAME = "admin";
 const string BROKER_PASSWORD = "admin";
+
+// SSL/TLS certificate paths (relative to test directory)
+const string TRUSTSTORE_PATH = "tests/resources/certs/truststore.jks";
+const string TRUSTSTORE_PASSWORD = "changeit";
+const string KEYSTORE_PATH = "tests/resources/certs/client-keystore.jks";
+const string KEYSTORE_PASSWORD = "changeit";
+const string KEYSTORE_KEY_PASSWORD = "changeit";
 
 // Test queue and topic names - each test uses a unique queue to avoid interference
 const string TEST_QUEUE = "test-queue";
@@ -58,6 +66,18 @@ const string TRANSACTED_PRODUCER_CONSUMER_QUEUE = "transacted-producer-consumer-
 const string CONSUMER_RECEIVE_TOPIC = "test/consumer/receive";
 const string CLIENT_ACK_TOPIC = "test/client-ack/topic";
 const string TRANSACTED_TOPIC = "test/transacted/topic";
+
+// SSL/TLS test queues
+const string SSL_TEST_QUEUE = "ssl-test-queue";
+const string SSL_PRODUCER_TEXT_QUEUE = "ssl-producer-text-queue";
+const string SSL_PRODUCER_BYTES_QUEUE = "ssl-producer-bytes-queue";
+const string SSL_PRODUCER_MAP_QUEUE = "ssl-producer-map-queue";
+const string SSL_CONSUMER_QUEUE = "ssl-consumer-queue";
+const string SSL_TRANSACTED_QUEUE = "ssl-transacted-queue";
+const string SSL_CLIENT_CERT_QUEUE = "ssl-client-cert-queue";
+
+// SSL/TLS test topics
+const string SSL_TEST_TOPIC = "test/ssl/topic";
 
 // Test message content
 const string TEXT_MESSAGE_CONTENT = "Hello from Ballerina Solace Connector";
