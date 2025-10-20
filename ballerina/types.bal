@@ -21,12 +21,6 @@ public type Service distinct service object {
     // remote function onMessage(soalce:Message message, soalce:Caller caller) returns error?;
 };
 
-# The service configuration type for the `solace:Service`.
-public type ServiceConfiguration QueueServiceConfig|TopicServiceConfig;
-
-# Annotation to configure the `solace:Service`.
-public annotation ServiceConfiguration ServiceConfig on service;
-
 # Defines the JMS session acknowledgement modes.
 public enum AcknowledgementMode {
     # Indicates that the session will use a local transaction which may subsequently 
@@ -59,52 +53,85 @@ public enum ConsumerType {
     DEFAULT = "DEFAULT"
 }
 
-# Represents configurations for a JMS queue subscription.
+# Common configurations related to the Solace queue or topic subscription.
 #
-# + queueName - The name of the queue to consume messages from
 # + sessionAckMode - Configuration indicating how messages received by the session will be acknowledged
-# + messageSelector - Only messages with properties matching the message selector expression are delivered.
+# + messageSelector - Only messages with properties matching the message selector expression are delivered. 
 # If this value is not set that indicates that there is no message selector for the message consumer
 # For example, to only receive messages with a property `priority` set to `'high'`, use:
 # `"priority = 'high'"`. If this value is not set, all messages in the queue will be delivered.
-public type QueueConfig record {|
-    string queueName;
+type CommonSubscriptionConfig record {|
     AcknowledgementMode sessionAckMode = AUTO_ACKNOWLEDGE;
     string messageSelector?;
 |};
 
-public type QueueServiceConfig record {|
-    *QueueConfig;
-    decimal pollingInterval = 10;
-    decimal receiveTimeout = 5;
+# Represents configurations for a Solace queue subscription.
+#
+# + queueName - The name of the queue to consume messages from
+public type QueueConfig record {|
+    *CommonSubscriptionConfig;
+    string queueName;
 |};
 
-# Represents configurations for JMS topic subscription.
+# Represents configurations for Solace topic subscription.
 #
 # + topicName - The name of the topic to subscribe to
-# + sessionAckMode - Configuration indicating how messages received by the session will be acknowledged
 # + consumerType - The message consumer type
 # + subscriberName - the name used to identify the subscription
-# + messageSelector - Only messages with properties matching the message selector expression are delivered.
 # If this value is not set that indicates that there is no message selector for the message consumer
 # For example, to only receive messages with a property `priority` set to `'high'`, use:
 # `"priority = 'high'"`. If this value is not set, all messages in the queue will be delivered.
 # + noLocal - If true then any messages published to the topic using this session's connection, or any other connection
 # with the same client identifier, will not be added to the durable subscription.
 public type TopicConfig record {|
+    *CommonSubscriptionConfig;
     string topicName;
-    AcknowledgementMode sessionAckMode = AUTO_ACKNOWLEDGE;
     ConsumerType consumerType = DEFAULT;
     string subscriberName?;
-    string messageSelector?;
     boolean noLocal = false;
 |};
 
-public type TopicServiceConfig record {|
-    *TopicConfig;
+# Common configurations related to the Solace service configuration related to queue or topic subscription.
+# 
+# + pollingInterval - The polling interval in seconds
+# + receiveTimeout - The timeout to wait till a `receive` action finishes when there are no messages
+type CommonServiceConfig record {|
+    *CommonSubscriptionConfig;
     decimal pollingInterval = 10;
-    decimal receiveTimeout = 5;
+    decimal receiveTimeout = 10.0;
 |};
+
+# Represents configurations for a service configurations related to solace queue subscription.
+#
+# + queueName - The name of the queue to consume messages from
+public type QueueServiceConfig record {|
+    *CommonServiceConfig;
+    string queueName;
+|};
+
+# Represents configurations for a service configurations related to solace topic subscription.
+# 
+# + topicName - The name of the topic to subscribe to
+# + consumerType - The message consumer type
+# + subscriberName - the name used to identify the subscription
+# If this value is not set that indicates that there is no message selector for the message consumer
+# For example, to only receive messages with a property `priority` set to `'high'`, use:
+# `"priority = 'high'"`. If this value is not set, all messages in the queue will be delivered.
+# + noLocal - If true then any messages published to the topic using this session's connection, or any other connection
+# with the same client identifier, will not be added to the durable subscription.
+public type TopicServiceConfig record {|
+    *CommonServiceConfig;
+    string topicName;
+    ConsumerType consumerType = DEFAULT;
+    string subscriberName?;
+    boolean noLocal = false;
+|};
+
+# The service configuration type for the `solace:Service`.
+public type ServiceConfiguration QueueServiceConfig|TopicServiceConfig;
+
+# Annotation to configure the `solace:Service`.
+public annotation ServiceConfiguration ServiceConfig on service;
 
 # Represents a message destination in Solace.
 # Can be either a Topic for publish/subscribe messaging or a Queue for point-to-point messaging.
