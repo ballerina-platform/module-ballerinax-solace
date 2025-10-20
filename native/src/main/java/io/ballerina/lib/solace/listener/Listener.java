@@ -90,8 +90,11 @@ public class Listener {
             bService.addNativeData(NATIVE_RECEIVER, receiver);
             List<BObject> serviceList = (List<BObject>) bListener.getNativeData(NATIVE_SERVICE_LIST);
             serviceList.add(bService);
-            if (Objects.nonNull(started) && ((Boolean) started)) {
-                receiver.consume();
+            if (Objects.nonNull(started)) {
+                AtomicBoolean listenerStarted = (AtomicBoolean) started;
+                if (listenerStarted.get()) {
+                    receiver.consume();
+                }
             }
         } catch (BError | JMSException e) {
             String errorMsg = Objects.isNull(e.getMessage()) ? "Unknown error" : e.getMessage();
