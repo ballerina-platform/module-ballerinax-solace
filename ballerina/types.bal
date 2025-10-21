@@ -18,7 +18,7 @@ import ballerina/constraint;
 
 # The Solace service type.
 public type Service distinct service object {
-    // remote function onMessage(soalce:Message message, soalce:Caller caller) returns error?;
+    // remote function onMessage(solace:Message message, solace:Caller caller) returns error?;
 };
 
 # Defines the JMS session acknowledgement modes.

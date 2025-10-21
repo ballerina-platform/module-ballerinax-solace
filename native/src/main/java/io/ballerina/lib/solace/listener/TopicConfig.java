@@ -31,7 +31,7 @@ import java.math.BigDecimal;
  * @param ackMode The acknowledgement mode for message consumption. This determines how
  *                messages received by the session are acknowledged.
  *                Common values include "AUTO_ACKNOWLEDGE", "CLIENT_ACKNOWLEDGE", and "DUPS_OK_ACKNOWLEDGE".
- * @param topicName       The queueManagerName of the JMS topic to subscribe to.
+ * @param topicName       The name of the JMS topic to subscribe to.
  *
  * @param messageSelector An optional JMS message selector expression. Only messages with properties
  *                        matching this selector will be delivered to the consumer.
@@ -43,8 +43,8 @@ import java.math.BigDecimal;
  * @param consumerType    The type of message consumer. Expected values include types such as
  *                        "DEFAULT", "DURABLE", or "SHARED" depending on your implementation.
  *
- * @param subscriberName  An optional queueManagerName used to identify the subscription, especially for durable
- *                        or shared subscriptions. If {@code null}, no queueManagerName is associated.
+ * @param subscriberName  An optional name to identify the subscription, especially for durable
+ *                        or shared subscriptions.
  * @param pollingInterval   The polling interval in milliseconds
  * @param receiveTimeout    The timeout to wait till a `receive` action finishes when there are no messages
  */

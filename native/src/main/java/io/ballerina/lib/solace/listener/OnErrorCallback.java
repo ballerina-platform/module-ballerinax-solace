@@ -21,7 +21,7 @@ package io.ballerina.lib.solace.listener;
 import io.ballerina.runtime.api.values.BError;
 
 /**
- * {@code OnMsgCallback} provides ability handle the error results which is captured when dispatching messages to
+ * {@code OnErrorCallback} provides ability to handle the error results which are captured when dispatching messages to
  * the Solace service.
  */
 public class OnErrorCallback {

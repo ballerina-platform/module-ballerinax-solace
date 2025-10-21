@@ -20,10 +20,10 @@ import ballerina/jballerina.java;
 # Represents a Solace listener endpoint that can be used to receive messages from a Solace topic or a queue.
 public isolated class Listener {
 
-    # Initializes a new `solace:Listener`.
+    # Initializes a new Solace message listener with the given broker URL and configuration.
     # ```ballerina
     # listener solace:Listener messageListener = check new (
-    #     brokerUrl = "smf://localhost:55554",
+    #     url = "smf://localhost:55554",
     #     messageVpn = "default",
     #     auth = {
     #         username: "admin",
@@ -32,6 +32,10 @@ public isolated class Listener {
     # );
     # ```
     #
+    # + url - The Solace broker URL in the format `<scheme>://[username]:[password]@<host>[:port]`.
+    # Supported schemes are `smf` (plain-text) and `smfs` (TLS/SSL).
+    # Multiple hosts can be specified as a comma-separated list for failover support.
+    # Default ports: 55555 (standard), 55003 (compression), 55443 (SSL)
     # + config - configurations used when initializing the listener
     # + return - `solace:Error` if an error occurs or `()` otherwise
     public isolated function init(string url, *ListenerConfiguration config) returns Error? {

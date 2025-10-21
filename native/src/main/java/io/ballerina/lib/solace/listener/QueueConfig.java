@@ -31,7 +31,7 @@ import java.math.BigDecimal;
  * @param ackMode The acknowledgement mode for message consumption. This determines how
  *                messages received by the session are acknowledged.
  *                Common values include "AUTO_ACKNOWLEDGE", "CLIENT_ACKNOWLEDGE", and "DUPS_OK_ACKNOWLEDGE".
- * @param queueName       The queueManagerName of the JMS queue to consume messages from.
+ * @param queueName       The name of the JMS queue to consume messages from.
  * @param messageSelector An optional JMS message selector expression. Only messages with properties
  *                        matching this selector will be delivered to the consumer.
  *                        If this value is {@code null}, no selector is applied.

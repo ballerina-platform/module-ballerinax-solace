@@ -23,7 +23,7 @@ import io.ballerina.runtime.api.values.BError;
 import java.util.concurrent.Semaphore;
 
 /**
- * {@code OnMsgCallback} provides ability control poll cycle flow by notifications received from Ballerina
+ * {@code OnMsgCallback} provides ability to control poll cycle flow by notifications received from Ballerina
  * Solace service.
  */
 public class OnMsgCallback {
