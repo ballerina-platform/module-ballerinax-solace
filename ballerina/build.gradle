@@ -71,8 +71,17 @@ dependencies {
         transitive = false
     }
 
-    /* Netty dependencies */
+    /* Netty dependencies - required by sol-jms */
+    externalJars(group: 'io.netty', name: 'netty-common', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.netty', name: 'netty-buffer', version: "${nettyVersion}") {
+        transitive = false
+    }
     externalJars(group: 'io.netty', name: 'netty-transport', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.netty', name: 'netty-resolver', version: "${nettyVersion}") {
         transitive = false
     }
     externalJars(group: 'io.netty', name: 'netty-handler', version: "${nettyVersion}") {
@@ -81,18 +90,28 @@ dependencies {
     externalJars(group: 'io.netty', name: 'netty-codec', version: "${nettyVersion}") {
         transitive = false
     }
-    externalJars(group: 'io.netty', name: 'netty-buffer', version: "${nettyVersion}") {
+    externalJars(group: 'io.netty', name: 'netty-codec-http', version: "${nettyVersion}") {
         transitive = false
     }
-    externalJars(group: 'io.netty', name: 'netty-common', version: "${nettyVersion}") {
+    externalJars(group: 'io.netty', name: 'netty-handler-proxy', version: "${nettyVersion}") {
         transitive = false
     }
-    externalJars(group: 'io.netty', name: 'netty-resolver', version: "${nettyVersion}") {
+    externalJars(group: 'io.netty', name: 'netty-transport-native-epoll', version: "${nettyVersion}") {
         transitive = false
     }
-    externalJars(group: 'io.netty', name: 'netty-tcnative-boringssl-static', version: "${nettyTcnativeBoringsslStaticVersion}") {
+    externalJars(group: 'io.netty', name: 'netty-transport-classes-epoll', version: "${nettyVersion}") {
         transitive = false
     }
+    externalJars "io.netty:netty-transport-native-epoll::linux-x86_64"
+    externalJars "io.netty:netty-transport-native-epoll::linux-aarch_64"
+    externalJars(group: 'io.netty', name: 'netty-transport-native-kqueue', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.netty', name: 'netty-transport-classes-kqueue', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars "io.netty:netty-transport-native-kqueue::osx-x86_64"
+    externalJars "io.netty:netty-transport-native-kqueue::osx-aarch_64"
 
     /* Other dependencies */
     externalJars(group: 'commons-logging', name: 'commons-logging', version: "${commonsLoggingVersion}") {
@@ -153,15 +172,46 @@ publishing {
     }
 }
 
+task startSolaceServer() {
+    doLast {
+        if (!Os.isFamily(Os.FAMILY_WINDOWS)) {
+            def dockerComposeFile = "${project.projectDir}/tests/resources/docker-compose.yaml"
+            def initScript = "${project.projectDir}/tests/resources/init-solace.sh"
+            exec {
+                commandLine 'sh', '-c', "docker compose -f $dockerComposeFile up -d"
+            }
+            sleep(20 * 1000)
+            // Initialize queues
+            exec {
+                commandLine 'sh', '-c', "chmod +x $initScript && $initScript"
+                ignoreExitValue false
+            }
+        }
+    }
+}
+
+task stopSolaceServer() {
+    doLast {
+        if (!Os.isFamily(Os.FAMILY_WINDOWS)) {
+            def dockerComposeFile = "${project.projectDir}/tests/resources/docker-compose.yaml"
+            exec {
+                commandLine 'sh', '-c', "docker compose -f $dockerComposeFile rm -svf"
+            }
+            sleep(5 * 1000)
+        }
+    }
+}
+
 clean {
     delete 'build'
-    delete 'lib'
 }
 
 build.dependsOn copyToLib
 build.dependsOn ":${packageName}-native:build"
 
 test.dependsOn ":${packageName}-native:build"
+test.dependsOn startSolaceServer
+test.finalizedBy stopSolaceServer
 
 publish.dependsOn build
 publishToMavenLocal.dependsOn build

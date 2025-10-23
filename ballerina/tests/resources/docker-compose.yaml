@@ -1,0 +1,16 @@
+services:
+  solace:
+    image: 'solace/solace-pubsub-standard:latest'
+    container_name: solace-test-server
+    ports:
+      - '55554:55555'  # SMF - default messaging (55555 is Solace internal port, 55554 for Mac compatibility)
+      - '55003:55003'  # SMF - compressed messaging
+      - '8080:8080'    # Web transport
+    environment:
+      - username_admin_globalaccesslevel=admin
+      - username_admin_password=admin
+    shm_size: 1g
+    ulimits:
+      nofile:
+        soft: 2448
+        hard: 1048576
