@@ -25,7 +25,7 @@ configurable string queueName = ?;
 configurable string username = ?;
 configurable string password = ?;
 
-solace:MessageProducer producer = check new (BROKER_URL,
+solace:MessageProducer producer = check new (brokerUrl,
     destination = {
         queueName
     },
@@ -46,7 +46,7 @@ configurable string queueName = ?;
 configurable string username = ?;
 configurable string password = ?;
 
-solace:MessageConsumer consumer = check new (BROKER_URL,
+solace:MessageConsumer consumer = check new (brokerUrl,
     destination = {
         queueName
     },
