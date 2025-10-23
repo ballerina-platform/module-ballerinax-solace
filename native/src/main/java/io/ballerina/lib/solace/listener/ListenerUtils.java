@@ -18,66 +18,44 @@
 
 package io.ballerina.lib.solace.listener;
 
+import io.ballerina.lib.solace.CommonUtils;
 import io.ballerina.lib.solace.consumer.ConsumerType;
 
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
-import javax.jms.Queue;
 import javax.jms.Session;
-import javax.jms.Topic;
 
-public class ListenerUtils {
+/**
+ * Utility methods for listener operations.
+ */
+public final class ListenerUtils {
+
+    private ListenerUtils() {}
+
     /**
-     * Creates a JMS MessageConsumer based on subscription configuration.
+     * Creates a JMS MessageConsumer based on service configuration.
      *
-     * @param session           JMS session
-     * @param serviceConfig     Solace service configuration
+     * @param session       JMS session
+     * @param serviceConfig Solace service configuration
      * @return JMS MessageConsumer
      * @throws JMSException if consumer creation fails
      */
     public static MessageConsumer createConsumer(Session session, ServiceConfig serviceConfig)
             throws JMSException {
         return switch (serviceConfig) {
-            case QueueConfig queueConfig -> createQueueConsumer(session, queueConfig);
-            case TopicConfig topicConfig -> createTopicConsumer(session, topicConfig);
-        };
-    }
-
-    private static MessageConsumer createQueueConsumer(Session session, QueueConfig config) throws JMSException {
-        Queue queue = session.createQueue(config.queueName());
-        String messageSelector = config.messageSelector();
-
-        if (messageSelector != null && !messageSelector.isEmpty()) {
-            return session.createConsumer(queue, messageSelector);
-        } else {
-            return session.createConsumer(queue);
-        }
-    }
-
-    private static MessageConsumer createTopicConsumer(Session session, TopicConfig config) throws JMSException {
-        Topic topic = session.createTopic(config.topicName());
-        String messageSelector = config.messageSelector();
-        String subscriberName = config.subscriberName();
-
-        ConsumerType consumerType = ConsumerType.valueOf(config.consumerType());
-        return switch (consumerType) {
-            case ConsumerType.DEFAULT -> {
-                if (messageSelector != null && !messageSelector.isEmpty()) {
-                    yield session.createConsumer(topic, messageSelector, config.noLocal());
-                } else {
-                    yield session.createConsumer(topic);
-                }
-            }
-            case ConsumerType.DURABLE -> {
-                if (subscriberName == null || subscriberName.isEmpty()) {
-                    throw new IllegalArgumentException("Subscriber name is required for DURABLE consumer type");
-                }
-                if (messageSelector != null && !messageSelector.isEmpty()) {
-                    yield session.createDurableSubscriber(topic, subscriberName, messageSelector, config.noLocal());
-                } else {
-                    yield session.createDurableSubscriber(topic, subscriberName);
-                }
-            }
+            case QueueConfig queueConfig -> CommonUtils.createQueueConsumer(
+                    session,
+                    queueConfig.queueName(),
+                    queueConfig.messageSelector()
+            );
+            case TopicConfig topicConfig -> CommonUtils.createTopicConsumer(
+                    session,
+                    topicConfig.topicName(),
+                    topicConfig.messageSelector(),
+                    topicConfig.noLocal(),
+                    ConsumerType.valueOf(topicConfig.consumerType()),
+                    topicConfig.subscriberName()
+            );
         };
     }
 }

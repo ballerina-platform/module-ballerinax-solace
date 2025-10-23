@@ -25,12 +25,18 @@ import io.ballerina.lib.solace.config.auth.KerberosConfig;
 import io.ballerina.lib.solace.config.auth.OAuth2Config;
 import io.ballerina.lib.solace.config.retry.RetryConfig;
 import io.ballerina.lib.solace.config.ssl.SecureSocketConfig;
+import io.ballerina.lib.solace.consumer.ConsumerType;
 import io.ballerina.runtime.api.creators.ErrorCreator;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BError;
 
 import java.util.Hashtable;
 
+import javax.jms.JMSException;
+import javax.jms.MessageConsumer;
+import javax.jms.Queue;
+import javax.jms.Session;
+import javax.jms.Topic;
 import javax.naming.Context;
 
 /**
@@ -191,5 +197,63 @@ public final class CommonUtils {
     public static BError createError(String message, Throwable cause) {
         return ErrorCreator.createError(ModuleUtils.getModule(), SOLACE_ERROR,
                 StringUtils.fromString(message), ErrorCreator.createError(cause), null);
+    }
+
+    /**
+     * Creates a JMS MessageConsumer for a queue.
+     *
+     * @param session         JMS session
+     * @param queueName       Queue name
+     * @param messageSelector Optional message selector
+     * @return JMS MessageConsumer
+     * @throws JMSException if consumer creation fails
+     */
+    public static MessageConsumer createQueueConsumer(Session session, String queueName, String messageSelector)
+            throws JMSException {
+        Queue queue = session.createQueue(queueName);
+
+        if (messageSelector != null && !messageSelector.isEmpty()) {
+            return session.createConsumer(queue, messageSelector);
+        } else {
+            return session.createConsumer(queue);
+        }
+    }
+
+    /**
+     * Creates a JMS MessageConsumer for a topic.
+     *
+     * @param session         JMS session
+     * @param topicName       Topic name
+     * @param messageSelector Optional message selector
+     * @param noLocal         No local flag
+     * @param consumerType    Consumer type (DEFAULT or DURABLE)
+     * @param subscriberName  Subscriber name (required for DURABLE)
+     * @return JMS MessageConsumer
+     * @throws JMSException if consumer creation fails
+     */
+    public static MessageConsumer createTopicConsumer(Session session, String topicName, String messageSelector,
+                                                      boolean noLocal, ConsumerType consumerType,
+                                                      String subscriberName) throws JMSException {
+        Topic topic = session.createTopic(topicName);
+
+        return switch (consumerType) {
+            case DEFAULT -> {
+                if (messageSelector != null && !messageSelector.isEmpty()) {
+                    yield session.createConsumer(topic, messageSelector, noLocal);
+                } else {
+                    yield session.createConsumer(topic);
+                }
+            }
+            case DURABLE -> {
+                if (subscriberName == null || subscriberName.isEmpty()) {
+                    throw new IllegalArgumentException("Subscriber name is required for DURABLE consumer type");
+                }
+                if (messageSelector != null && !messageSelector.isEmpty()) {
+                    yield session.createDurableSubscriber(topic, subscriberName, messageSelector, noLocal);
+                } else {
+                    yield session.createDurableSubscriber(topic, subscriberName);
+                }
+            }
+        };
     }
 }

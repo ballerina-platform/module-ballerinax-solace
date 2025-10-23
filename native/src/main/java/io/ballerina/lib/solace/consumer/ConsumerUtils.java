@@ -18,11 +18,11 @@
 
 package io.ballerina.lib.solace.consumer;
 
+import io.ballerina.lib.solace.CommonUtils;
+
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
-import javax.jms.Queue;
 import javax.jms.Session;
-import javax.jms.Topic;
 
 /**
  * Utility methods for consumer operations.
@@ -42,45 +42,19 @@ public final class ConsumerUtils {
     public static MessageConsumer createConsumer(Session session, SubscriptionConfig subscriptionConfig)
             throws JMSException {
         return switch (subscriptionConfig) {
-            case QueueConfig queueConfig -> createQueueConsumer(session, queueConfig);
-            case TopicConfig topicConfig -> createTopicConsumer(session, topicConfig);
-        };
-    }
-
-    private static MessageConsumer createQueueConsumer(Session session, QueueConfig config) throws JMSException {
-        Queue queue = session.createQueue(config.queueName());
-        String messageSelector = config.messageSelector();
-
-        if (messageSelector != null && !messageSelector.isEmpty()) {
-            return session.createConsumer(queue, messageSelector);
-        } else {
-            return session.createConsumer(queue);
-        }
-    }
-
-    private static MessageConsumer createTopicConsumer(Session session, TopicConfig config) throws JMSException {
-        Topic topic = session.createTopic(config.topicName());
-        String messageSelector = config.messageSelector();
-        String subscriberName = config.subscriberName();
-
-        return switch (config.consumerType()) {
-            case DEFAULT -> {
-                if (messageSelector != null && !messageSelector.isEmpty()) {
-                    yield session.createConsumer(topic, messageSelector, config.noLocal());
-                } else {
-                    yield session.createConsumer(topic);
-                }
-            }
-            case DURABLE -> {
-                if (subscriberName == null || subscriberName.isEmpty()) {
-                    throw new IllegalArgumentException("Subscriber name is required for DURABLE consumer type");
-                }
-                if (messageSelector != null && !messageSelector.isEmpty()) {
-                    yield session.createDurableSubscriber(topic, subscriberName, messageSelector, config.noLocal());
-                } else {
-                    yield session.createDurableSubscriber(topic, subscriberName);
-                }
-            }
+            case QueueConfig queueConfig -> CommonUtils.createQueueConsumer(
+                    session,
+                    queueConfig.queueName(),
+                    queueConfig.messageSelector()
+            );
+            case TopicConfig topicConfig -> CommonUtils.createTopicConsumer(
+                    session,
+                    topicConfig.topicName(),
+                    topicConfig.messageSelector(),
+                    topicConfig.noLocal(),
+                    topicConfig.consumerType(),
+                    topicConfig.subscriberName()
+            );
         };
     }
 }
