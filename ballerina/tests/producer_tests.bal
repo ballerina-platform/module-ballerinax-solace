@@ -404,8 +404,7 @@ isolated function testProducerValidationWithInvalidCompressionLevel() {
 }
 
 @test:Config {
-    groups: ["producer", "validation"],
-    enable: false
+    groups: ["producer", "validation"]
 }
 isolated function testProducerValidationWithLongUsername() {
     MessageProducer|Error producer = new (BROKER_URL, {

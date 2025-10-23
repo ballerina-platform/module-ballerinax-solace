@@ -14,7 +14,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-import ballerina/constraint;
 import ballerina/jballerina.java;
 
 # Solace Message Producer to send messages to both queues and topics.
@@ -35,8 +34,8 @@ public isolated client class MessageProducer {
     # + config - Producer configuration including connection settings and destination
     # + return - A `solace:Error` if initialization fails or else `()`
     public isolated function init(string url, *ProducerConfiguration config) returns Error? {
-        ProducerConfiguration|constraint:Error validated = constraint:validate(config);
-        if validated is constraint:Error {
+        Error? validated = validateConfigurations(config);
+        if validated is Error {
             return error Error(
                 string `Error occurred while validating the producer configurations: ${validated.message()}`, validated);
         }

@@ -235,8 +235,7 @@ isolated function testSvcOnErrorWithAdditionalParameters() returns error? {
 }
 
 @test:Config {
-    groups: ["service", "validations"],
-    enable: false
+    groups: ["service", "validations"]
 }
 isolated function testDetachFailure() returns error? {
     Service consumerSvc = @ServiceConfig {
@@ -251,7 +250,7 @@ isolated function testDetachFailure() returns error? {
     if result is Error {
         test:assertEquals(
                 result.message(),
-                "Failed to detach a service from the listener: Could not find the native JMS session",
+                "Could not find the native Solace message receiver",
                 "Invalid error message");
     }
 }

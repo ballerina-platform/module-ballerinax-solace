@@ -14,7 +14,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-import ballerina/constraint;
 import ballerina/jballerina.java;
 
 # Solace Message Consumer to receive messages from both queues and topics.
@@ -34,8 +33,8 @@ public isolated client class MessageConsumer {
     # + config - Consumer configuration including connection settings and subscription details
     # + return - A `solace:Error` if initialization fails or else `()`
     public isolated function init(string url, *ConsumerConfiguration config) returns Error? {
-        ConsumerConfiguration|constraint:Error validated = constraint:validate(config);
-        if validated is constraint:Error {
+        Error? validated = validateConfigurations(config);
+        if validated is Error {
             return error Error(
                 string `Error occurred while validating the consumer configurations: ${validated.message()}`, validated);
         }

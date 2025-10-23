@@ -14,7 +14,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-import ballerina/constraint;
 import ballerina/jballerina.java;
 
 # Represents a Solace listener endpoint that can be used to receive messages from a Solace topic or a queue.
@@ -39,12 +38,12 @@ public isolated class Listener {
     # + config - configurations used when initializing the listener
     # + return - `solace:Error` if an error occurs or `()` otherwise
     public isolated function init(string url, *ListenerConfiguration config) returns Error? {
-        ListenerConfiguration|constraint:Error validated = constraint:validate(config);
-        if validated is constraint:Error {
+        Error? validated = validateConfigurations(config);
+        if validated is Error {
             return error Error(
                 string `Error occurred while validating the listener configurations: ${validated.message()}`, validated);
         }
-        return self.initListener(url, validated);
+        return self.initListener(url, config);
     }
 
     isolated function initListener(string url, ListenerConfiguration config) returns Error? = @java:Method {
