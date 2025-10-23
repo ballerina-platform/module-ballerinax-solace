@@ -55,28 +55,22 @@ public isolated client class MessageProducer {
     # + message - Message to be sent to the Solace broker
     # + return - A `solace:Error` if there is an error or else `()`
     isolated remote function send(Message message) returns Error? {
-        IMessage iMessage;
-        anydata payload = message.payload;
-        if payload is int || payload is boolean || payload is float || payload is decimal {
-            byte[] convertedPayload = payload.toString().toBytes();
-            iMessage = constructIMessage(message, convertedPayload);
-        } else if payload is string {
-            iMessage = constructIMessage(message, payload);
-        } else if payload is xml {
-            iMessage = constructIMessage(message, payload.toString());
-        } else if payload is map<Value> {
-            iMessage = constructIMessage(message, payload);
-        } else if payload is byte[] {
-            iMessage = constructIMessage(message, payload);
-        } else if payload is record {} {
-            byte[] convertedPayload = payload.toJsonString().toBytes();
-            iMessage = constructIMessage(message, convertedPayload);
-        } else if payload is json {
-            byte[] convertedPayload = payload.toJsonString().toBytes();
-            iMessage = constructIMessage(message, convertedPayload);
-        } else {
-            return error Error("Invalid payload type to be send as a Solace message payload");
-        }
+        string|map<Value>|byte[] payload = check convertPayload(message.payload);
+        map<Property> properties = prepareProperties(message);
+        IMessage iMessage = {
+            payload,
+            correlationId: message.correlationId,
+            replyTo: message.replyTo,
+            properties,
+            messageId: message.messageId,
+            timestamp: message.timestamp,
+            destination: message.destination,
+            deliveryMode: message.deliveryMode,
+            redelivered: message.redelivered,
+            jmsType: message.jmsType,
+            expiration: message.expiration,
+            priority: message.priority
+        };
         return self.externSendMessage(iMessage);
     }
 
@@ -119,19 +113,33 @@ public isolated client class MessageProducer {
     } external;
 }
 
-isolated function constructIMessage(Message message, string|map<Value>|byte[] payload) returns IMessage {
-    return {
-        payload,
-        correlationId: message.correlationId,
-        replyTo: message.replyTo,
-        properties: message.properties,
-        messageId: message.messageId,
-        timestamp: message.timestamp,
-        destination: message.destination,
-        deliveryMode: message.deliveryMode,
-        redelivered: message.redelivered,
-        jmsType: message.jmsType,
-        expiration: message.expiration,
-        priority: message.priority
-    };
+isolated function convertPayload(anydata payload) returns string|map<Value>|byte[]|Error {
+    if payload is string {
+        return payload;
+    } else if payload is map<Value> {
+        return payload;
+    } else if payload is byte[] {
+        return payload;
+    } else if payload is xml {
+        return payload.toString();
+    } else if payload is int|boolean|float|decimal {
+        return payload.toString().toBytes();
+    } else if payload is record {} {
+        return payload.toJsonString().toBytes();
+    } else if payload is json {
+        return payload.toJsonString().toBytes();
+    } else {
+        return error Error("Invalid payload type to be sent as a Solace message payload");
+    }
+}
+
+isolated function prepareProperties(Message message) returns map<Property> {
+    map<Property> properties = {};
+    if message.properties is map<Property> {
+        properties = (<map<Property>>message.properties).clone();
+    }
+    if message.payload is xml {
+        properties[SOLACE_JMS_PROP_ISXML] = true;
+    }
+    return properties;
 }

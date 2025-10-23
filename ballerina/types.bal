@@ -347,6 +347,9 @@ public type KeyStore record {|
     SslStoreFormat format = JKS;
 |};
 
+# A boolean property of Solace message to denote the text payload set in the message is an XML
+public const SOLACE_JMS_PROP_ISXML = "JMS_Solace_isXML";
+
 # Represent the valid value types allowed in JMS message properties.
 public type Property boolean|int|byte|float|string;
 
