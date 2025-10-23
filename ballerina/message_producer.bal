@@ -113,7 +113,7 @@ public isolated client class MessageProducer {
     } external;
 }
 
-isolated function convertPayload(anydata payload) returns string|map<Value>|byte[]|Error {
+isolated function convertPayload(anydata payload) returns string|map<Value>|byte[] {
     if payload is string {
         return payload;
     } else if payload is map<Value> {
@@ -124,12 +124,8 @@ isolated function convertPayload(anydata payload) returns string|map<Value>|byte
         return payload.toString();
     } else if payload is int|boolean|float|decimal {
         return payload.toString().toBytes();
-    } else if payload is record {} {
-        return payload.toJsonString().toBytes();
-    } else if payload is json {
-        return payload.toJsonString().toBytes();
     } else {
-        return error Error("Invalid payload type to be sent as a Solace message payload");
+        return payload.toJsonString().toBytes();
     }
 }
 
@@ -139,7 +135,9 @@ isolated function prepareProperties(Message message) returns map<Property> {
         properties = (<map<Property>>message.properties).clone();
     }
     if message.payload is xml {
-        properties[SOLACE_JMS_PROP_ISXML] = true;
+        if !properties.hasKey(SOLACE_JMS_PROP_ISXML) {
+            properties[SOLACE_JMS_PROP_ISXML] = true;
+        }
     }
     return properties;
 }
