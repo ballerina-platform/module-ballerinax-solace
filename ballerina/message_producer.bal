@@ -54,7 +54,33 @@ public isolated client class MessageProducer {
     #
     # + message - Message to be sent to the Solace broker
     # + return - A `solace:Error` if there is an error or else `()`
-    isolated remote function send(Message message) returns Error? = @java:Method {
+    isolated remote function send(Message message) returns Error? {
+        IMessage iMessage;
+        anydata payload = message.payload;
+        if payload is int || payload is boolean || payload is float || payload is decimal {
+            byte[] convertedPayload = payload.toString().toBytes();
+            iMessage = constructIMessage(message, convertedPayload);
+        } else if payload is string {
+            iMessage = constructIMessage(message, payload);
+        } else if payload is xml {
+            iMessage = constructIMessage(message, payload.toString());
+        } else if payload is map<Value> {
+            iMessage = constructIMessage(message, payload);
+        } else if payload is byte[] {
+            iMessage = constructIMessage(message, payload);
+        } else if payload is record {} {
+            byte[] convertedPayload = payload.toJsonString().toBytes();
+            iMessage = constructIMessage(message, convertedPayload);
+        } else if payload is json {
+            byte[] convertedPayload = payload.toJsonString().toBytes();
+            iMessage = constructIMessage(message, convertedPayload);
+        } else {
+            return error Error("Invalid payload type to be send as a Solace message payload");
+        }
+        return self.externSendMessage(iMessage);
+    }
+
+    isolated function externSendMessage(IMessage message) returns Error? = @java:Method {
         name: "send",
         'class: "io.ballerina.lib.solace.producer.Actions"
     } external;
@@ -91,4 +117,21 @@ public isolated client class MessageProducer {
     isolated remote function close() returns Error? = @java:Method {
         'class: "io.ballerina.lib.solace.producer.Actions"
     } external;
+}
+
+isolated function constructIMessage(Message message, string|map<Value>|byte[] payload) returns IMessage {
+    return {
+        payload,
+        correlationId: message.correlationId,
+        replyTo: message.replyTo,
+        properties: message.properties,
+        messageId: message.messageId,
+        timestamp: message.timestamp,
+        destination: message.destination,
+        deliveryMode: message.deliveryMode,
+        redelivered: message.redelivered,
+        jmsType: message.jmsType,
+        expiration: message.expiration,
+        priority: message.priority
+    };
 }

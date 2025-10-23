@@ -220,7 +220,7 @@ isolated function testClientAckWithTopic() returns error? {
     check consumer->close();
 }
 
-@test:Config {groups: ["consumer", "client_ack"], dependsOn: [testClientAckWithTopic]}
+@test:Config {groups: ["consumer", "client_ack", "fixIssue"], dependsOn: [testClientAckWithTopic]}
 isolated function testClientAckWithDifferentMessageTypes() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
@@ -233,8 +233,9 @@ isolated function testClientAckWithDifferentMessageTypes() returns error? {
     });
 
     check producer->send({payload: "Text message"});
-    check producer->send({payload: [1, 2, 3, 4, 5]});
-    check producer->send({payload: {"key": "value", "number": 42}});
+    check producer->send({payload: "Sample bytes message".toBytes()});
+    map<Value> payload = {"status": "active", "count": 100};
+    check producer->send({payload});
     check producer->close();
 
     MessageConsumer consumer = check new (BROKER_URL, {
