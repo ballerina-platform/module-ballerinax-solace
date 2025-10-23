@@ -465,3 +465,52 @@ isolated function testMessageSelectorWithQueue() returns error? {
     }
     check consumer->close();
 }
+
+@test:Config {groups: ["consumer", "xml"], dependsOn: [testMessageSelectorWithQueue]}
+isolated function testReceiveXmlMessage() returns error? {
+    MessageProducer producer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        destination: {queueName: CONSUMER_XML_MSG_QUEUE}
+    });
+
+    xml xmlPayload = xml `<order><id>67890</id><item>Gadget</item><quantity>25</quantity></order>`;
+    Message message = {
+        payload: xmlPayload
+    };
+    check producer->send(message);
+    check producer->close();
+
+    MessageConsumer consumer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        subscriptionConfig: {
+            queueName: CONSUMER_XML_MSG_QUEUE
+        }
+    });
+
+    Message? receivedMessage = check consumer->receive(5.0);
+    test:assertTrue(receivedMessage is Message, "Should receive an XML message");
+    if receivedMessage is Message {
+        test:assertTrue(receivedMessage.payload is string, "XML content should be received as string");
+        anydata receivedPayload = receivedMessage.payload;
+        if receivedPayload is string {
+            xml receivedXml = check xml:fromString(receivedPayload);
+            test:assertEquals(receivedXml, xmlPayload, "Invalid XML payload received");
+        }
+        // Verify the JMS_Solace_isXML property is set
+        if receivedMessage.properties is map<Property> {
+            test:assertEquals(receivedMessage.properties["JMS_Solace_isXML"], true,
+                    "Should have JMS_Solace_isXML property set to true");
+        }
+    }
+    check consumer->close();
+}

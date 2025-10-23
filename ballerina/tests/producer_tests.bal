@@ -421,3 +421,25 @@ isolated function testProducerValidationWithLongUsername() {
                 "Error message should mention username");
     }
 }
+
+@test:Config {
+    groups: ["producer", "xml"]
+}
+isolated function testSendXmlMessage() returns error? {
+    MessageProducer producer = check new (BROKER_URL, {
+        destination: {queueName: TEST_QUEUE},
+        messageVpn: MESSAGE_VPN,
+        enableDynamicDurables: true,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        }
+    });
+
+    xml xmlPayload = xml `<order><id>12345</id><item>Widget</item><quantity>10</quantity></order>`;
+    Message message = {
+        payload: xmlPayload
+    };
+    check producer->send(message);
+    check producer->close();
+}
