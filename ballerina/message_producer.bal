@@ -57,7 +57,7 @@ public isolated client class MessageProducer {
     isolated remote function send(Message message) returns Error? {
         string|map<Value>|byte[] payload = check convertPayload(message.payload);
         map<Property> properties = prepareProperties(message);
-        IMessage iMessage = {
+        InternalMessage iMessage = {
             payload,
             correlationId: message.correlationId,
             replyTo: message.replyTo,
@@ -71,10 +71,10 @@ public isolated client class MessageProducer {
             expiration: message.expiration,
             priority: message.priority
         };
-        return self.externSendMessage(iMessage);
+        return self.externSend(iMessage);
     }
 
-    isolated function externSendMessage(IMessage message) returns Error? = @java:Method {
+    isolated function externSend(InternalMessage message) returns Error? = @java:Method {
         name: "send",
         'class: "io.ballerina.lib.solace.producer.Actions"
     } external;

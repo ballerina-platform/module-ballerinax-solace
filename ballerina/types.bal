@@ -385,7 +385,7 @@ public type Message record {|
 |};
 
 // Internal representation for the Solace message.
-type IMessage record {|
+type InternalMessage record {|
     string|map<Value>|byte[] payload;
     string correlationId?;
     Destination replyTo?;
