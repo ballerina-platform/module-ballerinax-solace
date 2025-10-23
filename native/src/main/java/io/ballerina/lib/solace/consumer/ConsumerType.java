@@ -25,9 +25,5 @@ public enum ConsumerType {
     /** Default message consumer. */
     DEFAULT,
     /** Durable subscriber. */
-    DURABLE,
-    /** Shared consumer. */
-    SHARED,
-    /** Shared durable subscriber. */
-    SHARED_DURABLE
+    DURABLE
 }

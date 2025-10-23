@@ -43,10 +43,6 @@ public enum AcknowledgementMode {
 public enum ConsumerType {
     # Represents JMS durable subscriber
     DURABLE = "DURABLE",
-    # Represents JMS shared consumer
-    SHARED = "SHARED",
-    # Represents JMS shared durable subscriber
-    SHARED_DURABLE = "SHARED_DURABLE",
     # Represents JMS default consumer
     DEFAULT = "DEFAULT"
 }

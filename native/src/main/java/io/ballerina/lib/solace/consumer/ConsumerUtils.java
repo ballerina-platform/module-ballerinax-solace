@@ -81,27 +81,6 @@ public final class ConsumerUtils {
                     yield session.createDurableSubscriber(topic, subscriberName);
                 }
             }
-            case SHARED -> {
-                if (subscriberName == null || subscriberName.isEmpty()) {
-                    throw new IllegalArgumentException("Subscriber name is required for SHARED consumer type");
-                }
-                if (messageSelector != null && !messageSelector.isEmpty()) {
-                    yield session.createSharedConsumer(topic, subscriberName, messageSelector);
-                } else {
-                    yield session.createSharedConsumer(topic, subscriberName);
-                }
-            }
-            case SHARED_DURABLE -> {
-                if (subscriberName == null || subscriberName.isEmpty()) {
-                    throw new IllegalArgumentException(
-                            "Subscriber name is required for SHARED_DURABLE consumer type");
-                }
-                if (messageSelector != null && !messageSelector.isEmpty()) {
-                    yield session.createSharedDurableConsumer(topic, subscriberName, messageSelector);
-                } else {
-                    yield session.createSharedDurableConsumer(topic, subscriberName);
-                }
-            }
         };
     }
 }
