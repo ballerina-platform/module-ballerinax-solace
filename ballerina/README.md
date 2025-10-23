@@ -4,10 +4,6 @@
 
 The `ballerinax/solace` package provides APIs to interact with Solace PubSub+ brokers through the JMS API. It allows developers to programmatically produce and consume messages, manage topics and queues, and implement robust, event-driven solutions that leverage Solace’s high-performance messaging capabilities within Ballerina applications.
 
-## Setup guide
-
-<TBA>
-
 ## Quickstart
 
 ### Step 1: Import the module
@@ -88,8 +84,3 @@ Save the changes and run the Ballerina application using the following command.
 bal run
 ```
 
-## Examples
-
-The Solace connector provides practical examples illustrating usage in various scenarios. Explore these [examples](https://github.com/ballerina-platform/module-ballerinax-solace/tree/main/examples/) covering common Solace operations.
-
-<TBA>
