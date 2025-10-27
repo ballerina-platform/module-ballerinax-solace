@@ -52,8 +52,9 @@ public isolated client class MessageConsumer {
     # ```
     #
     # + timeout - The maximum time to wait for a message in seconds. Default is 10.0 seconds
+    # + T - Optional type description of the expected data type
     # + return - The received `Message`, `()` if no message is available within the timeout, or a `solace:Error` if there is an error
-    isolated remote function receive(decimal timeout = 10.0) returns Message|Error? = @java:Method {
+    isolated remote function receive(decimal timeout = 10.0, typedesc<Message> T = <>) returns T|Error? = @java:Method {
         'class: "io.ballerina.lib.solace.consumer.Actions"
     } external;
 
@@ -61,9 +62,10 @@ public isolated client class MessageConsumer {
     # ```ballerina
     # solace:Message? message = check consumer->receiveNoWait();
     # ```
-    #
+    # 
+    # + T - Optional type description of the expected data type
     # + return - The received `Message` if immediately available, `()` if no message is available, or a `solace:Error` if there is an error
-    isolated remote function receiveNoWait() returns Message|Error? = @java:Method {
+    isolated remote function receiveNoWait(typedesc<Message> T = <>) returns T|Error? = @java:Method {
         'class: "io.ballerina.lib.solace.consumer.Actions"
     } external;
 

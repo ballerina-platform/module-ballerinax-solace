@@ -17,7 +17,7 @@
 import ballerina/lang.runtime;
 import ballerina/test;
 
-@test:Config {groups: ["consumer", "client_ack"]}
+@test:Config {groups: ["consumer", "client_ack", "databindingFailure"]}
 isolated function testClientAckWithQueue() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,

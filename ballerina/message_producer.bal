@@ -138,6 +138,10 @@ isolated function prepareProperties(Message message) returns map<Property> {
         if !properties.hasKey(SOLACE_JMS_PROP_ISXML) {
             properties[SOLACE_JMS_PROP_ISXML] = true;
         }
+    } else {
+        if !properties.hasKey(SOLACE_JMS_PROP_ISXML) {
+            properties[SOLACE_JMS_PROP_ISXML] = false;
+        }
     }
     return properties;
 }

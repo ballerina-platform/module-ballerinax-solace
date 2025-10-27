@@ -500,12 +500,8 @@ isolated function testReceiveXmlMessage() returns error? {
     Message? receivedMessage = check consumer->receive(5.0);
     test:assertTrue(receivedMessage is Message, "Should receive an XML message");
     if receivedMessage is Message {
-        test:assertTrue(receivedMessage.payload is string, "XML content should be received as string");
-        anydata receivedPayload = receivedMessage.payload;
-        if receivedPayload is string {
-            xml receivedXml = check xml:fromString(receivedPayload);
-            test:assertEquals(receivedXml, xmlPayload, "Invalid XML payload received");
-        }
+        test:assertTrue(receivedMessage.payload is xml, "Invalid content received a XML payload");
+        test:assertEquals(receivedMessage.payload, xmlPayload, "Invalid XML payload received");
         // Verify the JMS_Solace_isXML property is set
         if receivedMessage.properties is map<Property> {
             test:assertEquals(receivedMessage.properties["JMS_Solace_isXML"], true,
