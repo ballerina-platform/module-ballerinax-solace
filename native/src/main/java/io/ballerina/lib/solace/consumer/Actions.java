@@ -26,6 +26,7 @@ import io.ballerina.runtime.api.values.BDecimal;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
+import io.ballerina.runtime.api.values.BTypedesc;
 
 import java.math.BigDecimal;
 import java.util.Hashtable;
@@ -102,9 +103,10 @@ public final class Actions {
      *
      * @param consumer Ballerina consumer object
      * @param timeout  Timeout in seconds
+     * @param bTypedesc Expected message type
      * @return Ballerina message, {@code null} if no message available, or {@code solace:Error} on failure
      */
-    public static Object receive(BObject consumer, BDecimal timeout) {
+    public static Object receive(BObject consumer, BDecimal timeout, BTypedesc bTypedesc) {
         MessageConsumer nativeConsumer = (MessageConsumer) consumer.getNativeData(NATIVE_CONSUMER);
 
         CompletableFuture<Object> future = new CompletableFuture<>();
@@ -117,7 +119,7 @@ public final class Actions {
                 if (message == null) {
                     future.complete(null);
                 } else {
-                    BMap<BString, Object> ballerinaMessage = MessageConverter.toBallerinaMessage(message);
+                    BMap<BString, Object> ballerinaMessage = MessageConverter.toBallerinaMessage(message, bTypedesc);
                     future.complete(ballerinaMessage);
                 }
             } catch (JMSException exception) {
@@ -144,9 +146,10 @@ public final class Actions {
      * Receives the next message from the Solace broker if one is immediately available.
      *
      * @param consumer Ballerina consumer object
+     * @param bTypedesc Expected message type
      * @return Ballerina message, {@code null} if no message available, or {@code solace:Error} on failure
      */
-    public static Object receiveNoWait(BObject consumer) {
+    public static Object receiveNoWait(BObject consumer, BTypedesc bTypedesc) {
         MessageConsumer nativeConsumer = (MessageConsumer) consumer.getNativeData(NATIVE_CONSUMER);
 
         CompletableFuture<Object> future = new CompletableFuture<>();
@@ -157,7 +160,7 @@ public final class Actions {
                 if (message == null) {
                     future.complete(null);
                 } else {
-                    BMap<BString, Object> ballerinaMessage = MessageConverter.toBallerinaMessage(message);
+                    BMap<BString, Object> ballerinaMessage = MessageConverter.toBallerinaMessage(message, bTypedesc);
                     future.complete(ballerinaMessage);
                 }
             } catch (JMSException exception) {
