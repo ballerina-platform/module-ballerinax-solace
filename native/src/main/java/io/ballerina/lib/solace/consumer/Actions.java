@@ -20,6 +20,7 @@ package io.ballerina.lib.solace.consumer;
 
 import com.solacesystems.jms.SolConnectionFactory;
 import com.solacesystems.jms.SolJmsUtility;
+import io.ballerina.lib.solace.BallerinaSolaceDatabindingException;
 import io.ballerina.lib.solace.CommonUtils;
 import io.ballerina.lib.solace.config.ConnectionConfiguration;
 import io.ballerina.runtime.api.values.BDecimal;
@@ -47,7 +48,8 @@ public final class Actions {
     private static final String NATIVE_SESSION = "native.session";
     private static final String NATIVE_CONNECTION = "native.connection";
 
-    private Actions() {}
+    private Actions() {
+    }
 
     /**
      * Creates a {@link javax.jms.MessageConsumer} using the broker URL and consumer configurations.
@@ -101,8 +103,8 @@ public final class Actions {
     /**
      * Receives the next message from the Solace broker within the specified timeout.
      *
-     * @param consumer Ballerina consumer object
-     * @param timeout  Timeout in seconds
+     * @param consumer  Ballerina consumer object
+     * @param timeout   Timeout in seconds
      * @param bTypedesc Expected message type
      * @return Ballerina message, {@code null} if no message available, or {@code solace:Error} on failure
      */
@@ -126,6 +128,8 @@ public final class Actions {
                 future.complete(CommonUtils.createError(
                         String.format("Error occurred while receiving message from Solace broker: %s",
                                 exception.getMessage()), exception));
+            } catch (BallerinaSolaceDatabindingException exception) {
+                future.complete(CommonUtils.createError(exception.getMessage(), exception));
             } catch (Exception exception) {
                 future.complete(CommonUtils.createError(
                         String.format("Unexpected error occurred while receiving message: %s",
@@ -145,7 +149,7 @@ public final class Actions {
     /**
      * Receives the next message from the Solace broker if one is immediately available.
      *
-     * @param consumer Ballerina consumer object
+     * @param consumer  Ballerina consumer object
      * @param bTypedesc Expected message type
      * @return Ballerina message, {@code null} if no message available, or {@code solace:Error} on failure
      */
@@ -167,6 +171,8 @@ public final class Actions {
                 future.complete(CommonUtils.createError(
                         String.format("Error occurred while receiving message from Solace broker: %s",
                                 exception.getMessage()), exception));
+            } catch (BallerinaSolaceDatabindingException exception) {
+                future.complete(CommonUtils.createError(exception.getMessage(), exception));
             } catch (Exception exception) {
                 future.complete(CommonUtils.createError(
                         String.format("Unexpected error occurred while receiving message: %s",

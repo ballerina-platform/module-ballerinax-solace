@@ -55,7 +55,7 @@ public isolated client class MessageProducer {
     # + message - Message to be sent to the Solace broker
     # + return - A `solace:Error` if there is an error or else `()`
     isolated remote function send(Message message) returns Error? {
-        string|map<Value>|byte[] payload = check convertPayload(message.payload);
+        string|map<Value>|byte[] payload = convertPayload(message.payload);
         map<Property> properties = prepareProperties(message);
         InternalMessage iMessage = {
             payload,
