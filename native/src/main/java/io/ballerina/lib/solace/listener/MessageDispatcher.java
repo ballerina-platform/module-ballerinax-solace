@@ -80,6 +80,9 @@ public class MessageDispatcher {
                 onMsgCallback.notifyFailure(bError);
                 onError(e);
             } catch (JMSException | BallerinaSolaceException e) {
+                BError bError = CommonUtils.createError(
+                        "Unexpected error occurred while receiving messages from the broker: " + e.getMessage(), e);
+                onMsgCallback.notifyFailure(bError);
                 onError(e);
             }
         });

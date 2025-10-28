@@ -103,7 +103,7 @@ public class Listener {
         return null;
     }
 
-    private static int getSessionAckMode(String ackMode) {
+    static int getSessionAckMode(String ackMode) {
         return switch (ackMode) {
             case SESSION_TRANSACTED_MODE -> Session.SESSION_TRANSACTED;
             case AUTO_ACKNOWLEDGE_MODE -> Session.AUTO_ACKNOWLEDGE;
