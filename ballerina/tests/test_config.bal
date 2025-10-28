@@ -67,3 +67,4 @@ const string TEXT_MESSAGE_CONTENT_2 = "Second test message";
 // Databinding
 const string DATABINDING_QUEUE = "client-databinding-queue";
 const string DATABINDING_TOPIC = "client-databinding-topic";
+const string SERVICE_DATABINDING_QUEUE = "service-databinding-queue";

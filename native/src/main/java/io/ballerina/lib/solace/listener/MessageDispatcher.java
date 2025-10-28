@@ -18,6 +18,7 @@
 
 package io.ballerina.lib.solace.listener;
 
+import io.ballerina.lib.solace.BallerinaSolaceDatabindingException;
 import io.ballerina.lib.solace.BallerinaSolaceException;
 import io.ballerina.lib.solace.CommonUtils;
 import io.ballerina.lib.solace.ModuleUtils;
@@ -73,6 +74,10 @@ public class MessageDispatcher {
                 onMsgCallback.notifySuccess(result);
             } catch (BError e) {
                 onMsgCallback.notifyFailure(e);
+                onError(e);
+            } catch (BallerinaSolaceDatabindingException e) {
+                BError bError = CommonUtils.createError(e.getMessage(), e);
+                onMsgCallback.notifyFailure(bError);
                 onError(e);
             } catch (JMSException | BallerinaSolaceException e) {
                 onError(e);
