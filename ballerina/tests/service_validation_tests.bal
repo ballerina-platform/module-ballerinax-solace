@@ -138,7 +138,7 @@ isolated function testSvcMethodWithInvalidParams() returns error? {
     if result is Error {
         test:assertEquals(
                 result.message(),
-                "Failed to attach service to listener: onMessage method parameters must be of type 'solace:Message' or 'solace:Caller'.",
+                "Failed to attach service to listener: onMessage method parameters must be of type 'solace:Message' (or its subtype) or 'solace:Caller'.",
                 "Invalid error message received");
     }
 }

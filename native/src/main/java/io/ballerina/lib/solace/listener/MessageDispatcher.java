@@ -91,7 +91,8 @@ public class MessageDispatcher {
                     args[idx++] = getCaller();
                     break;
                 case TypeTags.RECORD_TYPE_TAG:
-                    args[idx++] = MessageConverter.toBallerinaMessage(message);
+                    args[idx++] = MessageConverter
+                            .toBallerinaMessage(message, ValueCreator.createTypedescValue(referredType));
                     break;
             }
         }

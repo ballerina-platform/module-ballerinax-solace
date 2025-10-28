@@ -20,6 +20,7 @@ package io.ballerina.lib.solace.listener;
 
 import io.ballerina.lib.solace.CommonUtils;
 import io.ballerina.lib.solace.ModuleUtils;
+import io.ballerina.runtime.api.Runtime;
 import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.types.Parameter;
@@ -46,8 +47,9 @@ import static io.ballerina.runtime.api.constants.RuntimeConstants.VERSION_SEPARA
  * should be replaced by a compiler plugin.
  */
 public class Service {
-    private static final Type MSG_TYPE = ValueCreator.createRecordValue(
-            ModuleUtils.getModule(), "Message").getType();
+    private static final BObject TYPE_CHECKER = ValueCreator.createObjectValue(
+            ModuleUtils.getModule(), "TypeChecker");
+    private static final String IS_SOLACE_MSG_METHOD = "isSolaceMessage";
     private static final Type CALLER_TYPE = ValueCreator.createObjectValue(
             ModuleUtils.getModule(), "Caller").getOriginalType();
     private static final Type ERROR_TYPE = TypeCreator.createErrorType("Error", ModuleUtils.getModule());
@@ -80,7 +82,7 @@ public class Service {
                 .findFirst();
     }
 
-    public static void validateService(BObject consumerService) throws BError {
+    public static void validateService(Runtime runtime, BObject consumerService) throws BError {
         ServiceType service = (ServiceType) TypeUtils.getType(consumerService);
         Object svcConfig = service.getAnnotation(SERVICE_CONFIG_ANNOTATION);
         if (Objects.isNull(svcConfig)) {
@@ -99,7 +101,7 @@ public class Service {
         for (RemoteMethodType remoteMethod: remoteMethods) {
             String remoteMethodName = remoteMethod.getName();
             if (ON_MSG_METHOD.equals(remoteMethodName)) {
-                validateOnMessageMethod(remoteMethod);
+                validateOnMessageMethod(runtime, remoteMethod);
             } else if (ON_ERR_METHOD.equals(remoteMethodName)) {
                 validateOnErrorMethod(remoteMethod);
             } else {
@@ -108,7 +110,7 @@ public class Service {
         }
     }
 
-    private static void validateOnMessageMethod(RemoteMethodType onMessageMethod) {
+    private static void validateOnMessageMethod(Runtime runtime, RemoteMethodType onMessageMethod) {
         Parameter[] parameters = onMessageMethod.getParameters();
         if (parameters.length < 1 || parameters.length > 2) {
             throw CommonUtils.createError("onMessage method can have only have either one or two parameters.");
@@ -117,7 +119,7 @@ public class Service {
         Parameter message = null;
         for (Parameter parameter : parameters) {
             Type parameterType = TypeUtils.getReferredType(parameter.type);
-            if (TypeUtils.isSameType(MSG_TYPE, parameterType)) {
+            if (inSubtypeOfSolaceMessage(runtime, parameterType)) {
                 message = parameter;
                 continue;
             }
@@ -125,11 +127,22 @@ public class Service {
                 continue;
             }
             throw CommonUtils.createError(
-                    "onMessage method parameters must be of type 'solace:Message' or 'solace:Caller'.");
+                    "onMessage method parameters must be of type 'solace:Message' " +
+                            "(or its subtype) or 'solace:Caller'.");
         }
 
         if (Objects.isNull(message)) {
             throw CommonUtils.createError("Required parameter 'solace:Message' can not be found.");
+        }
+    }
+
+    private static boolean inSubtypeOfSolaceMessage(Runtime runtime, Type paramType) {
+        try {
+            return (boolean) runtime.callMethod(TYPE_CHECKER, IS_SOLACE_MSG_METHOD, null,
+                    ValueCreator.createTypedescValue(paramType));
+        } catch (BError bError) {
+            bError.printStackTrace();
+            throw bError;
         }
     }
 

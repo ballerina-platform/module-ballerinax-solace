@@ -76,7 +76,7 @@ public class Listener {
         Connection connection = (Connection) bListener.getNativeData(NATIVE_CONNECTION);
         Object started = bListener.getNativeData(LISTENER_STARTED);
         try {
-            Service.validateService(bService);
+            Service.validateService(env.getRuntime(), bService);
             Service nativeService = new Service(bService);
             ServiceConfig svcConfig = nativeService.getServiceConfig();
             int sessionAckMode = getSessionAckMode(svcConfig.ackMode());
