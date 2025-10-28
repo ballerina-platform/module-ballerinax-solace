@@ -167,8 +167,9 @@ public final class MessageConverter {
 
     public static BMap<BString, Object> toBallerinaMessage(Message jmsMessage, BTypedesc expectedType)
             throws JMSException, BallerinaSolaceException {
-        BMap<BString, Object> ballerinaMessage = ValueCreator.createRecordValue(ModuleUtils.getModule(),
-                MESSAGE_RECORD_NAME);
+        RecordType messageType = getRecordType(expectedType);
+        RecordType recordType = getRecordType(messageType);
+        BMap<BString, Object> ballerinaMessage = ValueCreator.createRecordValue(recordType);
 
         // Store the native JMS message for later acknowledgement
         ballerinaMessage.addNativeData(NATIVE_MESSAGE, jmsMessage);
@@ -308,7 +309,7 @@ public final class MessageConverter {
             return getPayloadFromBytesMessage(bytesMessage, payloadType, typeTag);
         }
         throw new BallerinaSolaceException(
-                String.format("Data binding failed: Unsupported JMS message type '%s'",
+                String.format("Data binding failed: Unsupported message type '%s'",
                         jmsMessage.getClass().getSimpleName()));
     }
 
@@ -324,7 +325,7 @@ public final class MessageConverter {
 
         if (typeTag != TypeTags.STRING_TAG && typeTag != TypeTags.XML_TAG) {
             throw new BallerinaSolaceException(
-                    String.format("Data binding failed: Cannot bind JMS TextMessage to type '%s'. " +
+                    String.format("Data binding failed: Cannot bind TextMessage to type '%s'. " +
                             "Expected 'string' or 'xml'", payloadType));
         }
 
@@ -332,7 +333,7 @@ public final class MessageConverter {
             if (!message.propertyExists(SupportedProperty.SOLACE_JMS_PROP_ISXML) ||
                     !message.getBooleanProperty(SupportedProperty.SOLACE_JMS_PROP_ISXML)) {
                 throw new BallerinaSolaceException(
-                        "Data binding failed: Cannot bind JMS TextMessage to 'xml' type. " +
+                        "Data binding failed: Cannot bind TextMessage to 'xml' type. " +
                                 "Message is missing XML marker property (JMS_Solace_isXML=true)");
             }
             return XmlUtils.parse(message.getText());
@@ -343,9 +344,10 @@ public final class MessageConverter {
 
     private static Object getPayloadFromMapMessage(MapMessage message, Type payloadType, int typeTag)
             throws JMSException, BallerinaSolaceException {
-        if (!TypeUtils.isSameType(payloadType, BALLERINA_MAP_MSG_TYPE) && typeTag != TypeTags.ANYDATA_TAG) {
+        if (!TypeUtils.isSameType(payloadType, BALLERINA_MAP_MSG_TYPE) && typeTag != TypeTags.ANYDATA_TAG
+                && typeTag != TypeTags.RECORD_TYPE_TAG) {
             throw new BallerinaSolaceException(
-                    String.format("Data binding failed: Cannot bind JMS MapMessage to type '%s'. " +
+                    String.format("Data binding failed: Cannot bind MapMessage to type '%s'. " +
                             "Expected 'map<solace:Value>'", payloadType));
         }
 
@@ -357,6 +359,9 @@ public final class MessageConverter {
             Object value = message.getObject(key);
             payload.put(StringUtils.fromString(key), getMapValue(value));
         }
+        if (typeTag == TypeTags.RECORD_TYPE_TAG) {
+            return ValueUtils.convert(payload, payloadType);
+        }
         return payload;
     }
 
@@ -365,15 +370,15 @@ public final class MessageConverter {
         // Validate that string/xml types are not used with BytesMessage
         if (typeTag == TypeTags.STRING_TAG || typeTag == TypeTags.XML_TAG) {
             throw new BallerinaSolaceException(
-                    String.format("Data binding failed: Cannot bind JMS BytesMessage to type '%s'. " +
-                            "Use JMS TextMessage for string/xml payloads", payloadType));
+                    String.format("Data binding failed: Cannot bind BytesMessage to type '%s'. " +
+                            "Use TextMessage for string/xml payloads", payloadType));
         }
 
         // Validate that map<Value> type is not used with BytesMessage
         if (TypeUtils.isSameType(payloadType, BALLERINA_MAP_MSG_TYPE)) {
             throw new BallerinaSolaceException(
-                    String.format("Data binding failed: Cannot bind JMS BytesMessage to type '%s'. " +
-                            "Use JMS MapMessage for map payloads", payloadType));
+                    String.format("Data binding failed: Cannot bind BytesMessage to type '%s'. " +
+                            "Use MapMessage for map payloads", payloadType));
         }
 
         long bodyLength = message.getBodyLength();

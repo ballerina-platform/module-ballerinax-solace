@@ -63,3 +63,7 @@ const string TRANSACTED_TOPIC = "test/transacted/topic";
 // Test message content
 const string TEXT_MESSAGE_CONTENT = "Hello from Ballerina Solace Connector";
 const string TEXT_MESSAGE_CONTENT_2 = "Second test message";
+
+// Databinding
+const string DATABINDING_QUEUE = "client-databinding-queue";
+const string DATABINDING_TOPIC = "client-databinding-topic";
