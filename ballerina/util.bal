@@ -14,19 +14,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
-# Represents the TypeChecker which is used by the runtime to check whether a type is a subtype of `solace:Message`
-isolated class TypeChecker {
-    isolated function init() {
+# Checks whether a given type is a subtype of `solace:Message`.
+#
+# + typeDesc - The type needed to be checked as a subtype of `solace:Message`
+# + return - True if the type is a subtype of `solace:Message`, else false
+isolated function isSolaceMessage(typedesc<anydata> typeDesc) returns boolean {
+    if typeDesc is typedesc<Message> {
+        return true;
     }
-
-    # Checks whether a given type is a subtype of `solace:Message`.
-    #
-    # + typeDesc - The type needed to be checked as a subtype of `solace:Message`
-    # + return - True if the type is a subtype of `solace:Message`, else false
-    isolated function isSolaceMessage(typedesc<anydata> typeDesc) returns boolean {
-        if typeDesc is typedesc<Message> {
-            return true;
-        }
-        return false;
-    }
+    return false;
 }

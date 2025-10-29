@@ -47,9 +47,7 @@ import static io.ballerina.runtime.api.constants.RuntimeConstants.VERSION_SEPARA
  * should be replaced by a compiler plugin.
  */
 public class Service {
-    private static final BObject TYPE_CHECKER = ValueCreator.createObjectValue(
-            ModuleUtils.getModule(), "TypeChecker");
-    private static final String IS_SOLACE_MSG_METHOD = "isSolaceMessage";
+    private static final String IS_SOLACE_MSG_FUNCTION = "isSolaceMessage";
     private static final Type CALLER_TYPE = ValueCreator.createObjectValue(
             ModuleUtils.getModule(), "Caller").getOriginalType();
     private static final Type ERROR_TYPE = TypeCreator.createErrorType("Error", ModuleUtils.getModule());
@@ -138,7 +136,7 @@ public class Service {
 
     private static boolean inSubtypeOfSolaceMessage(Runtime runtime, Type paramType) {
         try {
-            return (boolean) runtime.callMethod(TYPE_CHECKER, IS_SOLACE_MSG_METHOD, null,
+            return (boolean) runtime.callFunction(ModuleUtils.getModule(), IS_SOLACE_MSG_FUNCTION, null,
                     ValueCreator.createTypedescValue(paramType));
         } catch (BError bError) {
             bError.printStackTrace();
