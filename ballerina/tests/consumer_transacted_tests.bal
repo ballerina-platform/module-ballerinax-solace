@@ -428,8 +428,9 @@ isolated function testTransactedSessionWithDifferentMessageTypes() returns error
     });
 
     check producer->send({payload: "Transacted text"});
-    check producer->send({payload: [10, 20, 30]});
-    check producer->send({payload: {"status": "active", "count": 100}});
+    check producer->send({payload: "Sample bytes message".toBytes()});
+    map<Value> payload = {"status": "active", "count": 100};
+    check producer->send({payload});
     check producer->close();
 
     MessageConsumer consumer = check new (BROKER_URL, {

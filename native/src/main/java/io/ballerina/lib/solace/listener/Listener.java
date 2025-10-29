@@ -76,7 +76,7 @@ public class Listener {
         Connection connection = (Connection) bListener.getNativeData(NATIVE_CONNECTION);
         Object started = bListener.getNativeData(LISTENER_STARTED);
         try {
-            Service.validateService(bService);
+            Service.validateService(env.getRuntime(), bService);
             Service nativeService = new Service(bService);
             ServiceConfig svcConfig = nativeService.getServiceConfig();
             int sessionAckMode = getSessionAckMode(svcConfig.ackMode());
@@ -103,7 +103,7 @@ public class Listener {
         return null;
     }
 
-    private static int getSessionAckMode(String ackMode) {
+    static int getSessionAckMode(String ackMode) {
         return switch (ackMode) {
             case SESSION_TRANSACTED_MODE -> Session.SESSION_TRANSACTED;
             case AUTO_ACKNOWLEDGE_MODE -> Session.AUTO_ACKNOWLEDGE;

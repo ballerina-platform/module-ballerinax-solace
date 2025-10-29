@@ -37,6 +37,7 @@ const string CONSUMER_PROPERTIES_QUEUE = "consumer-properties-queue";
 const string CONSUMER_CORRELATION_ID_QUEUE = "consumer-correlation-id-queue";
 const string CONSUMER_TIMEOUT_QUEUE = "consumer-timeout-queue";
 const string CONSUMER_SELECTOR_QUEUE = "consumer-selector-queue";
+const string CONSUMER_XML_MSG_QUEUE = "consumer-xml-msg-queue";
 
 // Client acknowledge test queues
 const string CLIENT_ACK_QUEUE = "client-ack-queue";
@@ -62,3 +63,8 @@ const string TRANSACTED_TOPIC = "test/transacted/topic";
 // Test message content
 const string TEXT_MESSAGE_CONTENT = "Hello from Ballerina Solace Connector";
 const string TEXT_MESSAGE_CONTENT_2 = "Second test message";
+
+// Databinding
+const string DATABINDING_QUEUE = "client-databinding-queue";
+const string DATABINDING_TOPIC = "client-databinding-topic";
+const string SERVICE_DATABINDING_QUEUE = "service-databinding-queue";

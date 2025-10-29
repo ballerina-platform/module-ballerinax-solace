@@ -18,6 +18,7 @@
 
 package io.ballerina.lib.solace.listener;
 
+import io.ballerina.lib.solace.BallerinaSolaceDatabindingException;
 import io.ballerina.lib.solace.BallerinaSolaceException;
 import io.ballerina.lib.solace.CommonUtils;
 import io.ballerina.lib.solace.ModuleUtils;
@@ -74,7 +75,14 @@ public class MessageDispatcher {
             } catch (BError e) {
                 onMsgCallback.notifyFailure(e);
                 onError(e);
+            } catch (BallerinaSolaceDatabindingException e) {
+                BError bError = CommonUtils.createError(e.getMessage(), e);
+                onMsgCallback.notifyFailure(bError);
+                onError(e);
             } catch (JMSException | BallerinaSolaceException e) {
+                BError bError = CommonUtils.createError(
+                        "Unexpected error occurred while receiving messages from the broker: " + e.getMessage(), e);
+                onMsgCallback.notifyFailure(bError);
                 onError(e);
             }
         });
@@ -91,7 +99,8 @@ public class MessageDispatcher {
                     args[idx++] = getCaller();
                     break;
                 case TypeTags.RECORD_TYPE_TAG:
-                    args[idx++] = MessageConverter.toBallerinaMessage(message);
+                    args[idx++] = MessageConverter
+                            .toBallerinaMessage(message, ValueCreator.createTypedescValue(referredType));
                     break;
             }
         }

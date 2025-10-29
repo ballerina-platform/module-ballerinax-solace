@@ -86,7 +86,7 @@ public type TopicConfig record {|
 |};
 
 # Common configurations related to the Solace service configuration related to queue or topic subscription.
-# 
+#
 # + pollingInterval - The polling interval in seconds
 # + receiveTimeout - The timeout to wait till a `receive` action finishes when there are no messages
 type CommonServiceConfig record {|
@@ -104,7 +104,7 @@ public type QueueServiceConfig record {|
 |};
 
 # Represents configurations for a service configurations related to solace topic subscription.
-# 
+#
 # + topicName - The name of the topic to subscribe to
 # + consumerType - The message consumer type
 # + subscriberName - the name used to identify the subscription
@@ -347,6 +347,9 @@ public type KeyStore record {|
     SslStoreFormat format = JKS;
 |};
 
+# A boolean property of Solace message to denote the text payload set in the message is an XML
+public const SOLACE_JMS_PROP_ISXML = "JMS_Solace_isXML";
+
 # Represent the valid value types allowed in JMS message properties.
 public type Property boolean|int|byte|float|string;
 
@@ -355,8 +358,8 @@ public type Value Property|byte[];
 
 # Represent the Message used to send and receive content from the Solace broker.
 public type Message record {|
-    # Message payload (can be text, binary, or structured map data)
-    string|map<Value>|byte[] payload;
+    # Message payload
+    anydata payload;
     # Id which can be used to correlate multiple messages
     string correlationId?;
     # JMS destination to which a reply to this message should be sent
@@ -378,6 +381,22 @@ public type Message record {|
     # Message expiration time (Only set by the JMS provider)
     int expiration?;
     # Message priority level (Only set by the JMS provider)
+    int priority?;
+|};
+
+// Internal representation for the Solace message.
+type InternalMessage record {|
+    string|map<Value>|byte[] payload;
+    string correlationId?;
+    Destination replyTo?;
+    map<Property> properties?;
+    string messageId?;
+    int timestamp?;
+    Destination destination?;
+    int deliveryMode?;
+    boolean redelivered?;
+    string jmsType?;
+    int expiration?;
     int priority?;
 |};
 

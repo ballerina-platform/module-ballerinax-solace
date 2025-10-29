@@ -54,7 +54,27 @@ public isolated client class MessageProducer {
     #
     # + message - Message to be sent to the Solace broker
     # + return - A `solace:Error` if there is an error or else `()`
-    isolated remote function send(Message message) returns Error? = @java:Method {
+    isolated remote function send(Message message) returns Error? {
+        string|map<Value>|byte[] payload = convertPayload(message.payload);
+        map<Property> properties = prepareProperties(message);
+        InternalMessage iMessage = {
+            payload,
+            correlationId: message.correlationId,
+            replyTo: message.replyTo,
+            properties,
+            messageId: message.messageId,
+            timestamp: message.timestamp,
+            destination: message.destination,
+            deliveryMode: message.deliveryMode,
+            redelivered: message.redelivered,
+            jmsType: message.jmsType,
+            expiration: message.expiration,
+            priority: message.priority
+        };
+        return self.externSend(iMessage);
+    }
+
+    isolated function externSend(InternalMessage message) returns Error? = @java:Method {
         name: "send",
         'class: "io.ballerina.lib.solace.producer.Actions"
     } external;
@@ -91,4 +111,37 @@ public isolated client class MessageProducer {
     isolated remote function close() returns Error? = @java:Method {
         'class: "io.ballerina.lib.solace.producer.Actions"
     } external;
+}
+
+isolated function convertPayload(anydata payload) returns string|map<Value>|byte[] {
+    if payload is string {
+        return payload;
+    } else if payload is map<Value> {
+        return payload;
+    } else if payload is byte[] {
+        return payload;
+    } else if payload is xml {
+        return payload.toString();
+    } else if payload is int|boolean|float|decimal {
+        return payload.toString().toBytes();
+    } else {
+        return payload.toJsonString().toBytes();
+    }
+}
+
+isolated function prepareProperties(Message message) returns map<Property> {
+    map<Property> properties = {};
+    if message.properties is map<Property> {
+        properties = (<map<Property>>message.properties).clone();
+    }
+    if message.payload is xml {
+        if !properties.hasKey(SOLACE_JMS_PROP_ISXML) {
+            properties[SOLACE_JMS_PROP_ISXML] = true;
+        }
+    } else {
+        if !properties.hasKey(SOLACE_JMS_PROP_ISXML) {
+            properties[SOLACE_JMS_PROP_ISXML] = false;
+        }
+    }
+    return properties;
 }

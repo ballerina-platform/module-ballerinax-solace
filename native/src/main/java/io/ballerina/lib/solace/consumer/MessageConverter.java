@@ -18,21 +18,31 @@
 
 package io.ballerina.lib.solace.consumer;
 
+import com.solacesystems.jms.SupportedProperty;
+import io.ballerina.lib.solace.BallerinaSolaceDatabindingException;
 import io.ballerina.lib.solace.BallerinaSolaceException;
 import io.ballerina.lib.solace.ModuleUtils;
 import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.types.ArrayType;
+import io.ballerina.runtime.api.types.IntersectionType;
 import io.ballerina.runtime.api.types.MapType;
 import io.ballerina.runtime.api.types.PredefinedTypes;
+import io.ballerina.runtime.api.types.RecordType;
 import io.ballerina.runtime.api.types.Type;
+import io.ballerina.runtime.api.types.TypeTags;
 import io.ballerina.runtime.api.types.UnionType;
+import io.ballerina.runtime.api.utils.JsonUtils;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.utils.TypeUtils;
 import io.ballerina.runtime.api.utils.ValueUtils;
+import io.ballerina.runtime.api.utils.XmlUtils;
+import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
+import io.ballerina.runtime.api.values.BTypedesc;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.Iterator;
 
@@ -84,17 +94,11 @@ public final class MessageConverter {
     private MessageConverter() {
     }
 
-    /**
-     * Converts JMS message to Ballerina message.
-     *
-     * @param jmsMessage JMS message
-     * @return Ballerina message map
-     * @throws JMSException if message conversion fails
-     */
-    public static BMap<BString, Object> toBallerinaMessage(Message jmsMessage)
+    public static BMap<BString, Object> toBallerinaMessage(Message jmsMessage, BTypedesc expectedType)
             throws JMSException, BallerinaSolaceException {
-        BMap<BString, Object> ballerinaMessage = ValueCreator.createRecordValue(ModuleUtils.getModule(),
-                MESSAGE_RECORD_NAME);
+        RecordType messageType = getRecordType(expectedType);
+        RecordType recordType = getRecordType(messageType);
+        BMap<BString, Object> ballerinaMessage = ValueCreator.createRecordValue(recordType);
 
         // Store the native JMS message for later acknowledgement
         ballerinaMessage.addNativeData(NATIVE_MESSAGE, jmsMessage);
@@ -151,7 +155,7 @@ public final class MessageConverter {
         }
 
         // Set message payload based on message type
-        Object payload = extractPayload(jmsMessage);
+        Object payload = getPayloadWithIntendedTypeForBMessage(jmsMessage, recordType);
         ballerinaMessage.put(PAYLOAD, payload);
 
         return ballerinaMessage;
@@ -167,8 +171,7 @@ public final class MessageConverter {
         return destMap;
     }
 
-    private static BMap<BString, Object> extractProperties(Message message)
-            throws JMSException, BallerinaSolaceException {
+    private static BMap<BString, Object> extractProperties(Message message) throws JMSException {
         BMap<BString, Object> messageProperties = ValueCreator.createMapValue(BALLERINA_MSG_PROPERTY_TYPE);
         Enumeration<String> propertyNames = message.getPropertyNames();
         Iterator<String> iterator = propertyNames.asIterator();
@@ -180,31 +183,150 @@ public final class MessageConverter {
         return messageProperties;
     }
 
-    private static Object extractPayload(Message message) throws JMSException, BallerinaSolaceException {
-        if (message instanceof TextMessage textMessage) {
-            String text = textMessage.getText();
-            return text != null ? StringUtils.fromString(text) : StringUtils.fromString("");
-        } else if (message instanceof BytesMessage bytesMessage) {
-            long bodyLength = bytesMessage.getBodyLength();
-            byte[] bytes = new byte[(int) bodyLength];
-            bytesMessage.readBytes(bytes);
-            return ValueCreator.createArrayValue(bytes);
-        } else if (message instanceof MapMessage mapMessage) {
-            BMap<BString, Object> payload = ValueCreator.createMapValue(BALLERINA_MAP_MSG_TYPE);
-            Enumeration<String> mapNames = mapMessage.getMapNames();
-            Iterator<String> iterator = mapNames.asIterator();
-            while (iterator.hasNext()) {
-                String key = iterator.next();
-                Object value = mapMessage.getObject(key);
-                payload.put(StringUtils.fromString(key), getMapValue(value));
-            }
-            return payload;
-        }
-        throw new BallerinaSolaceException(
-                String.format("Unsupported message type: %s", message.getClass().getTypeName()));
+    private static Object getPayloadWithIntendedTypeForBMessage(Message jmsMessage, RecordType recordType)
+            throws JMSException {
+        Type intendedType = TypeUtils.getReferredType(recordType.getFields().get(PAYLOAD.getValue()).getFieldType());
+        return getPayloadWithIntendedType(jmsMessage, intendedType);
     }
 
-    private static Object getMapValue(Object value) throws BallerinaSolaceException {
+    private static Object getPayloadWithIntendedType(Message jmsMessage, Type payloadType)
+            throws JMSException, BallerinaSolaceDatabindingException {
+        int typeTag = payloadType.getTag();
+        try {
+            if (jmsMessage instanceof TextMessage textMessage) {
+                return getPayloadFromTextMessage(textMessage, payloadType, typeTag);
+            }
+            if (jmsMessage instanceof MapMessage mapMessage) {
+                return getPayloadFromMapMessage(mapMessage, payloadType, typeTag);
+            }
+            if (jmsMessage instanceof BytesMessage bytesMessage) {
+                return getPayloadFromBytesMessage(bytesMessage, payloadType, typeTag);
+            }
+        } catch (BError bError) {
+            StringBuilder errorMsg = new StringBuilder("Data binding failed: ").append(bError.getDetails());
+            throw new BallerinaSolaceDatabindingException(errorMsg.toString());
+        }
+        throw new BallerinaSolaceDatabindingException(
+                String.format("Data binding failed: Unsupported message type '%s'",
+                        jmsMessage.getClass().getSimpleName()));
+    }
+
+    private static Object getPayloadFromTextMessage(TextMessage message, Type payloadType, int typeTag)
+            throws JMSException, BallerinaSolaceDatabindingException {
+        if (typeTag == TypeTags.ANYDATA_TAG) {
+            if (message.propertyExists(SupportedProperty.SOLACE_JMS_PROP_ISXML) &&
+                    message.getBooleanProperty(SupportedProperty.SOLACE_JMS_PROP_ISXML)) {
+                return XmlUtils.parse(message.getText());
+            }
+            return StringUtils.fromString(message.getText());
+        }
+
+        if (typeTag != TypeTags.STRING_TAG && typeTag != TypeTags.XML_TAG) {
+            throw new BallerinaSolaceDatabindingException(
+                    String.format("Data binding failed: Cannot bind TextMessage to type '%s'. " +
+                            "Expected 'string' or 'xml'", payloadType));
+        }
+
+        if (typeTag == TypeTags.XML_TAG) {
+            if (!message.propertyExists(SupportedProperty.SOLACE_JMS_PROP_ISXML) ||
+                    !message.getBooleanProperty(SupportedProperty.SOLACE_JMS_PROP_ISXML)) {
+                throw new BallerinaSolaceDatabindingException(
+                        "Data binding failed: Cannot bind TextMessage to 'xml' type. " +
+                                "Message is missing XML marker property (JMS_Solace_isXML=true)");
+            }
+            return XmlUtils.parse(message.getText());
+        }
+
+        return StringUtils.fromString(message.getText());
+    }
+
+    private static Object getPayloadFromMapMessage(MapMessage message, Type payloadType, int typeTag)
+            throws JMSException, BallerinaSolaceDatabindingException {
+        if (!TypeUtils.isSameType(payloadType, BALLERINA_MAP_MSG_TYPE) && typeTag != TypeTags.ANYDATA_TAG
+                && typeTag != TypeTags.RECORD_TYPE_TAG) {
+            throw new BallerinaSolaceDatabindingException(
+                    String.format("Data binding failed: Cannot bind MapMessage to type '%s'. " +
+                            "Expected 'map<solace:Value>'", payloadType));
+        }
+
+        BMap<BString, Object> payload = ValueCreator.createMapValue(BALLERINA_MAP_MSG_TYPE);
+        Enumeration<String> mapNames = message.getMapNames();
+        Iterator<String> iterator = mapNames.asIterator();
+        while (iterator.hasNext()) {
+            String key = iterator.next();
+            Object value = message.getObject(key);
+            payload.put(StringUtils.fromString(key), getMapValue(value));
+        }
+        if (typeTag == TypeTags.RECORD_TYPE_TAG) {
+            return ValueUtils.convert(payload, payloadType);
+        }
+        return payload;
+    }
+
+    private static Object getPayloadFromBytesMessage(BytesMessage message, Type payloadType, int typeTag)
+            throws JMSException, BallerinaSolaceDatabindingException {
+        // Validate that string/xml types are not used with BytesMessage
+        if (typeTag == TypeTags.STRING_TAG || typeTag == TypeTags.XML_TAG) {
+            throw new BallerinaSolaceDatabindingException(
+                    String.format("Data binding failed: Cannot bind BytesMessage to type '%s'. " +
+                            "Use TextMessage for string/xml payloads", payloadType));
+        }
+
+        // Validate that map<Value> type is not used with BytesMessage
+        if (TypeUtils.isSameType(payloadType, BALLERINA_MAP_MSG_TYPE)) {
+            throw new BallerinaSolaceDatabindingException(
+                    String.format("Data binding failed: Cannot bind BytesMessage to type '%s'. " +
+                            "Use MapMessage for map payloads", payloadType));
+        }
+
+        long bodyLength = message.getBodyLength();
+        byte[] bytes = new byte[(int) bodyLength];
+        message.readBytes(bytes);
+
+        // Handle byte array types directly
+        if (typeTag == TypeTags.ANYDATA_TAG) {
+            return ValueCreator.createArrayValue(bytes);
+        }
+
+        if (typeTag == TypeTags.ARRAY_TAG) {
+            Type elementType = TypeUtils.getReferredType(((ArrayType) payloadType).getElementType());
+            if (elementType.getTag() == TypeTags.BYTE_TAG) {
+                return ValueCreator.createArrayValue(bytes);
+            }
+        }
+
+        // For other types, convert bytes to JSON string and parse
+        String jsonString = new String(bytes, StandardCharsets.UTF_8);
+
+        switch (typeTag) {
+            case TypeTags.ARRAY_TAG:
+            default:
+                return getValueFromJson(payloadType, jsonString);
+        }
+    }
+
+    public static RecordType getRecordType(BTypedesc bTypedesc) {
+        RecordType recordType;
+        if (bTypedesc.getDescribingType().isReadOnly()) {
+            recordType = (RecordType) ((IntersectionType) (bTypedesc.getDescribingType())).getConstituentTypes().get(0);
+        } else {
+            recordType = (RecordType) bTypedesc.getDescribingType();
+        }
+        return recordType;
+    }
+
+    public static RecordType getRecordType(Type type) {
+        if (type.getTag() == TypeTags.INTERSECTION_TAG) {
+            return (RecordType) TypeUtils.getReferredType(((IntersectionType) (type)).getConstituentTypes().get(0));
+        }
+        return (RecordType) type;
+    }
+
+    private static Object getValueFromJson(Type type, String stringValue) {
+        return ValueUtils.convert(JsonUtils.parse(stringValue), type);
+    }
+
+    private static Object getMapValue(Object value) throws BallerinaSolaceDatabindingException {
         if (isPrimitive(value)) {
             Type type = TypeUtils.getType(value);
             return ValueUtils.convert(value, type);
@@ -215,8 +337,9 @@ public final class MessageConverter {
         if (value instanceof byte[]) {
             return ValueCreator.createArrayValue((byte[]) value);
         }
-        throw new BallerinaSolaceException(
-                String.format("Unidentified map value type: %s", value.getClass().getTypeName()));
+        throw new BallerinaSolaceDatabindingException(
+                String.format("Data binding failed: Unsupported map value type '%s'",
+                        value.getClass().getSimpleName()));
     }
 
     private static boolean isPrimitive(Object value) {
