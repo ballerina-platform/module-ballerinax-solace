@@ -123,6 +123,12 @@ path = "./lib/netty-transport-native-epoll-@netty.version@-linux-aarch_64.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
+artifactId = "netty-transport-native-unix-common"
+version = "@netty.version@"
+path = "./lib/netty-transport-native-unix-common-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
 artifactId = "netty-transport-native-kqueue"
 version = "@netty.version@"
 path = "./lib/netty-transport-native-kqueue-@netty.version@.jar"
