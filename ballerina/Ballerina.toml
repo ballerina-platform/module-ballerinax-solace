@@ -15,8 +15,8 @@ graalvmCompatible = true
 [[platform.java21.dependency]]
 groupId = "io.ballerina.lib"
 artifactId = "solace-native"
-version = "0.3.0-SNAPSHOT"
-path = "../native/build/libs/solace-native-0.3.0-SNAPSHOT.jar"
+version = "0.3.0"
+path = "../native/build/libs/solace-native-0.3.0.jar"
 
 [[platform.java21.dependency]]
 groupId = "javax.jms"
