@@ -30,7 +30,9 @@ import io.ballerina.runtime.api.creators.ErrorCreator;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BError;
 
+import java.util.Arrays;
 import java.util.Hashtable;
+import java.util.Objects;
 
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
@@ -255,5 +257,42 @@ public final class CommonUtils {
                 }
             }
         };
+    }
+
+    /**
+     * Converts an array of Objects to an array of Strings.
+     *
+     * @param objectArray array of Objects
+     * @return array of Strings
+     */
+    public static String[] convertToStringArray(Object[] objectArray) {
+        if (Objects.isNull(objectArray)) {
+            return new String[]{};
+        }
+        return Arrays.stream(objectArray)
+                .filter(Objects::nonNull)
+                .map(Object::toString)
+                .toArray(String[]::new);
+    }
+
+    /**
+     * Maps protocol names from Ballerina constants to Solace JMS expected values.
+     *
+     * @param protocols array of protocol names
+     * @return mapped array of protocol names
+     */
+    public static String[] mapProtocols(String[] protocols) {
+        if (protocols == null || protocols.length == 0) {
+            return new String[]{};
+        }
+        return Arrays.stream(protocols).map(protocol -> {
+            return switch (protocol) {
+                case "sslv3" -> "SSLv3";
+                case "tlsv1" -> "TLSv1";
+                case "tlsv11" -> "TLSv1.1";
+                case "tlsv12" -> "TLSv1.2";
+                default -> throw new IllegalArgumentException("Unsupported protocol: " + protocol);
+            };
+        }).toArray(String[]::new);
     }
 }

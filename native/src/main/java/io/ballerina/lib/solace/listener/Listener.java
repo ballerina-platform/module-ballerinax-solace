@@ -67,7 +67,7 @@ public class Listener {
             bListener.addNativeData(NATIVE_CONNECTION, connection);
             bListener.addNativeData(NATIVE_SERVICE_LIST, new ArrayList<BObject>());
         } catch (Exception e) {
-            return CommonUtils.createError("Failed to initialize listener", e);
+            return CommonUtils.createError(String.format("Failed to initialize listener: %s", e.getMessage()), e);
         }
         return null;
     }
