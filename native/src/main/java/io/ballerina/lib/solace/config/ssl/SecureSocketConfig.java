@@ -18,6 +18,7 @@
 
 package io.ballerina.lib.solace.config.ssl;
 
+import io.ballerina.lib.solace.CommonUtils;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
@@ -64,11 +65,14 @@ public record SecureSocketConfig(
                 config.containsKey(KEY_STORE) ?
                         new KeyStoreConfig((BMap<BString, Object>) config.getMapValue(KEY_STORE)) : null,
                 config.containsKey(PROTOCOLS) ?
-                        List.of(config.getArrayValue(PROTOCOLS).getStringArray()) : null,
+                        List.of(CommonUtils.mapProtocols(CommonUtils.convertToStringArray(
+                                config.getArrayValue(PROTOCOLS).getValues()))) : null,
                 config.containsKey(CIPHER_SUITES) ?
-                        List.of(config.getArrayValue(CIPHER_SUITES).getStringArray()) : null,
+                        List.of(CommonUtils.convertToStringArray(
+                                config.getArrayValue(CIPHER_SUITES).getValues())) : null,
                 config.containsKey(TRUSTED_COMMON_NAMES) ?
-                        List.of(config.getArrayValue(TRUSTED_COMMON_NAMES).getStringArray()) : null
+                        List.of(CommonUtils.convertToStringArray(
+                                config.getArrayValue(TRUSTED_COMMON_NAMES).getValues())) : null
         );
     }
 }
