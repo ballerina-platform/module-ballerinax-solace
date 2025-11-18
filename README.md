@@ -1,4 +1,4 @@
-# Ballerina AWS Marketplace Metering connector
+# Ballerina Solace (JMS) connector
 
 [![Build](https://github.com/ballerina-platform/module-ballerinax-solace/actions/workflows/ci.yml/badge.svg)](https://github.com/ballerina-platform/module-ballerinax-solace/actions/workflows/ci.yml)
 [![Trivy](https://github.com/ballerina-platform/module-ballerinax-solace/actions/workflows/trivy-scan.yml/badge.svg)](https://github.com/ballerina-platform/module-ballerinax-solace/actions/workflows/trivy-scan.yml)
