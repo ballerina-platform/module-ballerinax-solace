@@ -14,7 +14,7 @@ functionality to send and receive messages by connecting to a Solace Event Broke
 The `solace` library specification has evolved and may continue to evolve in the future. The released versions of the
 specification can be found under the relevant GitHub tag.
 
-If you have any feedback or suggestions about the library, start a discussion via a GitHub issue or in the Discord server. Based on the outcome of the discussion, the specification and implementation can be updated. Community feedback is always welcome. If you have any proposals, you can submit a pull request to the [ballerina-spec](https://github.com/ballerina-platform/ballerina-spec) repository under the `/beps/con-solace` directory. You can also start the corresponding discussion by opening an [issue](https://github.com/ballerina-platform/ballerina-spec/issues) in the same repository.
+If you have any feedback or suggestions, you can submit a proposal as a pull request to the [ballerina-spec](https://github.com/ballerina-platform/ballerina-spec) repository under the `/beps/con-solace` directory. You can also initiate the related discussion by opening an [issue](https://github.com/ballerina-platform/ballerina-spec/issues) in the same repository. Once the proposal is reviewed and accepted, the corresponding pull request will be merged into the `ballerina-spec` repository.
 
 The conforming implementation of the specification is released to Ballerina Central. Any deviation from the specification is considered a bug.
 
