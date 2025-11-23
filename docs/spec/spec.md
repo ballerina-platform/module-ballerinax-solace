@@ -581,127 +581,216 @@ isolated remote function close() returns Error?;
 
 ## 6. Listener
 
-The `solace:MessageConsumer` is used to receive messages from a Solace destination.
+The `solace:Listener` enables applications to receive messages asynchronously from a Solace event broker.
 
 ### 6.1 Configurations
+
+- `ListenerConfiguration` record represents the listener configuration for Ballerina Solace listener.
+
+```ballerina
+public type ListenerConfiguration record {|
+    *CommonConnectionConfiguration;
+|};
+```
+
 ### 6.2. Initialization
+
+- The `solace:Listener` can be initialized by providing the broker URL and the `solace:ListenerConfiguration`.
+
+```ballerina
+# Initializes a new Solace message listener with the given broker URL and configuration.
+# ```
+# listener solace:Listener messageListener = check new (
+#     url = "smf://localhost:55554",
+#     messageVpn = "default",
+#     auth = {
+#         username: "admin",
+#         password: "admin"
+#     }
+# );
+# ```
+#
+# + url - The Solace broker URL in the format `<scheme>://[username]:[password]@<host>[:port]`.
+# Supported schemes are `smf` (plain-text) and `smfs` (TLS/SSL).
+# Multiple hosts can be specified as a comma-separated list for failover support.
+# Default ports: 55555 (standard), 55003 (compression), 55443 (SSL)
+# + config - configurations used when initializing the listener
+# + return - `solace:Error` if an error occurs or `()` otherwise
+public isolated function init(string url, *ListenerConfiguration config) returns Error?;
+```
+
 ### 6.3. Functions
 
-### 3.3. `solace:Caller`
+- To attach a service to the listener, use the `attach` function.
+```ballerina
+# Attaches a Solace service to the listener.
+# ```
+# check messageListener.attach(solaceSvc);
+# ```
+#
+# + 'service - service instance
+# + name - service name
+# + return - `solace:Error` if an error occurs or `()` otherwise
+public isolated function attach(Service 'service, string[]|string? name = ()) returns Error?;
+```
+
+- To detach a service from the listener, use the `detach` function.
+```ballerina
+# Detaches a Solace service from the listener.
+# ```
+# check messageListener.detach(solaceSvc);
+# ```
+#
+# + 'service - service instance
+# + return - `solace:Error` if an error occurs or `()` otherwise
+public isolated function detach(Service 'service) returns Error?;
+```
+
+- To start the listener, use the `'start` function.
+```ballerina
+# Starts the listener.
+# ```
+# check messageListener.'start();
+# ```
+#
+# + return - `solace:Error` if an error occurs or `()` otherwise
+public isolated function 'start() returns Error?;
+```
+
+- To stop the listener gracefully, use the `gracefulStop` function.
+```ballerina
+# Gracefully stops the listener.
+# ```
+# check messageListener.gracefulStop();
+# ```
+#
+# + return - `solace:Error` if an error occurs or `()` otherwise
+public isolated function gracefulStop() returns Error?;
+```
+
+- To stop the listener immediately, use the `immediateStop` function.
+```ballerina
+# Immediately stops the listener.
+# ```
+# check messageListener.immediateStop();
+# ```
+#
+# + return - `solace:Error` if an error occurs or `()` otherwise
+public isolated function immediateStop() returns Error?;
+```
+
+### 6.4. Service
+
+A Solace service in Ballerina is used to receive messages from a Solace. It is attached to a `solace:Listener` and bound to a specific Solace destination, which can be either a **queue** or a **topic**.
+
+#### 6.4.1. Configuration
+
+- `ServiceConfig` defines the configurations for the service.
+```ballerina
+public annotation ServiceConfiguration ServiceConfig on service;
+```
+
+- `ServiceConfiguration` type defines the service configuration types for a Solace service.
+```ballerina
+public type ServiceConfiguration QueueServiceConfig|TopicServiceConfig;
+```
+
+- `QueueServiceConfig` record represents configurations for a service configurations related to solace queue subscription.
+```ballerina
+public type QueueServiceConfig record {|
+    *CommonServiceConfig;
+    # The name of the queue to consume messages from
+    string queueName;
+|};
+```
+
+- `TopicServiceConfig` record represents configurations for a service configurations related to solace topic subscription.
+```ballerina
+public type TopicServiceConfig record {|
+    *CommonServiceConfig;
+    # The name of the topic to subscribe to
+    string topicName;
+    # The message consumer type
+    ConsumerType consumerType = DEFAULT;
+    # The name used to identify the subscription
+    string subscriberName?;
+    # If true then any messages published to the topic using this session's connection, or any other connection
+    # with the same client identifier, will not be added to the durable subscription.
+    boolean noLocal = false;
+|};
+```
+
+#### 6.4.2. Functions
+
+- To receive messages from a Solace destination, use the `onMessage` function.
+```ballerina
+# Invoked when a message is received at a subscribed Solace destination.
+#
+# + message - Received Solace message
+# + caller - Optional `solace:Caller` to control transactions and message acknowledgement
+# + return - A `error` if there is an error during message processing or else `()`
+remote function onMessage(solace:Message message, solace:Caller caller) returns error?;
+```
+
+- To handle runtime errors that occur while dispatching a message to the `onMessage` function, use the `onError` function. `onError` is an optional API, if the user does not define a `onError` function on the `solace:Service` the identified error will be logged into the console.
+```ballerina
+# Invoked when a runtime error occurs during message while dispatching a message to the `onMessage` method.
+#
+# + err - The `solace:Error` containing details of the error encountered
+# + return - A `error` if an error occurs while handling the error, or else `()`
+remote function onError(solace:Error err) returns error?;
+```
+
+### 6.5. Caller
 
 The `solace:Caller` is used inside a `solace:Service` to acknowledge a message or to handle transactions.
 
-#### 3.3.1. Remote Functions
+#### 6.5.1. Functions
 
-- **`acknowledge(solace:Message message)`**: Acknowledges a message.
-  - **`message`** (`solace:Message`): The message to acknowledge.
-  - **Returns**: `solace:Error?`
-
-- **`commit()`**: Commits the current transaction.
-  - **Returns**: `solace:Error?`
-
-- **`rollback()`**: Rolls back the current transaction.
-  - **Returns**: `solace:Error?`
-
-## 4. Listener Endpoint
-
-The `solace:Listener` is used to receive messages from a Solace destination and dispatch them to a service.
-
-### 4.1. Initialization
-
-The listener is initialized with the broker URL and a `ListenerConfiguration` record.
-
+- To mark a Solace message as received, use the `acknowledge` function.
 ```ballerina
-listener solace:Listener messageListener = check new (
-    url = "smf://localhost:55554",
-    messageVpn = "default",
-    auth = {
-        username: "admin",
-        password: "admin"
-    }
-);
+# Mark a Solace message as received.
+# ```
+# check caller->acknowledge(message);
+# ```
+#
+# + message - Solace message record
+# + return - `solace:Error` if there is an error in the execution or else '()'
+isolated remote function acknowledge(solace:Message message) returns Error?;
 ```
 
-- **`url`** (string): The Solace broker URL.
-- **`config`** (`ListenerConfiguration`): The configuration for the listener.
+- To commit all the messages received in this transaction and release any locks currently held, use the `commit` function.
+```ballerina
+# Commits all messages received in this transaction and releases any locks currently held.
+# ```
+# check caller->'commit();
+# ```
+#
+# + return - A `solace:Error` if there is an error or else `()`
+isolated remote function 'commit() returns Error?;
+```
 
-### 4.2. Service
+- To rollback all the messages received in this transaction and release any locks currently held, use the `rollback` function.
+```ballerina
+# Rolls back any messages received in this transaction and releases any locks currently held.
+# ```
+# check caller->'rollback();
+# ```
+#
+# + return - A `solace:Error` if there is an error or else `()`
+isolated remote function 'rollback() returns Error?;
+```
 
-A service can be attached to the listener to process incoming messages.
+### 6.6. Usage
 
+After initializing the `solace:Listener` a `solace:Service` must be attached to it.
 ```ballerina
 @solace:ServiceConfig {
-    queueName: "MyQueue"
+   queueName: "MyQueue"
 }
-service solace:Service on messageListener {
+service on messageListener {
     remote function onMessage(solace:Message message, solace:Caller caller) returns error? {
-        // Process message
+        // process results
     }
 }
 ```
-
-The `solace:ServiceConfig` annotation is used to configure the service.
-
-## 5. Data Types
-
-### 5.1. `solace:Message`
-
-Represents a Solace message.
-
-| Field           | Type                     | Description                               |
-|-----------------|--------------------------|-------------------------------------------|
-| `payload`       | `anydata`                | The message payload.                      |
-| `correlationId` | `string?`                | The correlation ID for the message.       |
-| `replyTo`       | `solace:Destination?`    | The destination for replies.              |
-| `properties`    | `map<solace:Property>?`  | Custom message properties.                |
-| `messageId`     | `string?`                | The message ID.                           |
-| `timestamp`     | `int?`                   | The message timestamp.                    |
-| `destination`   | `solace:Destination?`    | The destination of the message.           |
-| `deliveryMode`  | `int?`                   | The delivery mode.                        |
-| `redelivered`   | `boolean?`               | Whether the message is redelivered.       |
-| `jmsType`       | `string?`                | The JMS message type.                     |
-| `expiration`    | `int?`                   | The message expiration time.              |
-| `priority`      | `int?`                   | The message priority.                     |
-
-### 5.2. `solace:Destination`
-
-Represents a message destination, which can be a `solace:Topic` or a `solace:Queue`.
-
-- **`solace:Topic`**: `record {| string topicName; |}`
-- **`solace:Queue`**: `record {| string queueName; |}`
-
-### 5.3. Configurations
-
-The connector uses several record types for configuration:
-
-- `ProducerConfiguration`
-- `ConsumerConfiguration`
-- `ListenerConfiguration`
-- `CommonConnectionConfiguration`
-- `BasicAuthConfig`
-- `KerberosConfig`
-- `OAuth2Config`
-- `RetryConfig`
-- `SecureSocket`
-- `TrustStore`
-- `KeyStore`
-- `QueueConfig`
-- `TopicConfig`
-- `QueueServiceConfig`
-- `TopicServiceConfig`
-- `CommonSubscriptionConfig`
-- `CommonServiceConfig`
-
-### 5.4. Enums
-
-- **`AcknowledgementMode`**: `SESSION_TRANSACTED`, `AUTO_ACKNOWLEDGE`, `CLIENT_ACKNOWLEDGE`, `DUPS_OK_ACKNOWLEDGE`
-- **`ConsumerType`**: `DURABLE`, `DEFAULT`
-- **`Protocol`**: `SSLv30`, `TLSv10`, `TLSv11`, `TLSv12`
-- **`SslCipherSuite`**: Various cipher suites.
-- **`SslStoreFormat`**: `JKS`, `PKCS12`
-
-## 6. Error Handling
-
-The connector functions return a `solace:Error` on failure. This is a distinct error type that provides details about the error that occurred.
-
-This specification provides a high-level overview of the Ballerina Solace connector. For more detailed information, please refer to the connector's API documentation.
