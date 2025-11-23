@@ -24,7 +24,7 @@ The conforming implementation of the specification is released to Ballerina Cent
 ## Contents
 
 1. [Overview](#1-overview)
-2. [Common configurations](#2-common-configurations)
+2. [Common configuration](#2-common-configuration)
 3. [Message](#3-message)
 4. [Message producer](#4-message-producer)
     * 4.1. [Configurations](#41-configurations)
@@ -56,7 +56,7 @@ Ballerina `solace` provides several core APIs:
 - **`solace:Listener`**: An endpoint that allows a Ballerina service to receive messages from a Solace queue or topic.
 - **`solace:Caller`**: A client used within a service to acknowledge messages or manage transactions.
 
-## 2. Common configurations
+## 2. Common configuration
 
 - `CommonConnectionConfiguration` record represents the common configurations needed for connecting with the Solace event broker.
 ```ballerina
