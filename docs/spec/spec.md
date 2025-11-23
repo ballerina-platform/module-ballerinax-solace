@@ -236,6 +236,54 @@ public type RetryConfig record {|
 |};
 ```
 
+- `CommonSubscriptionConfig` record represents the common configurations related to the Solace queue or topic subscription.
+
+```ballerina
+type CommonSubscriptionConfig record {|
+    # Configuration indicating how messages received by the session will be acknowledged
+    AcknowledgementMode sessionAckMode = AUTO_ACKNOWLEDGE;
+    # Only messages with properties matching the message selector expression are delivered. 
+    # If this value is not set that indicates that there is no message selector for the message consumer
+    # For example, to only receive messages with a property `priority` set to `'high'`, use:
+    # `"priority = 'high'"`. If this value is not set, all messages in the queue will be delivered.
+    string messageSelector?;
+|};
+```
+
+- `AcknowledgementMode` enum defines the JMS session acknowledgement modes. 
+
+```ballerina
+public enum AcknowledgementMode {
+    # Indicates that the session will use a local transaction which may subsequently 
+    # be committed or rolled back by calling the session's `commit` or `rollback` methods. 
+    SESSION_TRANSACTED = "SESSION_TRANSACTED",
+    # Indicates that the session automatically acknowledges a client's receipt of a message 
+    # either when the session has successfully returned from a call to `receive` or when 
+    # the message listener the session has called to process the message successfully returns.
+    AUTO_ACKNOWLEDGE = "AUTO_ACKNOWLEDGE",
+    # Indicates that the client acknowledges a consumed message by calling the 
+    # MessageConsumer's or Caller's `acknowledge` method. Acknowledging a consumed message 
+    # acknowledges all messages that the session has consumed.
+    CLIENT_ACKNOWLEDGE = "CLIENT_ACKNOWLEDGE",
+    # Indicates that the session to lazily acknowledge the delivery of messages. 
+    # This is likely to result in the delivery of some duplicate messages if the JMS provider fails, 
+    # so it should only be used by consumers that can tolerate duplicate messages. 
+    # Use of this mode can reduce session overhead by minimizing the work the session does to prevent duplicates.
+    DUPS_OK_ACKNOWLEDGE = "DUPS_OK_ACKNOWLEDGE"
+}
+```
+
+- `ConsumerType` enum defines the supported JMS message consumer types. 
+
+```ballerina
+public enum ConsumerType {
+    # Represents JMS durable subscriber
+    DURABLE = "DURABLE",
+    # Represents JMS default consumer
+    DEFAULT = "DEFAULT"
+}
+```
+
 ## 3. Message
 
 An Solace message is a fundamental unit of data that facilitates communication between applications and the Solace event broker. It encompasses not only the actual data payload but also includes metadata in the form of headers and customizable properties. This comprehensive structure enables reliable, secure, and flexible data transfer in distributed and enterprise environments.
@@ -388,80 +436,156 @@ isolated remote function close() returns Error?;
 
 ## 5. MessageConsumer
 
-#### 3.1.1. Initialization
+The `solace:MessageConsumer` is used to receive messages from a Solace destination.
 
-The producer is initialized with the broker URL and a `ProducerConfiguration` record.
+### 5.1 Configurations
+
+- `ConsumerConfiguration` record represents the configuration for a Solace message consumer.
 
 ```ballerina
-solace:MessageProducer producer = check new (brokerUrl, {
-    destination: {topicName: "MyTopic"},
-    auth: {
-        username: "myuser",
-        password: "mypassword"
-    }
-});
+public type ConsumerConfiguration record {|
+    *CommonConnectionConfiguration;
+    # The subscription configuration specifying either a queue or topic to consume messages from
+    QueueConfig|TopicConfig subscriptionConfig;
+|};
 ```
 
-- **`url`** (string): The Solace broker URL.
-- **`config`** (`ProducerConfiguration`): The configuration for the producer.
+- `QueueConfig` record represents configurations for a Solace queue subscription.
 
-#### 3.1.2. Remote Functions
+```ballerina
+public type QueueConfig record {|
+    *CommonSubscriptionConfig;
+    # The name of the queue to consume messages from
+    string queueName;
+|};
+```
 
-- **`send(solace:Message message)`**: Sends a message to the configured destination.
-  - **`message`** (`solace:Message`): The message to be sent.
-  - **Returns**: `solace:Error?`
+- `TopicConfig` record represents configurations for Solace topic subscription.
 
-- **`commit()`**: Commits the current transaction.
-  - **Returns**: `solace:Error?`
+```ballerina
+public type TopicConfig record {|
+    *CommonSubscriptionConfig;
+    # The name of the topic to subscribe to
+    string topicName;
+    # The message consumer type
+    ConsumerType consumerType = DEFAULT;
+    # The name used to identify the subscription
+    string subscriberName?;
+    # If true then any messages published to the topic using this session's connection, or any other connection
+    # with the same client identifier, will not be added to the durable subscription.
+    boolean noLocal = false;
+|};
+```
 
-- **`rollback()`**: Rolls back the current transaction.
-  - **Returns**: `solace:Error?`
+### 5.2. Initialization
 
-- **`close()`**: Closes the producer.
-  - **Returns**: `solace:Error?`
+- The `solace:MessageConsumer` can be initialized by providing the broker URL and the `solace:ConsumerConfiguration`.
 
-### 3.2. `solace:MessageConsumer`
+```ballerina
+# Initializes a new Solace message consumer with the given broker URL and configuration.
+# ```
+# solace:MessageConsumer consumer = check new (brokerUrl, {
+#     subscriptionConfig: {queueName: "orders"}
+# });
+# ```
+#
+# + url - The Solace broker URL in the format `<scheme>://[username]:[password]@<host>[:port]`.
+# Supported schemes are `smf` (plain-text) and `smfs` (TLS/SSL).
+# Multiple hosts can be specified as a comma-separated list for failover support.
+# Default ports: 55555 (standard), 55003 (compression), 55443 (SSL)
+# + config - Consumer configuration including connection settings and subscription details
+# + return - A `solace:Error` if initialization fails or else `()`
+public isolated function init(string url, *ConsumerConfiguration config) returns Error?;
+```
+
+### 5.3. Functions
+
+- To receives the next message from the Solace broker, use the `receive` function.
+
+```ballerina
+# Receives the next message from the Solace broker, waiting up to the specified timeout.
+# ```
+# solace:Message? message = check consumer->receive(5.0);
+# ```
+#
+# + timeout - The maximum time to wait for a message in seconds. Default is 10.0 seconds
+# + T - Optional type description of the expected data type
+# + return - The received `Message`, `()` if no message is available within the timeout, or a `solace:Error` if there is an error
+isolated remote function receive(decimal timeout = 10.0, typedesc<Message> T = <>) returns T|Error?;
+```
+
+- To receives the next message from the Solace broker if one is immediately available, use the `receiveNoWait` function.
+
+```ballerina
+# Receives the next message from the Solace broker if one is immediately available, without waiting.
+# ```
+# solace:Message? message = check consumer->receiveNoWait();
+# ```
+# 
+# + T - Optional type description of the expected data type
+# + return - The received `Message` if immediately available, `()` if no message is available, or a `solace:Error` if there is an error
+isolated remote function receiveNoWait(typedesc<Message> T = <>) returns T|Error?;
+```
+
+- To acknowledges the specified message, use the `acknowledge` function.
+
+```ballerina
+# Acknowledges the specified message. This method should only be called when the consumer is configured
+# with `sessionAckMode: CLIENT_ACKNOWLEDGE`.
+# ```
+# check consumer->acknowledge(message);
+# ```
+#
+# + message - The message to acknowledge
+# + return - A `solace:Error` if there is an error or else `()`
+isolated remote function acknowledge(Message message) returns Error?;
+```
+
+- To commit all messages received in this transaction and releases any locks currently held, use the `commit` function.
+
+```ballerina
+# Commits all messages received in this transaction and releases any locks currently held.
+# This method should only be called when the consumer is configured with `sessionAckMode: SESSION_TRANSACTED`.
+# ```
+# check consumer->'commit();
+# ```
+#
+# + return - A `solace:Error` if there is an error or else `()`
+isolated remote function 'commit() returns Error?
+```
+
+- To roll back any messages received in this transaction and releases any locks currently held, use the `rollback` function.
+
+```ballerina
+# Rolls back any messages received in this transaction and releases any locks currently held.
+# This method should only be called when the consumer is configured with `sessionAckMode: SESSION_TRANSACTED`.
+# ```
+# check consumer->'rollback();
+# ```
+#
+# + return - A `solace:Error` if there is an error or else `()`
+isolated remote function 'rollback() returns Error?;
+```
+
+- To close the message consumer and release any underlying resource, use the `close` function.
+
+```ballerina
+# Closes the message consumer and releases all resources.
+# ```
+# check consumer->close();
+# ```
+#
+# + return - A `solace:Error` if there is an error or else `()`
+isolated remote function close() returns Error?;
+```
+
+## 6. Listener
 
 The `solace:MessageConsumer` is used to receive messages from a Solace destination.
 
-#### 3.2.1. Initialization
-
-The consumer is initialized with the broker URL and a `ConsumerConfiguration` record.
-
-```ballerina
-solace:MessageConsumer consumer = check new (brokerUrl, {
-    subscriptionConfig: {queueName: "MyQueue"},
-    auth: {
-        username: "myuser",
-        password: "mypassword"
-    }
-});
-```
-
-- **`url`** (string): The Solace broker URL.
-- **`config`** (`ConsumerConfiguration`): The configuration for the consumer.
-
-#### 3.2.2. Remote Functions
-
-- **`receive(decimal timeout = 10.0)`**: Receives a message, waiting for a specified timeout.
-  - **`timeout`** (decimal): The timeout in seconds.
-  - **Returns**: `solace:Message|solace:Error?`
-
-- **`receiveNoWait()`**: Receives a message without waiting.
-  - **Returns**: `solace:Message|solace:Error?`
-
-- **`acknowledge(solace:Message message)`**: Acknowledges a message.
-  - **`message`** (`solace:Message`): The message to acknowledge.
-  - **Returns**: `solace:Error?`
-
-- **`commit()`**: Commits the current transaction.
-  - **Returns**: `solace:Error?`
-
-- **`rollback()`**: Rolls back the current transaction.
-  - **Returns**: `solace:Error?`
-
-- **`close()`**: Closes the consumer.
-  - **Returns**: `solace:Error?`
+### 6.1 Configurations
+### 6.2. Initialization
+### 6.3. Functions
 
 ### 3.3. `solace:Caller`
 
