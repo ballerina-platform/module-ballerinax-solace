@@ -21,30 +21,29 @@ under discussion can be found with the label `type/proposal` in Github.
 
 The conforming implementation of the specification is released to Ballerina Central. Any deviation from the specification is considered a bug.
 
-// todo: update this section properly
-
 ## Contents
 
 1. [Overview](#1-overview)
-2. [Queue Manager](#2-queue-manager)
-    * 2.1. [Configurations](#21-configurations)
-    * 2.2. [Initialization](#22-initialization)
-    * 2.3. [Functions](#23-functions)
+2. [Common configurations](#2-common-configurations)
 3. [Message](#3-message)
-4. [Client Options](#4-client-options)
-5. [Queue](#5-queue)
-    * 5.1. [Functions](#51-functions)
-6. [Topic](#6-topic)
-    * 6.1. [Functions](#61-functions)
-7. [Message listener](#7-message-listener)
-   * 7.1. [Initialization](#71-initialization)
-   * 7.2. [Functions](#72-functions)
-   * 7.3. [Service](#73-service)
-     * 7.3.1. [Configuration](#731-configuration)
-     * 7.3.2. [Functions](#732-functions)
-   * 7.4. [Caller](#74-caller)
-     * 7.4.1. [Functions](#741-functions)
-   * 7.5. [Usage](#75-usage)
+4. [Message producer](#4-message-producer)
+    * 4.1. [Configurations](#41-configurations)
+    * 4.2. [Initialization](#42-initialization)
+    * 4.3. [Functions](#43-functions)
+5. [Message consumer](#5-message-consumer)
+    * 5.1. [Configurations](#51-configurations)
+    * 5.2. [Initialization](#52-initialization)
+    * 5.3. [Functions](#53-functions)
+6. [Message listener](#6-message-listener)
+    * 6.1. [Configurations](#61-configurations)
+    * 6.2. [Initialization](#62-initialization)
+    * 6.3. [Functions](#63-functions)
+    * 6.4. [Service](#64-service)    
+     * 6.4.1. [Configuration](#641-configuration)
+     * 6.4.2. [Functions](#642-functions)
+    * 6.5. [Caller](#65-caller)
+     * 6.5.1. [Functions](#651-functions)
+    * 6.6. [Usage](#66-usage)
 
 ## 1. Overview
 
@@ -57,7 +56,7 @@ Ballerina `solace` provides several core APIs:
 - **`solace:Listener`**: An endpoint that allows a Ballerina service to receive messages from a Solace queue or topic.
 - **`solace:Caller`**: A client used within a service to acknowledge messages or manage transactions.
 
-## 2. CommonConfigurations
+## 2. Common configurations
 
 - `CommonConnectionConfiguration` record represents the common configurations needed for connecting with the Solace event broker.
 ```ballerina
@@ -328,7 +327,7 @@ public type Queue record {|
 public type Property boolean|int|byte|float|string;
 ```
 
-## 4. MessageProducer
+## 4. Message producer
 
 The `solace:MessageProducer` is used to send messages to a Solace destination.
 
@@ -412,7 +411,7 @@ isolated remote function 'rollback() returns Error?;
 isolated remote function close() returns Error?;
 ```
 
-## 5. MessageConsumer
+## 5. Message consumer
 
 The `solace:MessageConsumer` is used to receive messages from a Solace destination.
 
@@ -547,7 +546,7 @@ isolated remote function 'rollback() returns Error?;
 isolated remote function close() returns Error?;
 ```
 
-## 6. Listener
+## 6. Message listener
 
 The `solace:Listener` enables applications to receive messages asynchronously from a Solace event broker.
 
