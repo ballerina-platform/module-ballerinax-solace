@@ -60,7 +60,6 @@ Ballerina `solace` provides several core APIs:
 ## 2. CommonConfigurations
 
 - `CommonConnectionConfiguration` record represents the common configurations needed for connecting with the Solace event broker.
-
 ```ballerina
 type CommonConnectionConfiguration record {
     # The name of the message VPN to connect to
@@ -104,7 +103,6 @@ type CommonConnectionConfiguration record {
 ```
 
 - `BasicAuthConfig` record represents the basic authentication credentials for connecting to a Solace broker.
-
 ```ballerina
 public type BasicAuthConfig record {|
     # The username for authentication
@@ -115,7 +113,6 @@ public type BasicAuthConfig record {|
 ```
 
 - `KerberosConfig` record represents the Kerberos (GSS-KRB) authentication configuration for connecting to a Solace broker. 
-
 ```ballerina
 public type KerberosConfig record {|
     # The Kerberos service name used during authentication
@@ -130,7 +127,6 @@ public type KerberosConfig record {|
 ```
 
 - `OAuth2Config` record represents the OAuth 2.0 authentication configuration for connecting to a Solace broker. 
-
 ```ballerina
 public type OAuth2Config record {|
     # The OAuth 2.0 issuer identifier URI
@@ -143,7 +139,6 @@ public type OAuth2Config record {|
 ```
 
 - `SecureSocket` record represents the SSL/TLS configuration for secure connections to a Solace broker.
-
 ```ballerina
 public type SecureSocket record {|
     # The trust store configuration containing trusted CA certificates
@@ -173,7 +168,6 @@ public type SecureSocket record {|
 ```
 
 - `TrustStore` record represents a trust store containing trusted CA certificates.
-
 ```ballerina
 public type TrustStore record {|
     # The URL or path of the truststore file
@@ -186,7 +180,6 @@ public type TrustStore record {|
 ```
 
 - `KeyStore` record represents a key store containing the client's private key and certificate. 
-
 ```ballerina
 public type KeyStore record {|
     # The URL or path of the keystore file
@@ -205,13 +198,11 @@ public type KeyStore record {|
 ```
 
 - `Protocol` type represents the supported SSL/TLS protocol versions.
-
 ```ballerina
 public type Protocol SSLv30|TLSv10|TLSv11|TLSv12;
 ```
 
 - `SslCipherSuite` type represents the SSL Cipher Suite to be used for secure communication with the Solace broker.
-
 ```ballerina
 public type SslCipherSuite ECDHE_RSA_AES256_CBC_SHA384|ECDHE_RSA_AES256_CBC_SHA|RSA_AES256_CBC_SHA256|RSA_AES256_CBC_SHA|
     ECDHE_RSA_3DES_EDE_CBC_SHA|RSA_3DES_EDE_CBC_SHA|ECDHE_RSA_AES128_CBC_SHA|ECDHE_RSA_AES128_CBC_SHA256|RSA_AES128_CBC_SHA256|
@@ -219,7 +210,6 @@ public type SslCipherSuite ECDHE_RSA_AES256_CBC_SHA384|ECDHE_RSA_AES256_CBC_SHA|
 ```
 
 - `RetryConfig` record represents the retry configuration for connection and reconnection attempts to a Solace broker. 
-
 ```ballerina
 public type RetryConfig record {|
     # The number of times to retry connecting to the broker during initial connection.
@@ -237,7 +227,6 @@ public type RetryConfig record {|
 ```
 
 - `CommonSubscriptionConfig` record represents the common configurations related to the Solace queue or topic subscription.
-
 ```ballerina
 type CommonSubscriptionConfig record {|
     # Configuration indicating how messages received by the session will be acknowledged
@@ -250,8 +239,7 @@ type CommonSubscriptionConfig record {|
 |};
 ```
 
-- `AcknowledgementMode` enum defines the JMS session acknowledgement modes. 
-
+- `AcknowledgementMode` enum defines the JMS session acknowledgement modes.
 ```ballerina
 public enum AcknowledgementMode {
     # Indicates that the session will use a local transaction which may subsequently 
@@ -274,7 +262,6 @@ public enum AcknowledgementMode {
 ```
 
 - `ConsumerType` enum defines the supported JMS message consumer types. 
-
 ```ballerina
 public enum ConsumerType {
     # Represents JMS durable subscriber
@@ -289,7 +276,6 @@ public enum ConsumerType {
 An Solace message is a fundamental unit of data that facilitates communication between applications and the Solace event broker. It encompasses not only the actual data payload but also includes metadata in the form of headers and customizable properties. This comprehensive structure enables reliable, secure, and flexible data transfer in distributed and enterprise environments.
 
 - `Message` record represent the message used to send and receive content from the Solace broker.
-
 ```ballerina
 public type Message record {|
     # Message payload
@@ -320,7 +306,6 @@ public type Message record {|
 ```
 
 - `Destination` type represents a message destination in Solace.
-
 ```ballerina
 public type Destination Topic|Queue;
 
@@ -339,7 +324,6 @@ public type Queue record {|
 ```
 
 - `Property` type represent the valid value types allowed in JMS message properties.
-
 ```ballerina
 public type Property boolean|int|byte|float|string;
 ```
@@ -351,7 +335,6 @@ The `solace:MessageProducer` is used to send messages to a Solace destination.
 ### 4.1 Configurations
 
 - `ProducerConfiguration` record represents the configuration for a Solace message producer.
-
 ```ballerina
 public type ProducerConfiguration record {|
     *solace:CommonConnectionConfiguration;
@@ -363,7 +346,6 @@ public type ProducerConfiguration record {|
 ### 4.2. Initialization
 
 - The `solace:MessageProducer` can be initialized by providing the broker URL and the `solace:ProducerConfiguration`.
-
 ```ballerina
 # Initializes a new Solace message producer with the given broker URL and configuration.
 # ```
@@ -385,7 +367,6 @@ public isolated function init(string url, *ProducerConfiguration config) returns
 ### 4.3. Functions
 
 - To send a message to a destination in the Solace event broker, use `send` function.
-
 ```ballerina
 # Sends a message to the Solace broker.
 # ```
@@ -398,7 +379,6 @@ isolated remote function send(Message message) returns Error?;
 ```
 
 - To commit all messages sent in this transaction and releases any locks currently held, use the `commit` function.
-
 ```ballerina
 # Commits all messages sent in this transaction and releases any locks currently held.
 # This method should only be called when the producer is configured with `transacted: true`.
@@ -411,7 +391,6 @@ isolated remote function 'commit() returns Error?;
 ```
 
 - To roll back any messages sent in this transaction and releases any locks currently held, use the `rollback` function.
-
 ```ballerina
 # Rolls back any messages sent in this transaction and releases any locks currently held.
 # This method should only be called when the producer is configured with `transacted: true`.
@@ -424,7 +403,6 @@ isolated remote function 'rollback() returns Error?;
 ```
 
 - To close the connection to the message broker and release any underlying resources currently help, use the `close` function.
-
 ```ballerina
 # Closes the message producer.
 # ```
@@ -441,7 +419,6 @@ The `solace:MessageConsumer` is used to receive messages from a Solace destinati
 ### 5.1 Configurations
 
 - `ConsumerConfiguration` record represents the configuration for a Solace message consumer.
-
 ```ballerina
 public type ConsumerConfiguration record {|
     *CommonConnectionConfiguration;
@@ -451,7 +428,6 @@ public type ConsumerConfiguration record {|
 ```
 
 - `QueueConfig` record represents configurations for a Solace queue subscription.
-
 ```ballerina
 public type QueueConfig record {|
     *CommonSubscriptionConfig;
@@ -461,7 +437,6 @@ public type QueueConfig record {|
 ```
 
 - `TopicConfig` record represents configurations for Solace topic subscription.
-
 ```ballerina
 public type TopicConfig record {|
     *CommonSubscriptionConfig;
@@ -480,7 +455,6 @@ public type TopicConfig record {|
 ### 5.2. Initialization
 
 - The `solace:MessageConsumer` can be initialized by providing the broker URL and the `solace:ConsumerConfiguration`.
-
 ```ballerina
 # Initializes a new Solace message consumer with the given broker URL and configuration.
 # ```
@@ -501,7 +475,6 @@ public isolated function init(string url, *ConsumerConfiguration config) returns
 ### 5.3. Functions
 
 - To receives the next message from the Solace broker, use the `receive` function.
-
 ```ballerina
 # Receives the next message from the Solace broker, waiting up to the specified timeout.
 # ```
@@ -515,7 +488,6 @@ isolated remote function receive(decimal timeout = 10.0, typedesc<Message> T = <
 ```
 
 - To receives the next message from the Solace broker if one is immediately available, use the `receiveNoWait` function.
-
 ```ballerina
 # Receives the next message from the Solace broker if one is immediately available, without waiting.
 # ```
@@ -528,7 +500,6 @@ isolated remote function receiveNoWait(typedesc<Message> T = <>) returns T|Error
 ```
 
 - To acknowledges the specified message, use the `acknowledge` function.
-
 ```ballerina
 # Acknowledges the specified message. This method should only be called when the consumer is configured
 # with `sessionAckMode: CLIENT_ACKNOWLEDGE`.
@@ -542,7 +513,6 @@ isolated remote function acknowledge(Message message) returns Error?;
 ```
 
 - To commit all messages received in this transaction and releases any locks currently held, use the `commit` function.
-
 ```ballerina
 # Commits all messages received in this transaction and releases any locks currently held.
 # This method should only be called when the consumer is configured with `sessionAckMode: SESSION_TRANSACTED`.
@@ -555,7 +525,6 @@ isolated remote function 'commit() returns Error?
 ```
 
 - To roll back any messages received in this transaction and releases any locks currently held, use the `rollback` function.
-
 ```ballerina
 # Rolls back any messages received in this transaction and releases any locks currently held.
 # This method should only be called when the consumer is configured with `sessionAckMode: SESSION_TRANSACTED`.
@@ -568,7 +537,6 @@ isolated remote function 'rollback() returns Error?;
 ```
 
 - To close the message consumer and release any underlying resource, use the `close` function.
-
 ```ballerina
 # Closes the message consumer and releases all resources.
 # ```
@@ -586,7 +554,6 @@ The `solace:Listener` enables applications to receive messages asynchronously fr
 ### 6.1 Configurations
 
 - `ListenerConfiguration` record represents the listener configuration for Ballerina Solace listener.
-
 ```ballerina
 public type ListenerConfiguration record {|
     *CommonConnectionConfiguration;
@@ -596,7 +563,6 @@ public type ListenerConfiguration record {|
 ### 6.2. Initialization
 
 - The `solace:Listener` can be initialized by providing the broker URL and the `solace:ListenerConfiguration`.
-
 ```ballerina
 # Initializes a new Solace message listener with the given broker URL and configuration.
 # ```
