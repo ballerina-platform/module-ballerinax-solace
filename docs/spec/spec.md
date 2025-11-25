@@ -1,4 +1,4 @@
-# Specification: Ballerina `ibm.ibmmq` Library
+# Specification: Ballerina `solace` Library
 
 _Authors_: @ayeshLK \
 _Reviewers_: TBA \
