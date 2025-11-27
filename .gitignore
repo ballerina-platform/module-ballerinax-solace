@@ -1,6 +1,6 @@
 # Compiled class file
 *.class
-*.balx
+
 # Log file
 *.log
 
@@ -10,12 +10,8 @@
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
 
-# macOS Files
-*.DS_Store
-
-# Package Files
+# Package Files #
 *.jar
-!gradle/wrapper/gradle-wrapper.jar
 *.war
 *.ear
 *.zip
@@ -26,30 +22,31 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 
-# Ignore everything in this directory
-target
+# mac
+.DS_Store
+
 .classpath
-.settings
 .project
-*.iml
-*.iws
-*.ipr
-.m2
-.vscode/
-.cursor/
+.settings
+.vscode
+
+# Files related to IntelliJ
 .idea
+*.iml
+*.ipr
+*.iws
 
-# Ignore ballerina files
-target/
-generated/
-.ballerina
-**/Config.toml
-
-# Ignore Gradle project-specific cache directory
+# Gradle build related files
 .gradle
+!gradle/wrapper/gradle-wrapper.jar
+.m2
 
-# Ignore Gradle build output directory
+# Ignore output directories
 build
+target
+generated
 
-# Ignore Docker env file
-docker.env
+# Environment files
+*.env
+**/Config.toml
+examples/**/Dependencies.toml
