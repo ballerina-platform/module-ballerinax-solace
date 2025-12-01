@@ -7,13 +7,13 @@ import io.ballerina.runtime.api.values.BString;
 /**
  * Topic destination implementation for publish/subscribe messaging.
  */
-public record Topic(String name) implements Destination {
-    private static final BString NAME_KEY = StringUtils.fromString("name");
+public record Topic(String topicName) implements Destination {
+    private static final BString TOPIC_NAME_KEY = StringUtils.fromString("topicName");
 
     /**
      * Creates a Topic from a Ballerina map record.
      */
     public Topic(BMap<BString, Object> config) {
-        this(config.getStringValue(NAME_KEY).getValue());
+        this(config.getStringValue(TOPIC_NAME_KEY).getValue());
     }
 }

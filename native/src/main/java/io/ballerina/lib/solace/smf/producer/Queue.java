@@ -7,13 +7,13 @@ import io.ballerina.runtime.api.values.BString;
 /**
  * Queue destination implementation for point-to-point messaging.
  */
-public record Queue(String name) implements Destination {
-    private static final BString NAME_KEY = StringUtils.fromString("name");
+public record Queue(String queueName) implements Destination {
+    private static final BString QUEUE_NAME_KEY = StringUtils.fromString("queueName");
 
     /**
      * Creates a Queue from a Ballerina map record.
      */
     public Queue(BMap<BString, Object> config) {
-        this(config.getStringValue(NAME_KEY).getValue());
+        this(config.getStringValue(QUEUE_NAME_KEY).getValue());
     }
 }

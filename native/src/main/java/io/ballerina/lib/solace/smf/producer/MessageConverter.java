@@ -100,9 +100,9 @@ public class MessageConverter {
         }
 
         if (destination instanceof Topic topic) {
-            return JCSMPFactory.onlyInstance().createTopic(topic.name());
+            return JCSMPFactory.onlyInstance().createTopic(topic.topicName());
         } else if (destination instanceof Queue queue) {
-            return JCSMPFactory.onlyInstance().createQueue(queue.name());
+            return JCSMPFactory.onlyInstance().createQueue(queue.queueName());
         } else {
             throw new Exception("Unknown destination type: " + destination.getClass().getName());
         }
