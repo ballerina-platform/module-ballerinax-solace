@@ -1,9 +1,13 @@
 package io.ballerina.lib.solace.smf.producer;
 
+import com.solacesystems.jcsmp.JCSMPFactory;
+import com.solacesystems.jcsmp.JCSMPProperties;
 import com.solacesystems.jcsmp.JCSMPSession;
 import com.solacesystems.jcsmp.XMLMessage;
 import com.solacesystems.jcsmp.XMLMessageProducer;
 import io.ballerina.lib.solace.smf.common.CommonUtils;
+import io.ballerina.lib.solace.smf.config.ConfigurationUtils;
+import io.ballerina.lib.solace.smf.config.ProducerConfiguration;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
@@ -16,19 +20,25 @@ public class ProducerActions {
 
     private static final String NATIVE_PRODUCER = "native.producer";
     private static final String NATIVE_SESSION = "native.session";
-    private static final String NATIVE_CONNECTION = "native.connection";
-    private static final String DESTINATION = "destination";
 
     /**
      * Initialize the producer with connection and create session and producer.
      */
     public static BError init(BObject producer, BMap<BString, Object> config) {
         try {
-            // Create JCSMP session
-            JCSMPSession session = JCSMPSessionManager.createSession(config);
+            // Create configuration objects from Ballerina map
+            ProducerConfiguration producerConfig = new ProducerConfiguration(config);
 
-            // Create message producer
-            XMLMessageProducer xmlProducer = ProducerWrapper.createProducer(session);
+            // Build JCSMP properties from configuration
+            JCSMPProperties jcsmpProps = ConfigurationUtils.buildJCSMPProperties(
+                    producerConfig.connectionConfig());
+
+            // Create and connect JCSMP session
+            JCSMPSession session = JCSMPFactory.onlyInstance().createSession(jcsmpProps);
+            session.connect();
+
+            // Create message producer from session with publish event handler
+            XMLMessageProducer xmlProducer = session.getMessageProducer(new PublishEventHandler());
 
             // Store in native data for later use
             producer.addNativeData(NATIVE_SESSION, session);
