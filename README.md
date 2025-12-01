@@ -1,26 +1,14 @@
-# Ballerina Solace connector
+# Ballerina Solace (SMF) connector
 
 [![Build](https://github.com/ballerina-platform/module-ballerinax-solace/actions/workflows/ci.yml/badge.svg)](https://github.com/ballerina-platform/module-ballerinax-solace/actions/workflows/ci.yml)
-[![GitHub Last Commit](https://img.shields.io/github/last-commit/ballerina-platform/module-ballerinax-solace.svg)](https://github.com/ballerina-platform/module-ballerinax-solace/commits/master)
-[![GitHub Issues](https://img.shields.io/github/issues/ballerina-platform/ballerina-library/module/solace.svg?label=Open%20Issues)](https://github.com/ballerina-platform/ballerina-library/labels/module%solace)
+[![Trivy](https://github.com/ballerina-platform/module-ballerinax-solace/actions/workflows/trivy-scan.yml/badge.svg)](https://github.com/ballerina-platform/module-ballerinax-solace/actions/workflows/trivy-scan.yml)
+[![GraalVM Check](https://github.com/ballerina-platform/module-ballerinax-solace/actions/workflows/build-with-bal-test-graalvm.yml/badge.svg)](https://github.com/ballerina-platform/module-ballerinax-solace/actions/workflows/build-with-bal-test-graalvm.yml)
+[![GitHub Last Commit](https://img.shields.io/github/last-commit/ballerina-platform/module-ballerinax-solace.svg)](https://github.com/ballerina-platform/module-ballerinax-solace/commits/main)
+[![GitHub Issues](https://img.shields.io/github/issues/ballerina-platform/ballerina-library/module/solace.svg?label=Open%20Issues)](https://github.com/ballerina-platform/ballerina-library/labels/module%2Fsolace)
 
-## Overview
+[Solace PubSub+](https://docs.solace.com/) is an advanced event-broker platform that enables event-driven communication across distributed applications using multiple messaging patterns such as publish/subscribe, request/reply, and queue-based messaging. It supports standard messaging protocols, including JMS, MQTT, AMQP, and REST, enabling seamless integration across diverse systems and environments.
 
-[//]: # (TODO: Add overview mentioning the purpose of the module, supported REST API versions, and other high-level details.)
-
-## Setup guide
-
-[//]: # (TODO: Add detailed steps to obtain credentials and configure the module.)
-
-## Quickstart
-
-[//]: # (TODO: Add a quickstart guide to demonstrate a basic functionality of the module, including sample code snippets.)
-
-## Examples
-
-The `Solace` connector provides practical examples illustrating usage in various scenarios. Explore these [examples](https://github.com/module-ballerinax-solace/tree/main/examples/), covering the following use cases:
-
-[//]: # (TODO: Add examples)
+The `ballerinax/solace` package provides APIs to interact with Solace PubSub+ brokers through the SMF API. It allows developers to programmatically produce and consume messages, manage topics and queues, and implement robust, event-driven solutions that leverage Solace’s high-performance messaging capabilities within Ballerina applications.
 
 ## Build from the source
 

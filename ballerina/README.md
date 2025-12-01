@@ -1,17 +1,85 @@
 ## Overview
 
-[//]: # (TODO: Add overview mentioning the purpose of the module, supported REST API versions, and other high-level details.)
+[Solace PubSub+](https://docs.solace.com/) is an advanced event-broker platform that enables event-driven communication across distributed applications using multiple messaging patterns such as publish/subscribe, request/reply, and queue-based messaging. It supports standard messaging protocols, including JMS, MQTT, AMQP, and REST, enabling seamless integration across diverse systems and environments.
 
-## Setup guide
-
-[//]: # (TODO: Add detailed steps to obtain credentials and configure the module.)
+The `ballerinax/solace` package provides APIs to interact with Solace PubSub+ brokers through the JMS API. It allows developers to programmatically produce and consume messages, manage topics and queues, and implement robust, event-driven solutions that leverage Solace’s high-performance messaging capabilities within Ballerina applications.
 
 ## Quickstart
 
-[//]: # (TODO: Add a quickstart guide to demonstrate a basic functionality of the module, including sample code snippets.)
+### Step 1: Import the module
 
-## Examples
+Import the `solace` module into the Ballerina project.
 
-The `Solace` connector provides practical examples illustrating usage in various scenarios. Explore these [examples](https://github.com/module-ballerinax-solace/tree/main/examples/), covering the following use cases:
+```ballerina
+import ballerinax/solace;
+```
 
-[//]: # (TODO: Add examples)
+### Step 2: Instantiate a new connector
+
+#### Initialize a `solace:MessageProducer`
+
+```ballerina
+configurable string brokerUrl = ?;
+configurable string messageVpn = ?;
+configurable string queueName = ?;
+configurable string username = ?;
+configurable string password = ?;
+
+solace:MessageProducer producer = check new (brokerUrl,
+    destination = {
+        queueName
+    },
+    messageVpn = messageVpn,
+    auth = {
+        username,
+        password
+    }
+);
+```
+
+#### Initialize a `solace:MessageConsumer`
+
+```ballerina
+configurable string brokerUrl = ?;
+configurable string messageVpn = ?;
+configurable string queueName = ?;
+configurable string username = ?;
+configurable string password = ?;
+
+solace:MessageConsumer consumer = check new (brokerUrl,
+    destination = {
+        queueName
+    },
+    messageVpn = messageVpn,
+    auth = {
+        username,
+        password
+    }
+);
+```
+
+### Step 3: Invoke the connector operation
+
+Now, you can use the available connector operations to interact with Solace broker.
+
+#### Produce message to a queue
+
+```ballerina
+check producer->send({
+    payload: "This is a sample message"
+});
+```
+
+#### Retrieve a message from a queue
+
+```ballerina
+solace:Message? receivedMessage = check consumer->receive(5.0);
+```
+
+### Step 4: Run the Ballerina application
+
+Save the changes and run the Ballerina application using the following command.
+
+```bash
+bal run
+```
