@@ -12,3 +12,14 @@ distribution = "2201.12.10"
 [platform.java21]
 graalvmCompatible = true
 
+[[platform.java21.dependency]]
+groupId = "io.ballerina.lib"
+artifactId = "solace-native"
+version = "@project.version@"
+path = "../native/build/libs/solace.smf-native-@project.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "com.solacesystems"
+artifactId = "sol-jms"
+version = "@sol.jcsmp.version@"
+path = "./lib/sol-jcsmp-@sol.jcsmp.version@.jar"
