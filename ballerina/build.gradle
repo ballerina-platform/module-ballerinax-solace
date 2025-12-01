@@ -67,24 +67,36 @@ dependencies {
 //    }
 //
 //    /* Netty dependencies */
-//    externalJars(group: 'io.netty', name: 'netty-transport', version: "${nettyVersion}") {
-//        transitive = false
-//    }
-//    externalJars(group: 'io.netty', name: 'netty-handler', version: "${nettyVersion}") {
-//        transitive = false
-//    }
-//    externalJars(group: 'io.netty', name: 'netty-codec', version: "${nettyVersion}") {
-//        transitive = false
-//    }
-//    externalJars(group: 'io.netty', name: 'netty-buffer', version: "${nettyVersion}") {
-//        transitive = false
-//    }
-//    externalJars(group: 'io.netty', name: 'netty-common', version: "${nettyVersion}") {
-//        transitive = false
-//    }
-//    externalJars(group: 'io.netty', name: 'netty-resolver', version: "${nettyVersion}") {
-//        transitive = false
-//    }
+    externalJars(group: 'io.netty', name: 'netty-common', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.netty', name: 'netty-transport', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.netty', name: 'netty-handler', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.netty', name: 'netty-resolver', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.netty', name: 'netty-buffer', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.netty', name: 'netty-codec', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.netty', name: 'netty-codec-http', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.netty', name: 'netty-handler-proxy', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.netty', name: 'netty-transport-native-epoll', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.netty', name: 'netty-transport-classes-epoll', version: "${nettyVersion}") {
+        transitive = false
+    }
 //    externalJars(group: 'io.netty', name: 'netty-tcnative-boringssl-static', version: "${nettyTcnativeBoringsslStaticVersion}") {
 //        transitive = false
 //    }
@@ -106,6 +118,7 @@ task updateTomlFiles {
         def newBallerinaToml = ballerinaTomlFilePlaceHolder.text.replace("@project.version@", project.version)
         newBallerinaToml = newBallerinaToml.replace("@toml.version@", tomlVersion)
         newBallerinaToml = newBallerinaToml.replace("@sol.jcsmp.version@", project.solaceJcsmpVersion)
+        newBallerinaToml = newBallerinaToml.replace('@netty.version@', project.nettyVersion)
         ballerinaTomlFile.text = newBallerinaToml
     }
 }
