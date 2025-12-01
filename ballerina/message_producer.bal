@@ -21,7 +21,7 @@ public isolated client class MessageProducer {
 }
 
 // External function bindings to Java implementation
-isolated function externInit(MessageProducer producer, ProducerConfiguration config) returns error? = @java:Method {
+isolated function externInit(MessageProducer producer, map<anydata> config) returns error? = @java:Method {
     name: "init",
     'class: "io.ballerina.lib.solace.smf.producer.ProducerActions"
 } external;
