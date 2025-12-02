@@ -23,6 +23,30 @@ groupId = "com.solacesystems"
 artifactId = "sol-jcsmp"
 version = "@sol.jcsmp.version@"
 path = "./lib/sol-jcsmp-@sol.jcsmp.version@.jar"
+.
+[[platform.java21.dependency]]
+groupId = "com.solace"
+artifactId = "solace-serdes"
+version = "@solace.serdes.version@"
+path = "./lib/solace-serdes-@solace.serdes.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "commons-logging"
+artifactId = "commons-logging"
+version = "@commons.logging.version@"
+path = "./lib/commons-logging-@commons.logging.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "org.apache.servicemix.bundles"
+artifactId = "org.apache.servicemix.bundles.jzlib"
+version = "@servicemix.jzlib.version@"
+path = "./lib/org.apache.servicemix.bundles.jzlib-@servicemix.jzlib.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "org.osgi"
+artifactId = "org.osgi.annotation"
+version = "@osgi.annotation.version@"
+path = "./lib/org.osgi.annotation-@osgi.annotation.version@.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
@@ -56,15 +80,27 @@ path = "./lib/netty-buffer-@netty.version@.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
-artifactId = "netty-codec"
+artifactId = "netty-codec-base"
 version = "@netty.version@"
-path = "./lib/netty-codec-@netty.version@.jar"
+path = "./lib/netty-codec-base-@netty.version@.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
 artifactId = "netty-codec-http"
 version = "@netty.version@"
 path = "./lib/netty-codec-http-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-codec-compression"
+version = "@netty.version@"
+path = "./lib/netty-codec-compression-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-codec-socks"
+version = "@netty.version@"
+path = "./lib/netty-codec-socks-@netty.version@.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
@@ -84,3 +120,32 @@ artifactId = "netty-transport-classes-epoll"
 version = "@netty.version@"
 path = "./lib/netty-transport-classes-epoll-@netty.version@.jar"
 
+[[platform.java21.dependency]]
+path = "./lib/netty-transport-native-epoll-@netty.version@-linux-x86_64.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/netty-transport-native-epoll-@netty.version@-linux-aarch_64.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport-native-unix-common"
+version = "@netty.version@"
+path = "./lib/netty-transport-native-unix-common-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport-native-kqueue"
+version = "@netty.version@"
+path = "./lib/netty-transport-native-kqueue-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport-classes-kqueue"
+version = "@netty.version@"
+path = "./lib/netty-transport-classes-kqueue-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/netty-transport-native-kqueue-@netty.version@-osx-x86_64.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/netty-transport-native-kqueue-@netty.version@-osx-aarch_64.jar"
