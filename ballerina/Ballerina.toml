@@ -25,6 +25,24 @@ version = "10.29.0"
 path = "./lib/sol-jcsmp-10.29.0.jar"
 
 [[platform.java21.dependency]]
+groupId = "commons-logging"
+artifactId = "commons-logging"
+version = "@commons.logging.version@"
+path = "./lib/commons-logging-@commons.logging.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "org.apache.servicemix.bundles"
+artifactId = "org.apache.servicemix.bundles.jzlib"
+version = "@servicemix.jzlib.version@"
+path = "./lib/org.apache.servicemix.bundles.jzlib-@servicemix.jzlib.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "org.osgi"
+artifactId = "org.osgi.annotation"
+version = "@osgi.annotation.version@"
+path = "./lib/org.osgi.annotation-@osgi.annotation.version@.jar"
+
+[[platform.java21.dependency]]
 groupId = "io.netty"
 artifactId = "netty-common"
 version = "4.2.7.Final"
@@ -84,3 +102,32 @@ artifactId = "netty-transport-classes-epoll"
 version = "4.2.7.Final"
 path = "./lib/netty-transport-classes-epoll-4.2.7.Final.jar"
 
+[[platform.java21.dependency]]
+path = "./lib/netty-transport-native-epoll-4.2.7.Final-linux-x86_64.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/netty-transport-native-epoll-4.2.7.Final-linux-aarch_64.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport-native-unix-common"
+version = "4.2.7.Final"
+path = "./lib/netty-transport-native-unix-common-4.2.7.Final.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport-native-kqueue"
+version = "4.2.7.Final"
+path = "./lib/netty-transport-native-kqueue-4.2.7.Final.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport-classes-kqueue"
+version = "4.2.7.Final"
+path = "./lib/netty-transport-classes-kqueue-4.2.7.Final.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/netty-transport-native-kqueue-4.2.7.Final-osx-x86_64.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/netty-transport-native-kqueue-4.2.7.Final-osx-aarch_64.jar"
