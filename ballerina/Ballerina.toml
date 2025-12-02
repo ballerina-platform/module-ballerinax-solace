@@ -27,8 +27,8 @@ path = "./lib/sol-jcsmp-10.29.0.jar"
 [[platform.java21.dependency]]
 groupId = "com.solace"
 artifactId = "solace-serdes"
-version = "@solace.serdes.version@"
-path = "./lib/solace-serdes-@solace.serdes.version@.jar"
+version = "1.0.0"
+path = "./lib/solace-serdes-1.0.0.jar"
 
 [[platform.java21.dependency]]
 groupId = "commons-logging"
