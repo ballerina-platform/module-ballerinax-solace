@@ -1,5 +1,7 @@
 ## Purpose
 
+Fixes:
+
 ## Examples
 
 ## Checklist
@@ -7,4 +9,3 @@
 - [ ] Updated the changelog
 - [ ] Added tests
 - [ ] Updated the spec
-- [ ] Checked native-image compatibility
