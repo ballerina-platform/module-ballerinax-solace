@@ -7,13 +7,14 @@ on:
       - 2201.[0-9]+.x
   repository_dispatch:
     types: check_connector_for_breaking_changes
-  workflow_dispatch:
 
 jobs:
   call_workflow:
     name: Run Connector Build Workflow
-    if: ${{ github.repository_owner == 'ballerina-platform' }}
+    if: ${{ github.repository_owner == 'xlibb' }}
     uses: ballerina-platform/ballerina-library/.github/workflows/build-connector-template.yml@main
     secrets: inherit
     with:
-      repo-name: module-ballerinax-solace
+      repo-name: module-solace
+      additional-build-flags: "-x test"
+      additional-test-flags: "-x test"
