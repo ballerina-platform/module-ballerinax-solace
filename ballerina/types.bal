@@ -206,7 +206,10 @@ public type ProducerConfiguration record {|
 # Note: Flow control properties below only apply to FlowReceiver usage (queues and durable topic endpoints)
 # They are ignored for direct topic subscriptions which use XMLMessageConsumer
 public type CommonConsumerConfig record {|
-    # Optional SQL-92 message selector for filtering messages (only for queue consumers)
+    # Optional SQL-92 message selector for filtering messages on the broker before delivery
+    # Applies to both queue consumers and durable topic endpoint subscriptions (flows only).
+    # Not supported for direct topic subscriptions. Filters messages based on their properties and headers.
+    # Example: "OrderType = 'URGENT' AND Priority > 5" - only messages matching this condition will be delivered.
     string selector?;
     # JCSMP message acknowledgement mode
     AcknowledgementMode ackMode = AUTO_ACK;
@@ -242,7 +245,8 @@ public type TopicConsumerConfig record {|
     string topicName;
     # Endpoint type: DEFAULT (ephemeral/direct) or DURABLE (persisted on broker)
     EndpointType endpointType = DEFAULT;
-    # Endpoint name (required if endpointType is DURABLE)
+    # Endpoint name - REQUIRED when endpointType is DURABLE (optional for DEFAULT)
+    # Used to identify the durable topic endpoint on the broker. Must be unique for durable endpoints.
     string endpointName?;
 |};
 
@@ -276,7 +280,10 @@ public enum EndpointType {
 public type CommonServiceConfig record {|
     # JCSMP acknowledgement mode
     AcknowledgementMode ackMode = AUTO_ACK;
-    # Optional SQL-92 message selector for filtering messages (only for queue consumers)
+    # Optional SQL-92 message selector for filtering messages on the broker before delivery
+    # Applies to both queue consumers and durable topic endpoint subscriptions (flows only).
+    # Not supported for direct topic subscriptions. Filters messages based on their properties and headers.
+    # Example: "OrderType = 'URGENT' AND Priority > 5" - only messages matching this condition will be delivered.
     string selector?;
     # Polling interval in seconds (how often to poll for messages)
     decimal pollingInterval = 10;
@@ -314,7 +321,8 @@ public type TopicServiceConfig record {|
     string topicName;
     # Endpoint type: DEFAULT (ephemeral/direct) or DURABLE (persisted on broker)
     EndpointType endpointType = DEFAULT;
-    # Endpoint name (required if endpointType is DURABLE)
+    # Endpoint name - REQUIRED when endpointType is DURABLE (optional for DEFAULT)
+    # Used to identify the durable topic endpoint on the broker. Must be unique for durable endpoints.
     string endpointName?;
 |};
 
