@@ -239,10 +239,8 @@ public type ConsumerConfiguration record {|
 public enum DeliveryMode {
     # This mode provides at-most-once message delivery.
     DIRECT,
-    # This mode provides once-and-only-once message delivery.
-    PERSISTENT,
-    # This mode is functionally the same as Persistent.
-    NON_PERSISTENT
+    # This mode provides once-and-only-once message delivery. 
+    PERSISTENT
 }
 
 # Endpoint types for producer destinations
@@ -307,6 +305,8 @@ public type Message record {|
     # The binary payload of the message
     byte[] payload;
     # Delivery mode for the message (DIRECT, PERSISTENT, or NON_PERSISTENT)
+    // Double check if we can set this in the message level. If PERSISTENT and NON_PERSISTENT are same we can remove one
+    // Ans: Yes, it can ONLY be set at message level. We can remove NON_PERSISTENT as its same as PERSISTENT
     DeliveryMode deliveryMode = DIRECT;
     # Message priority (0-255, where 0 is lowest and 255 is highest)
     int priority?;
