@@ -52,14 +52,25 @@ public type KerberosConfig record {|
     boolean jaasConfigFileReloadEnabled = false;
 |};
 
-public type OAuth2Config record {|
-    # The OAuth 2.0 issuer identifier URI
-    string issuer;
+# OAuth2 Access Token authentication configuration
+public type OAuth2AccessTokenAuth record {|
     # The OAuth 2.0 access token for authentication
-    string accessToken?;
-    # The OpenID Connect (OIDC) ID token for authentication
-    string oidcToken?;
+    string accessToken;
+    # Optional issuer identifier URI for token validation
+    string issuerIdentifier?;
 |};
+
+# OpenID Connect (OIDC) ID Token authentication configuration
+public type OidcIdTokenAuth record {|
+    # The OpenID Connect (OIDC) ID token for authentication
+    string idToken;
+    # Optional issuer identifier URI for token validation
+    string issuerIdentifier?;
+|};
+
+# OAuth2 authentication configuration (mutually exclusive - use either access token or ID token)
+# When using OAuth2 authentication scheme, exactly one of OAuth2AccessTokenAuth or OidcIdTokenAuth must be provided
+public type OAuth2Config OAuth2AccessTokenAuth|OidcIdTokenAuth;
 
 # SSL/TLS certificate validation configuration
 public type CertificateValidation record {|
