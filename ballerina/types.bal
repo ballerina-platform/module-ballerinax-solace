@@ -17,6 +17,9 @@ public type Queue record {|
 public type Destination Topic|Queue;
 
 # Acknowledgement modes for message consumption
+// Since we create this for session does it apply for producer? If so what does it do?
+// Ans: It does not apply to producer. It is only for consumers and session level configuration
+// in JCSMP is so that all consumers created on that session inherit the ack mode as a default
 public enum AcknowledgementMode {
     AUTO_ACK = "SUPPORTED_MESSAGE_ACK_AUTO",
     CLIENT_ACK = "SUPPORTED_MESSAGE_ACK_CLIENT"
@@ -186,8 +189,6 @@ public type CommonConnectionConfiguration record {|
     decimal connectionTimeout = 30.0;
     # The maximum time in seconds for reading connection replies
     decimal readTimeout = 10.0;
-    # JCSMP message acknowledgement mode
-    AcknowledgementMode ackMode = SUPPORTED_MESSAGE_ACK_AUTO;
     # ZLIB compression level (0 = disabled, 1-9 = compression)
     int compressionLevel = 0;
     # Enable transacted messaging
@@ -208,6 +209,8 @@ public type ProducerConfiguration record {|
 public type CommonConsumerConfig record {|
     # Optional SQL-92 message selector for filtering messages (only for queue consumers)
     string selector?;
+    # JCSMP message acknowledgement mode
+    AcknowledgementMode ackMode = AUTO_ACK;
     # JCSMP flow control transport window size (1-255, default 255) - FlowReceiver only
     int transportWindowSize?;
     # Acknowledgement threshold as percentage of window size (1-75, default 0) - FlowReceiver only
