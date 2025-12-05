@@ -47,6 +47,26 @@ public isolated client class MessageProducer {
         name: "send"
     } external;
 
+    # Commit the current transaction.
+    #
+    # Only applicable in transacted mode. Commits all message operations since the last commit/rollback.
+    #
+    # + return - Error if commit fails
+    isolated remote function 'commit() returns Error? = @java:Method {
+        'class: "io.ballerina.lib.solace.smf.consumer.ConsumerActions",
+        name: "commit"
+    } external;
+
+    # Rollback the current transaction.
+    #
+    # Only applicable in transacted mode. Rolls back all message operations since the last commit/rollback.
+    #
+    # + return - Error if rollback fails
+    isolated remote function 'rollback() returns Error? = @java:Method {
+        'class: "io.ballerina.lib.solace.smf.consumer.ConsumerActions",
+        name: "rollback"
+    } external;
+
     # Check if the producer is closed.
     #
     # + return - True if the producer is closed, false otherwise
