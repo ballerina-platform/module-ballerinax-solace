@@ -25,29 +25,24 @@ public isolated client class MessageProducer {
 
     # Initialize a new MessageProducer with the given connection configuration.
     #
-    # + host - The broker host URL with format: [protocol:]host[:port]
+    # + url - The broker URL with format: [protocol:]host[:port]
     # + config - The producer connection configuration
     # + return - Error if initialization fails
-    isolated function init(string host, *ProducerConfiguration config) returns Error? {
-        return self.initProducer(host, config);
+    public isolated function init(string url, *ProducerConfiguration config) returns Error? {
+        return self.initProducer(url, config);
     }
 
-    isolated function initProducer(string host, ProducerConfiguration config) returns Error = @java:Method {
+    isolated function initProducer(string url, ProducerConfiguration config) returns Error = @java:Method {
         'class: "io.ballerina.lib.solace.smf.producer.ProducerActions",
         name: "init"
     } external;
 
     # Send a message to the specified destination.
     #
-    # The message's delivery mode determines the guarantee level:
-    # - DIRECT: At-most-once delivery (no guarantees)
-    # - PERSISTENT: Once-and-only-once delivery with broker acknowledgement
-    # - NON_PERSISTENT: Once-and-only-once delivery (functionally equivalent to PERSISTENT)
-    #
-    # + message - The message to send (payload and optional properties)
     # + destination - The destination to send to (topic or queue)
+    # + message - The message to send (payload and optional properties)
     # + return - Error if send fails
-    isolated remote function send(Message message, Destination destination) returns Error? = @java:Method {
+    isolated remote function send(Destination destination, Message message) returns Error? = @java:Method {
         'class: "io.ballerina.lib.solace.smf.producer.ProducerActions",
         name: "send"
     } external;

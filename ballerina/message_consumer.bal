@@ -9,7 +9,7 @@ import ballerina/jballerina.java;
 # Example queue consumer:
 # ```ballerina
 # final smf:MessageConsumer consumer = check new (
-#     host = "tcp://broker:55555",
+#     url = "tcp://broker:55555",
 #     auth = {username: "default"},
 #     subscriptionConfig = {
 #         queueName: "orders",
@@ -22,7 +22,7 @@ import ballerina/jballerina.java;
 # Example topic consumer:
 # ```ballerina
 # final smf:MessageConsumer consumer = check new (
-#     host = "tcp://broker:55555",
+#     url = "tcp://broker:55555",
 #     auth = {username: "default"},
 #     subscriptionConfig = {
 #         topicName: "orders/*/created",
@@ -35,13 +35,16 @@ public isolated client class MessageConsumer {
 
     # Initialize a new MessageConsumer with the given configuration.
     #
+    # + url - The broker URL with format: [protocol:]host[:port]
     # + config - The consumer configuration (composed of connection config + subscription config)
     # + return - Error if initialization fails
-    public isolated function init(ConsumerConfiguration config) returns Error? {
-        return self.initConsumer(config);
+    // We need to pass url here as well
+    // And use *ConsumerConfiguration
+public isolated function init(string url, *ConsumerConfiguration config) returns Error? {
+        return self.initConsumer(url, config);
     }
 
-    isolated function initConsumer(ConsumerConfiguration config) returns Error? = @java:Method {
+    isolated function initConsumer(string url, ConsumerConfiguration config) returns Error? = @java:Method {
         'class: "io.ballerina.lib.solace.smf.consumer.ConsumerActions",
         name: "init"
     } external;
@@ -76,28 +79,26 @@ public isolated client class MessageConsumer {
     #
     # + message - The message to acknowledge
     # + return - Error if acknowledgement fails
-    isolated remote function acknowledge(Message message) returns Error? = @java:Method {
+    isolated remote function ack(Message message) returns Error? = @java:Method {
         'class: "io.ballerina.lib.solace.smf.consumer.ConsumerActions",
         name: "acknowledge"
     } external;
 
-    # Settle a message with a specific outcome.
+    # Negatively acknowledge a message (NACK).
     #
-    # Available outcomes:
-    # - SettlementOutcome.ACCEPTED: Acknowledge the message (positive ACK)
-    # - SettlementOutcome.FAILED: Negative ACK with redelivery - message will be redelivered, delivery count incremented
-    # - SettlementOutcome.REJECTED: Negative ACK without redelivery - message moved to DMQ immediately
+    # Sends a negative acknowledgement for the message, indicating processing failure.
+    #
+    # + message - The message to negatively acknowledge
+    # + requeue - If true, message will be requeued for redelivery (FAILED outcome);
+    # If false, message moves to DMQ immediately (REJECTED outcome)
+    # + return - Error if NACK fails
     #
     # Only use this method if the subscription is configured with ackMode = "SUPPORTED_MESSAGE_ACK_CLIENT"
     # and the consumer flow is configured to support required settlement outcomes.
     # For transacted flows, settlement outcomes are ignored.
-    #
-    # + message - The message to settle
-    # + outcome - The settlement outcome
-    # + return - Error if settlement fails
-    isolated remote function settle(Message message, SettlementOutcome outcome) returns Error? = @java:Method {
+    isolated remote function nack(Message message, boolean requeue = true) returns Error? = @java:Method {
         'class: "io.ballerina.lib.solace.smf.consumer.ConsumerActions",
-        name: "settle"
+        name: "nack"
     } external;
 
     # Commit the current transaction.
