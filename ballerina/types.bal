@@ -18,8 +18,8 @@ public type Destination Topic|Queue;
 
 # Acknowledgement modes for message consumption
 public enum AcknowledgementMode {
-    SUPPORTED_MESSAGE_ACK_AUTO = "SUPPORTED_MESSAGE_ACK_AUTO",
-    SUPPORTED_MESSAGE_ACK_CLIENT = "SUPPORTED_MESSAGE_ACK_CLIENT"
+    AUTO_ACK = "SUPPORTED_MESSAGE_ACK_AUTO",
+    CLIENT_ACK = "SUPPORTED_MESSAGE_ACK_CLIENT"
 }
 
 # Message settlement outcomes for explicit acknowledgement control
@@ -275,7 +275,7 @@ public enum EndpointType {
 # They are ignored for direct topic subscriptions which use XMLMessageConsumer
 public type CommonServiceConfig record {|
     # JCSMP acknowledgement mode
-    AcknowledgementMode ackMode = SUPPORTED_MESSAGE_ACK_AUTO;
+    AcknowledgementMode ackMode = AUTO_ACK;
     # Optional SQL-92 message selector for filtering messages (only for queue consumers)
     string selector?;
     # Polling interval in seconds (how often to poll for messages)
