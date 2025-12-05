@@ -140,8 +140,6 @@ public type SecureSocket record {|
     string[] trustedCommonNames?;
     # The SSL protocols NOT to use
     Protocol[] excludedProtocols = [SSLv2Hello];
-    # The SSL cipher suites to use
-    SslCipherSuite[] cipherSuites?;
     # Certificate validation settings
     CertificateValidation validation = {};
 |};
