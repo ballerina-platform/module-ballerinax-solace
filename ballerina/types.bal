@@ -180,6 +180,18 @@ public type CommonConnectionConfiguration record {|
     int compressionLevel = 0;
     # Enable transacted messaging
     boolean transacted = false;
+    # Whether to generate a receive timestamp on incoming messages (set by broker)
+    # When enabled, incoming messages will have receiveTimestamp automatically set
+    boolean generateReceiveTimestamps = false;
+    # Whether to generate a send timestamp in outgoing messages
+    # When enabled, outgoing messages will have senderTimestamp automatically set if not already provided
+    boolean generateSendTimestamps = false;
+    # Whether to generate a sequence number in outgoing messages
+    # When enabled, outgoing messages will have sequenceNumber automatically generated if not already set
+    boolean generateSequenceNumbers = false;
+    # Whether to calculate message expiration time in outgoing and incoming messages
+    # When enabled, JCSMP calculates message expiration based on timeToLive field
+    boolean calculateMessageExpiration = false;
     # Retry configuration for connection attempts
     RetryConfig retryConfig?;
 |};
@@ -318,12 +330,17 @@ public type Message record {|
     // Ans: Yes, it can ONLY be set at message level. We can remove NON_PERSISTENT as its same as PERSISTENT
     DeliveryMode deliveryMode = DIRECT;
     # Message priority (0-255, where 0 is lowest and 255 is highest)
-    int priority?;
+    byte priority?;
     # Time-to-live in milliseconds (0 = never expires, only for PERSISTENT/NON_PERSISTENT modes)
     int timeToLive?;
     # Application-defined message ID for correlation
+    // Can we make it messageId and messageType
+    // Ans: messageId is a deprecated field in JCSMP used for acknowledgements. Since these two fields are
+    // supposed application defined I feel we should keep them as is to avoid confusion.
     string applicationMessageId?;
     # Application-defined message type
+    // Check if this is only string? And why is it there?
+    // Ans: this and applicationId are both string and are used by applications only
     string applicationMessageType?;
     # Correlation ID for request-reply patterns
     string correlationId?;
@@ -335,16 +352,19 @@ public type Message record {|
     int senderTimestamp?;
     # Receive timestamp in UTC milliseconds from epoch (set by broker)
     int receiveTimestamp?;
-    # Sequence number for message ordering
+    # Sequence number for message ordering (application-managed)
+    # Set by the application for message ordering and duplicate detection. Can be auto-generated if sequence number
+    # generation is enabled in the session. Once set, value is preserved across message resends and available on both
+    # direct and guaranteed message delivery. Note: distinct from broker-generated topicSequenceNumber.
     int sequenceNumber?;
     # Whether message was previously delivered
     boolean redelivered?;
     # Number of times this message has been delivered
     int deliveryCount?;
-    # User-defined properties map for custom key-value pairs
-    record {|
-        string...;
-    |} properties?;
+    # Properties map for custom key-value pairs
+    // String may not be enough here. Use a map<string|boolean> or map<anydata>
+    // Ans: It expects a SDTMap so for now we can keep it as map<anydata>
+    map<anydata> properties?;
     # Application-specific user data attachment (max 36 bytes)
     byte[] userData?;
 |};
