@@ -19,7 +19,7 @@ import ballerina/jballerina.java;
 #         // Process the message
 #         process(message);
 #         // Only acknowledge after successful processing
-#         check caller->acknowledge(message);
+#         check caller->ack(message);
 #     }
 # };
 # ```
@@ -49,28 +49,26 @@ public isolated client class Caller {
     #
     # + message - The message to acknowledge
     # + return - Error if acknowledgement fails
-    isolated remote function acknowledge(Message message) returns Error? = @java:Method {
+    isolated remote function ack(Message message) returns Error? = @java:Method {
         'class: "io.ballerina.lib.solace.smf.caller.CallerActions",
         name: "acknowledge"
     } external;
 
-    # Settle a message with a specific outcome.
+    # Negatively acknowledge a message (NACK).
     #
-    # Available outcomes:
-    # - SettlementOutcome.ACCEPTED: Acknowledge the message (positive ACK)
-    # - SettlementOutcome.FAILED: Negative ACK with redelivery - message will be redelivered, delivery count incremented
-    # - SettlementOutcome.REJECTED: Negative ACK without redelivery - message moved to DMQ immediately
+    # Sends a negative acknowledgement for the message, indicating processing failure.
+    #
+    # + message - The message to negatively acknowledge
+    # + requeue - If true, message will be requeued for redelivery (FAILED outcome);
+    # If false, message moves to DMQ immediately (REJECTED outcome)
+    # + return - Error if NACK fails
     #
     # Only use this method if the service is configured with `ackMode = "SUPPORTED_MESSAGE_ACK_CLIENT"`
     # and the listener flow is configured to support required settlement outcomes.
     # For transacted flows, settlement outcomes are ignored.
-    #
-    # + message - The message to settle
-    # + outcome - The settlement outcome
-    # + return - Error if settlement fails
-    isolated remote function settle(Message message, SettlementOutcome outcome) returns Error? = @java:Method {
+    isolated remote function nack(Message message, boolean requeue = true) returns Error? = @java:Method {
         'class: "io.ballerina.lib.solace.smf.caller.CallerActions",
-        name: "settle"
+        name: "nack"
     } external;
 
     # Commit the current transaction.

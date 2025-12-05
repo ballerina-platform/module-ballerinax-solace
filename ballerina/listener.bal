@@ -10,7 +10,7 @@ import ballerina/jballerina.java;
 # Example queue listener:
 # ```ballerina
 # listener smf:Listener solaceListener = check new (
-#     host = "tcp://broker:55555",
+#     url = "tcp://broker:55555",
 #     auth = {username: "default"}
 # );
 #
@@ -48,14 +48,14 @@ import ballerina/jballerina.java;
 public isolated class Listener {
     # Initialize a new Listener with the given connection configuration.
     #
-    # + host - The broker host URL with format: [protocol:]host[:port]
+    # + url - The broker URL with format: [protocol:]host[:port]
     # + config - The connection configuration (host, auth, SSL/TLS, retry, etc.)
     # + return - Error if initialization fails
-    public isolated function init(string host, CommonConnectionConfiguration config) returns Error? {
-        return self.initListener(host, config);
+    public isolated function init(string url, CommonConnectionConfiguration config) returns Error? {
+        return self.initListener(url, config);
     }
 
-    isolated function initListener(string host, CommonConnectionConfiguration config) returns Error =
+    isolated function initListener(string url, CommonConnectionConfiguration config) returns Error =
     @java:Method {
         'class: "io.ballerina.lib.solace.smf.listener.ListenerActions",
         name: "init"
