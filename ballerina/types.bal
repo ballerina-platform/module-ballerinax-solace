@@ -64,6 +64,8 @@ public type OAuth2Config record {|
 # SSL/TLS certificate validation configuration
 public type CertificateValidation record {|
     # Enable certificate validation
+    // What if we disable validateDate and validateHostname but keep this enabled? Check JCSMP docs
+    // Ans: We cannot do that as there are other validations like Certificate Chain Validation
     boolean enabled = true;
     # Validate the certificate's expiration date
     boolean validateDate = true;
@@ -115,33 +117,7 @@ public const TLSv12 = "tlsv12";
 public const SSLv2Hello = "SSLv2Hello";
 
 # Represents the supported SSL/TLS protocol versions.
-public type Protocol SSLv30|TLSv10|TLSv11|TLSv12|SSLv2Hello;
-
-# Cipher suite: TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384
-public const ECDHE_RSA_AES256_CBC_SHA384 = "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384";
-# Cipher suite: TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA
-public const ECDHE_RSA_AES256_CBC_SHA = "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA";
-# Cipher suite: TLS_RSA_WITH_AES_256_CBC_SHA256
-public const RSA_AES256_CBC_SHA256 = "TLS_RSA_WITH_AES_256_CBC_SHA256";
-# Cipher suite: TLS_RSA_WITH_AES_256_CBC_SHA
-public const RSA_AES256_CBC_SHA = "TLS_RSA_WITH_AES_256_CBC_SHA";
-# Cipher suite: TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA
-public const ECDHE_RSA_3DES_EDE_CBC_SHA = "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA";
-# Cipher suite: SSL_RSA_WITH_3DES_EDE_CBC_SHA
-public const RSA_3DES_EDE_CBC_SHA = "SSL_RSA_WITH_3DES_EDE_CBC_SHA";
-# Cipher suite: TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA
-public const ECDHE_RSA_AES128_CBC_SHA = "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA";
-# Cipher suite: TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
-public const ECDHE_RSA_AES128_CBC_SHA256 = "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256";
-# Cipher suite: TLS_RSA_WITH_AES_128_CBC_SHA256
-public const RSA_AES128_CBC_SHA256 = "TLS_RSA_WITH_AES_128_CBC_SHA256";
-# Cipher suite: TLS_RSA_WITH_AES_128_CBC_SHA
-public const RSA_AES128_CBC_SHA = "TLS_RSA_WITH_AES_128_CBC_SHA";
-
-# The SSL Cipher Suite to be used for secure communication with the Solace broker.
-public type SslCipherSuite ECDHE_RSA_AES256_CBC_SHA384|ECDHE_RSA_AES256_CBC_SHA|RSA_AES256_CBC_SHA256|RSA_AES256_CBC_SHA|
-    ECDHE_RSA_3DES_EDE_CBC_SHA|RSA_3DES_EDE_CBC_SHA|ECDHE_RSA_AES128_CBC_SHA|ECDHE_RSA_AES128_CBC_SHA256|RSA_AES128_CBC_SHA256|
-    RSA_AES128_CBC_SHA;
+public type Protocol SSLv30|TLSv10|TLSv11|TLSv12|SSLv2Hello|string;
 
 # SSL/TLS configuration for secure connections
 public type SecureSocket record {|
@@ -160,13 +136,15 @@ public type SecureSocket record {|
 |};
 
 # Retry configuration for connection attempts
+// Check if a backoff stragey is availble in JCSMP
+// Ans: No backoff strategy is available in JCSMP
 public type RetryConfig record {|
     # Number of times to retry connecting during initial connection (0 = no retries, -1 = infinite)
     int connectRetries = 0;
     # Number of connection retries per host when multiple hosts are specified
     int connectRetriesPerHost = 0;
     # Number of times to retry reconnecting after connection loss (-1 = infinite)
-    int reconnectRetries = 20;
+    int reconnectRetries = 3;
     # Time to wait between reconnection attempts in seconds
     decimal reconnectRetryWait = 3.0;
 |};
