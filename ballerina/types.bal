@@ -25,16 +25,6 @@ public enum AcknowledgementMode {
     CLIENT_ACK = "SUPPORTED_MESSAGE_ACK_CLIENT"
 }
 
-# Message settlement outcomes for explicit acknowledgement control
-public enum SettlementOutcome {
-    # Acknowledge the message - positive ACK indicating successful processing
-    ACCEPTED = "ACCEPTED",
-    # Negative ACK with redelivery - message will be redelivered by broker, delivery count incremented
-    FAILED = "FAILED",
-    # Negative ACK without redelivery - message moves to DMQ immediately (or deleted if no DMQ)
-    REJECTED = "REJECTED"
-}
-
 # Authentication configuration types
 public type BasicAuthConfig record {|
     # The username for authentication
@@ -232,15 +222,16 @@ public type CommonConsumerConfig record {|
 |};
 
 # Queue consumer configuration for synchronous (pull-based) consumption
-public type QueueConsumerConfig record {|
+public type QueueSubscription record {|
     *CommonConsumerConfig;
     # The queue name to consume messages from
     string queueName;
 |};
 
 # Topic consumer configuration for synchronous (pull-based) consumption
-public type TopicConsumerConfig record {|
+public type TopicSubscription record {|
     *CommonConsumerConfig;
+    // If all CommonConsumerConfig fields are FlowReceiver only we can have two different TopicConfigs, one for the durable case and one for the direct case
     # The topic name to subscribe to
     string topicName;
     # Endpoint type: DEFAULT (ephemeral/direct) or DURABLE (persisted on broker)
@@ -251,7 +242,7 @@ public type TopicConsumerConfig record {|
 |};
 
 # Consumer subscription configuration (sealed: QueueConsumerConfig | TopicConsumerConfig)
-public type ConsumerSubscription QueueConsumerConfig|TopicConsumerConfig;
+public type ConsumerSubscription QueueSubscription|TopicSubscription;
 
 # Consumer configuration for synchronous (pull-based) message consumption via MessageConsumer
 public type ConsumerConfiguration record {|
