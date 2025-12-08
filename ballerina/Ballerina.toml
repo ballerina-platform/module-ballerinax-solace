@@ -23,7 +23,7 @@ groupId = "com.solacesystems"
 artifactId = "sol-jcsmp"
 version = "10.29.0"
 path = "./lib/sol-jcsmp-10.29.0.jar"
-.
+
 [[platform.java21.dependency]]
 groupId = "com.solace"
 artifactId = "solace-serdes"
