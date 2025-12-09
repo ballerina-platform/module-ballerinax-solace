@@ -21,18 +21,23 @@ public final class ConfigurationUtils {
     }
 
     /**
-     * Builds JCSMPProperties from a ConnectionConfiguration.
+     * Builds JCSMPProperties from a ConnectionConfiguration and host URL.
+     *
+     * @param host   the broker host URL (from Ballerina init's url parameter)
+     * @param config the connection configuration
+     * @return configured JCSMPProperties
+     * @throws Exception if configuration fails
      */
-    public static JCSMPProperties buildJCSMPProperties(ConnectionConfiguration config) throws Exception {
+    public static JCSMPProperties buildJCSMPProperties(String host, ConnectionConfiguration config) throws Exception {
         JCSMPProperties props = new JCSMPProperties();
 
         // Set host and VPN
-        props.setProperty(JCSMPProperties.HOST, config.host());
+        props.setProperty(JCSMPProperties.HOST, host);
         props.setProperty(JCSMPProperties.VPN_NAME, config.vpnName());
 
         // Set client identification
-        if (config.clientId() != null) {
-            props.setProperty(JCSMPProperties.CLIENT_NAME, config.clientId());
+        if (config.clientName() != null) {
+            props.setProperty(JCSMPProperties.CLIENT_NAME, config.clientName());
         }
         props.setProperty(JCSMPProperties.APPLICATION_DESCRIPTION, config.clientDescription());
 
@@ -40,6 +45,12 @@ public final class ConfigurationUtils {
         if (config.localAddress() != null) {
             props.setProperty(JCSMPProperties.LOCALHOST, config.localAddress());
         }
+
+        // Set timestamp and sequence number generation
+        props.setProperty(JCSMPProperties.GENERATE_RCV_TIMESTAMPS, config.generateReceiveTimestamps());
+        props.setProperty(JCSMPProperties.GENERATE_SEND_TIMESTAMPS, config.generateSendTimestamps());
+        props.setProperty(JCSMPProperties.GENERATE_SEQUENCE_NUMBERS, config.generateSequenceNumbers());
+        props.setProperty(JCSMPProperties.CALCULATE_MESSAGE_EXPIRATION, config.calculateMessageExpiration());
 
         // Set channel properties (timeouts, retries, compression)
         setChannelProperties(props, config);
@@ -109,7 +120,9 @@ public final class ConfigurationUtils {
                     kerberosAuth.jaasConfigFileReloadEnabled());
         } else if (auth instanceof OAuth2Config oauth2Auth) {
             props.setProperty(JCSMPProperties.AUTHENTICATION_SCHEME, JCSMPProperties.AUTHENTICATION_SCHEME_OAUTH2);
-            props.setProperty(JCSMPProperties.OAUTH2_ISSUER_IDENTIFIER, oauth2Auth.issuer());
+            if (oauth2Auth.issuer() != null) {
+                props.setProperty(JCSMPProperties.OAUTH2_ISSUER_IDENTIFIER, oauth2Auth.issuer());
+            }
             if (oauth2Auth.accessToken() != null) {
                 props.setProperty(JCSMPProperties.OAUTH2_ACCESS_TOKEN, oauth2Auth.accessToken());
             }

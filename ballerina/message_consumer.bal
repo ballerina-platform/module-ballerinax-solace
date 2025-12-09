@@ -54,9 +54,9 @@ public isolated function init(string url, *ConsumerConfiguration config) returns
     # Blocks up to the specified timeout waiting for a message. Returns nil if no message
     # arrives within the timeout period.
     #
-    # + timeout - Maximum time in seconds to wait for a message
+    # + timeout - Maximum time in seconds to wait for a message. A timeout of zero never expires
     # + return - The received message, or nil if timeout occurs; Error if receive fails
-    isolated remote function receive(decimal timeout = 10.0) returns Message|Error? = @java:Method {
+    isolated remote function receive(decimal timeout = 0.0) returns Message|Error? = @java:Method {
         'class: "io.ballerina.lib.solace.smf.consumer.ConsumerActions",
         name: "receive"
     } external;

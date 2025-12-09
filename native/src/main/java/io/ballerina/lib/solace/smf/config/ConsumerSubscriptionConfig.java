@@ -1,0 +1,35 @@
+package io.ballerina.lib.solace.smf.config;
+
+import io.ballerina.runtime.api.utils.StringUtils;
+import io.ballerina.runtime.api.values.BMap;
+import io.ballerina.runtime.api.values.BString;
+
+/**
+ * Sealed interface for consumer subscription configuration.
+ * Can be either QueueConsumerConfig or TopicConsumerConfig.
+ */
+public sealed interface ConsumerSubscriptionConfig permits QueueConsumerConfig, TopicConsumerConfig {
+
+    /**
+     * Factory method to create the appropriate ConsumerSubscriptionConfig type
+     * based on the configuration map.
+     *
+     * @param config the configuration map containing either queueName or topicName
+     * @return a QueueConsumerConfig or TopicConsumerConfig instance
+     * @throws IllegalArgumentException if neither queueName nor topicName is present
+     */
+    static ConsumerSubscriptionConfig fromBMap(BMap<BString, Object> config) {
+        BString queueNameKey = StringUtils.fromString("queueName");
+        BString topicNameKey = StringUtils.fromString("topicName");
+
+        if (config.containsKey(queueNameKey)) {
+            return new QueueConsumerConfig(config);
+        } else if (config.containsKey(topicNameKey)) {
+            return new TopicConsumerConfig(config);
+        } else {
+            throw new IllegalArgumentException(
+                "Consumer subscription config must have either 'queueName' or 'topicName' field"
+            );
+        }
+    }
+}

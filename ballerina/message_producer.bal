@@ -32,7 +32,7 @@ public isolated client class MessageProducer {
         return self.initProducer(url, config);
     }
 
-    isolated function initProducer(string url, ProducerConfiguration config) returns Error = @java:Method {
+    isolated function initProducer(string url, ProducerConfiguration config) returns Error? = @java:Method {
         'class: "io.ballerina.lib.solace.smf.producer.ProducerActions",
         name: "init"
     } external;
@@ -53,7 +53,7 @@ public isolated client class MessageProducer {
     #
     # + return - Error if commit fails
     isolated remote function 'commit() returns Error? = @java:Method {
-        'class: "io.ballerina.lib.solace.smf.consumer.ConsumerActions",
+        'class: "io.ballerina.lib.solace.smf.producer.ProducerActions",
         name: "commit"
     } external;
 
@@ -63,7 +63,7 @@ public isolated client class MessageProducer {
     #
     # + return - Error if rollback fails
     isolated remote function 'rollback() returns Error? = @java:Method {
-        'class: "io.ballerina.lib.solace.smf.consumer.ConsumerActions",
+        'class: "io.ballerina.lib.solace.smf.producer.ProducerActions",
         name: "rollback"
     } external;
 

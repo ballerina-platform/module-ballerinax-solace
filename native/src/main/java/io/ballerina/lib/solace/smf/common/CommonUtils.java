@@ -1,14 +1,18 @@
 package io.ballerina.lib.solace.smf.common;
 
-import java.util.concurrent.CompletableFuture;
+import io.ballerina.lib.solace.smf.ModuleUtils;
 import io.ballerina.runtime.api.creators.ErrorCreator;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BError;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Utility class for common operations like error creation and virtual thread execution.
  */
 public class CommonUtils {
+
+    private static final String SOLACE_ERROR = "Error";
 
     /**
      * Creates a Ballerina error from a message and Java exception.
@@ -18,14 +22,16 @@ public class CommonUtils {
         if (cause != null) {
             errorMsg = message + ": " + cause.getMessage();
         }
-        return ErrorCreator.createError(StringUtils.fromString(errorMsg));
+        return ErrorCreator.createError(ModuleUtils.getModule(), SOLACE_ERROR, StringUtils.fromString(errorMsg), null,
+                null);
     }
 
     /**
      * Creates a Ballerina error from just a message.
      */
     public static BError createError(String message) {
-        return ErrorCreator.createError(StringUtils.fromString(message));
+        return ErrorCreator.createError(ModuleUtils.getModule(), SOLACE_ERROR,
+                StringUtils.fromString(message), null, null);
     }
 
     /**
@@ -51,6 +57,7 @@ public class CommonUtils {
      */
     @FunctionalInterface
     public interface RunnableWithException {
+
         void run() throws Exception;
     }
 }

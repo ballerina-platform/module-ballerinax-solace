@@ -226,6 +226,10 @@ public type QueueSubscription record {|
     *CommonConsumerConfig;
     # The queue name to consume messages from
     string queueName;
+    # Whether this is a temporary queue (auto-deleted when session disconnects)
+    # Temporary queues are useful for short-lived, session-specific messaging patterns like request-reply.
+    # If true, a temporary queue will be created; if false (default), uses a durable queue that must be pre-provisioned.
+    boolean temporary = false;
 |};
 
 # Topic consumer configuration for synchronous (pull-based) consumption
