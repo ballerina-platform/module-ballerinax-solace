@@ -21,8 +21,8 @@ public type Destination Topic|Queue;
 // Ans: It does not apply to producer. It is only for consumers and session level configuration
 // in JCSMP is so that all consumers created on that session inherit the ack mode as a default
 public enum AcknowledgementMode {
-    AUTO_ACK = "SUPPORTED_MESSAGE_ACK_AUTO",
-    CLIENT_ACK = "SUPPORTED_MESSAGE_ACK_CLIENT"
+    AUTO_ACK,
+    CLIENT_ACK
 }
 
 # Authentication configuration types
@@ -324,6 +324,7 @@ public type TopicServiceConfig record {|
 # Service subscription configuration (sealed: QueueServiceConfig | TopicServiceConfig)
 public type ServiceConfiguration QueueServiceConfig|TopicServiceConfig;
 
+// For the fields that are set by the broker mention that in the comment
 # Message type for publishing/consuming
 public type Message record {|
     # The binary payload of the message
