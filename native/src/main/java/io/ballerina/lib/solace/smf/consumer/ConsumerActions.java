@@ -5,6 +5,7 @@ import com.solacesystems.jcsmp.ConsumerFlowProperties;
 import com.solacesystems.jcsmp.DurableTopicEndpoint;
 import com.solacesystems.jcsmp.EndpointProperties;
 import com.solacesystems.jcsmp.FlowReceiver;
+import com.solacesystems.jcsmp.JCSMPException;
 import com.solacesystems.jcsmp.JCSMPFactory;
 import com.solacesystems.jcsmp.JCSMPProperties;
 import com.solacesystems.jcsmp.JCSMPSession;
@@ -45,6 +46,15 @@ public class ConsumerActions {
     private static final String SUBSCRIPTION_TYPE_DURABLE_TOPIC = "DURABLE_TOPIC";
 
     /**
+     * Functional interface for creating a FlowReceiver from flow properties.
+     * This allows abstracting the difference between JCSMPSession and TransactedSession.
+     */
+    @FunctionalInterface
+    private interface FlowReceiverFactory {
+        FlowReceiver createFlow(ConsumerFlowProperties flowProps) throws JCSMPException;
+    }
+
+    /**
      * Initialize the consumer with connection URL and configuration. Creates either a transacted or non-transacted
      * consumer based on configuration.
      *
@@ -65,10 +75,8 @@ public class ConsumerActions {
                     ConfigurationUtils.buildJCSMPProperties(url.getValue(), consumerConfig.connectionConfig());
 
             // Create and connect base JCSMP session
-            JCSMPSession session = JCSMPFactory.onlyInstance().createSession(jcsmpProps);
+            final JCSMPSession session = JCSMPFactory.onlyInstance().createSession(jcsmpProps);
             session.connect();
-
-            TransactedSession txSession = null;
 
             // Validate: Direct topic subscriptions cannot be transacted
             if (isTransacted && subscriptionConfig instanceof TopicConsumerConfig topicConfig &&
@@ -78,9 +86,7 @@ public class ConsumerActions {
             }
 
             // Create TransactedSession if in transacted mode
-            if (isTransacted) {
-                txSession = session.createTransactedSession();
-            }
+            final TransactedSession txSession = isTransacted ? session.createTransactedSession() : null;
 
             // Store session references and transacted flag
             consumer.addNativeData(NATIVE_SESSION, session);
@@ -90,19 +96,17 @@ public class ConsumerActions {
 
             // Create appropriate consumer based on subscription type
             if (subscriptionConfig instanceof QueueConsumerConfig queueConfig) {
-                if (isTransacted) {
-                    createQueueConsumer(consumer, txSession, queueConfig);
-                } else {
-                    createQueueConsumer(consumer, session, queueConfig);
-                }
+                FlowReceiverFactory factory = isTransacted
+                        ? props -> txSession.createFlow(null, props, null)
+                        : props -> session.createFlow(null, props);
+                createQueueConsumer(consumer, factory, queueConfig, isTransacted);
             } else if (subscriptionConfig instanceof TopicConsumerConfig topicConfig) {
                 topicConfig.validate();
                 if (topicConfig.isDurable()) {
-                    if (isTransacted) {
-                        createDurableTopicConsumer(consumer, txSession, topicConfig);
-                    } else {
-                        createDurableTopicConsumer(consumer, session, topicConfig);
-                    }
+                    FlowReceiverFactory factory = isTransacted
+                            ? props -> txSession.createFlow(null, props, null)
+                            : props -> session.createFlow(null, props);
+                    createDurableTopicConsumer(consumer, factory, topicConfig, isTransacted);
                 } else {
                     // Direct topic - always non-transacted (already validated above)
                     createDirectTopicConsumer(consumer, session, topicConfig);
@@ -118,26 +122,23 @@ public class ConsumerActions {
     }
 
     /**
-     * Creates a FlowReceiver for queue consumption (non-transacted).
+     * Configures common flow properties from a consumer subscription config.
+     * Applies to both queue and durable topic consumers.
+     *
+     * @param flowProps the flow properties to configure
+     * @param config    the consumer subscription configuration containing common fields
      */
-    private static void createQueueConsumer(BObject consumer, JCSMPSession session, QueueConsumerConfig config)
-            throws Exception {
-        Queue queue;
-        if (config.temporary()) {
-            if (config.queueName() != null && !config.queueName().isEmpty()) {
-                queue = session.createTemporaryQueue(config.queueName());
-            } else {
-                queue = session.createTemporaryQueue();
-            }
-        } else {
-            queue = JCSMPFactory.onlyInstance().createQueue(config.queueName());
-        }
-
-        ConsumerFlowProperties flowProps = new ConsumerFlowProperties();
-        flowProps.setEndpoint(queue);
+    private static void configureFlowProperties(ConsumerFlowProperties flowProps,
+                                                ConsumerSubscriptionConfig config) {
+        // Set ack mode
         flowProps.setAckMode(config.ackMode());
 
-        // Set optional flow properties
+        // Set selector if present
+        if (config.selector() != null) {
+            flowProps.setSelector(config.selector());
+        }
+
+        // Set optional flow control properties
         if (config.transportWindowSize() != null) {
             flowProps.setTransportWindowSize(config.transportWindowSize());
         }
@@ -162,15 +163,50 @@ public class ConsumerActions {
         if (config.reconnectRetryIntervalInMsecs() != null) {
             flowProps.setReconnectRetryIntervalInMsecs(config.reconnectRetryIntervalInMsecs());
         }
-        if (config.selector() != null) {
-            flowProps.setSelector(config.selector());
+    }
+
+    /**
+     * Creates a queue for consumption (temporary or regular).
+     *
+     * @param session the JCSMP session
+     * @param config  the queue consumer configuration
+     * @return the created Queue
+     * @throws JCSMPException if queue creation fails
+     */
+    private static Queue createQueue(JCSMPSession session, QueueConsumerConfig config) throws JCSMPException {
+        if (config.temporary()) {
+            return (config.queueName() != null && !config.queueName().isEmpty())
+                    ? session.createTemporaryQueue(config.queueName())
+                    : session.createTemporaryQueue();
+        }
+        return JCSMPFactory.onlyInstance().createQueue(config.queueName());
+    }
+
+    /**
+     * Creates a FlowReceiver for queue consumption (unified for transacted/non-transacted).
+     *
+     * @param consumer       the Ballerina consumer object
+     * @param flowFactory    the factory function for creating the flow receiver
+     * @param config         the queue consumer configuration
+     * @param isTransacted   whether this is a transacted flow
+     * @throws Exception if flow creation fails
+     */
+    private static void createQueueConsumer(BObject consumer, FlowReceiverFactory flowFactory,
+                                           QueueConsumerConfig config, boolean isTransacted) throws Exception {
+        JCSMPSession baseSession = (JCSMPSession) consumer.getNativeData(NATIVE_SESSION);
+        Queue queue = createQueue(baseSession, config);
+
+        ConsumerFlowProperties flowProps = new ConsumerFlowProperties();
+        flowProps.setEndpoint(queue);
+        configureFlowProperties(flowProps, config);
+
+        // Add settlement outcomes only for non-transacted flows
+        if (!isTransacted) {
+            flowProps.addRequiredSettlementOutcomes(XMLMessage.Outcome.FAILED, XMLMessage.Outcome.REJECTED);
         }
 
-        // Add required settlement outcomes for NACK support
-        flowProps.addRequiredSettlementOutcomes(XMLMessage.Outcome.FAILED, XMLMessage.Outcome.REJECTED);
-
-        // Create flow without listener (for sync receive)
-        FlowReceiver flowReceiver = session.createFlow(null, flowProps);
+        // Create flow using the factory function
+        FlowReceiver flowReceiver = flowFactory.createFlow(flowProps);
         flowReceiver.start();
 
         consumer.addNativeData(NATIVE_FLOW, flowReceiver);
@@ -178,133 +214,17 @@ public class ConsumerActions {
     }
 
     /**
-     * Creates a FlowReceiver for queue consumption (transacted).
+     * Creates a FlowReceiver for durable topic subscription (unified for transacted/non-transacted).
+     *
+     * @param consumer       the Ballerina consumer object
+     * @param flowFactory    the factory function for creating the flow receiver
+     * @param config         the topic consumer configuration
+     * @param isTransacted   whether this is a transacted flow
+     * @throws Exception if flow creation fails
      */
-    private static void createQueueConsumer(BObject consumer, TransactedSession txSession, QueueConsumerConfig config)
-            throws Exception {
-        Queue queue;
-        if (config.temporary()) {
-            JCSMPSession baseSession = (JCSMPSession) consumer.getNativeData(NATIVE_SESSION);
-
-            if (config.queueName() != null && !config.queueName().isEmpty()) {
-                queue = baseSession.createTemporaryQueue(config.queueName());
-            } else {
-                queue = baseSession.createTemporaryQueue();
-            }
-        } else {
-            queue = JCSMPFactory.onlyInstance().createQueue(config.queueName());
-        }
-
-        ConsumerFlowProperties flowProps = new ConsumerFlowProperties();
-        flowProps.setEndpoint(queue);
-        flowProps.setAckMode(config.ackMode());
-
-        // Set optional flow properties
-        if (config.transportWindowSize() != null) {
-            flowProps.setTransportWindowSize(config.transportWindowSize());
-        }
-        if (config.ackThreshold() != null) {
-            flowProps.setAckThreshold(config.ackThreshold());
-        }
-        if (config.ackTimerInMsecs() != null) {
-            flowProps.setAckTimerInMsecs(config.ackTimerInMsecs());
-        }
-        if (config.startState() != null) {
-            flowProps.setStartState(config.startState());
-        }
-        if (config.noLocal() != null) {
-            flowProps.setNoLocal(config.noLocal());
-        }
-        if (config.activeFlowIndication() != null) {
-            flowProps.setActiveFlowIndication(config.activeFlowIndication());
-        }
-        if (config.reconnectTries() != null) {
-            flowProps.setReconnectTries(config.reconnectTries());
-        }
-        if (config.reconnectRetryIntervalInMsecs() != null) {
-            flowProps.setReconnectRetryIntervalInMsecs(config.reconnectRetryIntervalInMsecs());
-        }
-        if (config.selector() != null) {
-            flowProps.setSelector(config.selector());
-        }
-
-        // NOTE: Settlement outcomes are ignored for transacted flows
-
-        // Create flow on transacted session (without listener for sync receive)
-        FlowReceiver flowReceiver = txSession.createFlow(null, flowProps, null);
-        flowReceiver.start();
-
-        consumer.addNativeData(NATIVE_FLOW, flowReceiver);
-        consumer.addNativeData(NATIVE_SUBSCRIPTION_TYPE, SUBSCRIPTION_TYPE_QUEUE);
-    }
-
-    /**
-     * Creates a FlowReceiver for durable topic subscription (non-transacted).
-     */
-    private static void createDurableTopicConsumer(BObject consumer, JCSMPSession session, TopicConsumerConfig config)
-            throws Exception {
-        // Create durable topic endpoint
-        DurableTopicEndpoint endpoint = JCSMPFactory.onlyInstance().createDurableTopicEndpoint(config.endpointName());
-
-        // Create topic subscription
-        Topic topic = JCSMPFactory.onlyInstance().createTopic(config.topicName());
-
-        // Provision the endpoint (ignore if already exists)
-        EndpointProperties endpointProps = new EndpointProperties();
-        session.provision(endpoint, endpointProps, JCSMPSession.FLAG_IGNORE_ALREADY_EXISTS);
-
-        ConsumerFlowProperties flowProps = new ConsumerFlowProperties();
-        flowProps.setEndpoint(endpoint);
-        flowProps.setNewSubscription(topic);
-        flowProps.setAckMode(config.ackMode());
-
-        // Set optional flow properties
-        if (config.transportWindowSize() != null) {
-            flowProps.setTransportWindowSize(config.transportWindowSize());
-        }
-        if (config.ackThreshold() != null) {
-            flowProps.setAckThreshold(config.ackThreshold());
-        }
-        if (config.ackTimerInMsecs() != null) {
-            flowProps.setAckTimerInMsecs(config.ackTimerInMsecs());
-        }
-        if (config.startState() != null) {
-            flowProps.setStartState(config.startState());
-        }
-        if (config.noLocal() != null) {
-            flowProps.setNoLocal(config.noLocal());
-        }
-        if (config.activeFlowIndication() != null) {
-            flowProps.setActiveFlowIndication(config.activeFlowIndication());
-        }
-        if (config.reconnectTries() != null) {
-            flowProps.setReconnectTries(config.reconnectTries());
-        }
-        if (config.reconnectRetryIntervalInMsecs() != null) {
-            flowProps.setReconnectRetryIntervalInMsecs(config.reconnectRetryIntervalInMsecs());
-        }
-        if (config.selector() != null) {
-            flowProps.setSelector(config.selector());
-        }
-
-        // Add required settlement outcomes for NACK support
-        flowProps.addRequiredSettlementOutcomes(XMLMessage.Outcome.FAILED, XMLMessage.Outcome.REJECTED);
-
-        // Create flow without listener (for sync receive)
-        FlowReceiver flowReceiver = session.createFlow(null, flowProps);
-        flowReceiver.start();
-
-        consumer.addNativeData(NATIVE_FLOW, flowReceiver);
-        consumer.addNativeData(NATIVE_SUBSCRIPTION_TYPE, SUBSCRIPTION_TYPE_DURABLE_TOPIC);
-    }
-
-    /**
-     * Creates a FlowReceiver for durable topic subscription (transacted).
-     */
-    private static void createDurableTopicConsumer(BObject consumer, TransactedSession txSession,
-                                                   TopicConsumerConfig config) throws Exception {
-        // Note: Cannot provision on TransactedSession, must use base JCSMPSession
-        // Get base session from native data
+    private static void createDurableTopicConsumer(BObject consumer, FlowReceiverFactory flowFactory,
+                                                   TopicConsumerConfig config, boolean isTransacted) throws Exception {
+        // Note: Provisioning requires base JCSMPSession (cannot provision on TransactedSession)
         JCSMPSession baseSession = (JCSMPSession) consumer.getNativeData(NATIVE_SESSION);
 
         // Create durable topic endpoint
@@ -313,48 +233,22 @@ public class ConsumerActions {
         // Create topic subscription
         Topic topic = JCSMPFactory.onlyInstance().createTopic(config.topicName());
 
-        // Provision the endpoint on base session (ignore if already exists)
+        // Provision the endpoint (ignore if already exists)
         EndpointProperties endpointProps = new EndpointProperties();
         baseSession.provision(endpoint, endpointProps, JCSMPSession.FLAG_IGNORE_ALREADY_EXISTS);
 
         ConsumerFlowProperties flowProps = new ConsumerFlowProperties();
         flowProps.setEndpoint(endpoint);
         flowProps.setNewSubscription(topic);
-        flowProps.setAckMode(config.ackMode());
+        configureFlowProperties(flowProps, config);
 
-        // Set optional flow properties
-        if (config.transportWindowSize() != null) {
-            flowProps.setTransportWindowSize(config.transportWindowSize());
-        }
-        if (config.ackThreshold() != null) {
-            flowProps.setAckThreshold(config.ackThreshold());
-        }
-        if (config.ackTimerInMsecs() != null) {
-            flowProps.setAckTimerInMsecs(config.ackTimerInMsecs());
-        }
-        if (config.startState() != null) {
-            flowProps.setStartState(config.startState());
-        }
-        if (config.noLocal() != null) {
-            flowProps.setNoLocal(config.noLocal());
-        }
-        if (config.activeFlowIndication() != null) {
-            flowProps.setActiveFlowIndication(config.activeFlowIndication());
-        }
-        if (config.reconnectTries() != null) {
-            flowProps.setReconnectTries(config.reconnectTries());
-        }
-        if (config.reconnectRetryIntervalInMsecs() != null) {
-            flowProps.setReconnectRetryIntervalInMsecs(config.reconnectRetryIntervalInMsecs());
-        }
-        if (config.selector() != null) {
-            flowProps.setSelector(config.selector());
+        // Add settlement outcomes only for non-transacted flows
+        if (!isTransacted) {
+            flowProps.addRequiredSettlementOutcomes(XMLMessage.Outcome.FAILED, XMLMessage.Outcome.REJECTED);
         }
 
-        // NOTE: Settlement outcomes are ignored for transacted flows
-
-        // Create flow on transacted session (without listener for sync receive)
-        FlowReceiver flowReceiver = txSession.createFlow(null, flowProps, null);
+        // Create flow using the factory function
+        FlowReceiver flowReceiver = flowFactory.createFlow(flowProps);
         flowReceiver.start();
 
         consumer.addNativeData(NATIVE_FLOW, flowReceiver);

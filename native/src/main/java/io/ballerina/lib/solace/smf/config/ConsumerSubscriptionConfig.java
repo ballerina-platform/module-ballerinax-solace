@@ -7,6 +7,7 @@ import io.ballerina.runtime.api.values.BString;
 /**
  * Sealed interface for consumer subscription configuration.
  * Can be either QueueConsumerConfig or TopicConsumerConfig.
+ * Contains common flow control properties shared by both queue and topic consumers.
  */
 public sealed interface ConsumerSubscriptionConfig permits QueueConsumerConfig, TopicConsumerConfig {
 
@@ -32,4 +33,16 @@ public sealed interface ConsumerSubscriptionConfig permits QueueConsumerConfig, 
             );
         }
     }
+
+    // Common flow control properties (from CommonConsumerConfig in types.bal)
+    String ackMode();
+    String selector();
+    Integer transportWindowSize();
+    Integer ackThreshold();
+    Integer ackTimerInMsecs();
+    Boolean startState();
+    Boolean noLocal();
+    Boolean activeFlowIndication();
+    Integer reconnectTries();
+    Integer reconnectRetryIntervalInMsecs();
 }
