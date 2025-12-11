@@ -12,9 +12,9 @@ import java.util.List;
 /**
  * SSL/TLS configuration for secure connections.
  *
- * @param validation certificate validation settings
- * @param trustStore trust store configuration, or null
- * @param keyStore key store configuration for client certificate authentication, or null
+ * @param validation         certificate validation settings
+ * @param trustStore         trust store configuration, or null
+ * @param keyStore           key store configuration for client certificate authentication, or null
  * @param trustedCommonNames list of acceptable common names for broker certificate validation
  */
 public record SecureSocketConfig(
@@ -22,6 +22,7 @@ public record SecureSocketConfig(
         TrustStoreConfig trustStore,
         KeyStoreConfig keyStore,
         List<String> trustedCommonNames) {
+
     private static final BString VALIDATION_KEY = StringUtils.fromString("validation");
     private static final BString TRUST_STORE_KEY = StringUtils.fromString("trustStore");
     private static final BString KEY_STORE_KEY = StringUtils.fromString("keyStore");
@@ -32,10 +33,10 @@ public record SecureSocketConfig(
      */
     public SecureSocketConfig(BMap<BString, Object> config) {
         this(
-            getValidationConfig(config),
-            getTrustStoreConfig(config),
-            getKeyStoreConfig(config),
-            getTrustedCommonNames(config)
+                getValidationConfig(config),
+                getTrustStoreConfig(config),
+                getKeyStoreConfig(config),
+                getTrustedCommonNames(config)
         );
     }
 

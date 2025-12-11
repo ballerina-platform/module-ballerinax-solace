@@ -237,19 +237,11 @@ public class ProducerActions {
 
             // Close in reverse order: producer, then session
             if (xmlProducer != null) {
-                try {
-                    xmlProducer.close();
-                } catch (Exception e) {
-                    // Log but continue with session close
-                }
+                xmlProducer.close();
             }
 
             if (session != null) {
-                try {
-                    session.closeSession();
-                } catch (Exception e) {
-                    // Log but continue
-                }
+                session.closeSession();
             }
 
             // Mark as closed and clear native data

@@ -9,9 +9,10 @@ import io.ballerina.runtime.api.values.BString;
  *
  * @param location URL or file path of trust store
  * @param password password for trust store
- * @param format format of trust store file (e.g., "jks" or "pkcs12")
+ * @param format   format of trust store file (e.g., "jks" or "pkcs12")
  */
 public record TrustStoreConfig(String location, String password, String format) {
+
     private static final BString LOCATION_KEY = StringUtils.fromString("location");
     private static final BString PASSWORD_KEY = StringUtils.fromString("password");
     private static final BString FORMAT_KEY = StringUtils.fromString("format");
@@ -21,9 +22,9 @@ public record TrustStoreConfig(String location, String password, String format) 
      */
     public TrustStoreConfig(BMap<BString, Object> config) {
         this(
-            config.getStringValue(LOCATION_KEY).getValue(),
-            config.getStringValue(PASSWORD_KEY).getValue(),
-            config.getStringValue(FORMAT_KEY).getValue()
+                config.getStringValue(LOCATION_KEY).getValue(),
+                config.getStringValue(PASSWORD_KEY).getValue(),
+                config.getStringValue(FORMAT_KEY).getValue()
         );
     }
 }

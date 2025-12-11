@@ -5,9 +5,12 @@ import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
 
 /**
- * Topic destination implementation for publish/subscribe messaging.
+ * Topic destination for publish/subscribe messaging.
+ *
+ * @param topicName name of topic to publish messages to
  */
 public record Topic(String topicName) implements Destination {
+
     private static final BString TOPIC_NAME_KEY = StringUtils.fromString("topicName");
 
     /**

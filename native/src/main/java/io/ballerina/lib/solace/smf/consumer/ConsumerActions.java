@@ -46,11 +46,12 @@ public class ConsumerActions {
     private static final String SUBSCRIPTION_TYPE_DURABLE_TOPIC = "DURABLE_TOPIC";
 
     /**
-     * Functional interface for creating a FlowReceiver from flow properties.
-     * This allows abstracting the difference between JCSMPSession and TransactedSession.
+     * Functional interface for creating a FlowReceiver from flow properties. This allows abstracting the difference
+     * between JCSMPSession and TransactedSession.
      */
     @FunctionalInterface
     private interface FlowReceiverFactory {
+
         FlowReceiver createFlow(ConsumerFlowProperties flowProps) throws JCSMPException;
     }
 
@@ -122,8 +123,8 @@ public class ConsumerActions {
     }
 
     /**
-     * Configures common flow properties from a consumer subscription config.
-     * Applies to both queue and durable topic consumers.
+     * Configures common flow properties from a consumer subscription config. Applies to both queue and durable topic
+     * consumers.
      *
      * @param flowProps the flow properties to configure
      * @param config    the consumer subscription configuration containing common fields
@@ -185,14 +186,14 @@ public class ConsumerActions {
     /**
      * Creates a FlowReceiver for queue consumption (unified for transacted/non-transacted).
      *
-     * @param consumer       the Ballerina consumer object
-     * @param flowFactory    the factory function for creating the flow receiver
-     * @param config         the queue consumer configuration
-     * @param isTransacted   whether this is a transacted flow
+     * @param consumer     the Ballerina consumer object
+     * @param flowFactory  the factory function for creating the flow receiver
+     * @param config       the queue consumer configuration
+     * @param isTransacted whether this is a transacted flow
      * @throws Exception if flow creation fails
      */
     private static void createQueueConsumer(BObject consumer, FlowReceiverFactory flowFactory,
-                                           QueueConsumerConfig config, boolean isTransacted) throws Exception {
+                                            QueueConsumerConfig config, boolean isTransacted) throws Exception {
         JCSMPSession baseSession = (JCSMPSession) consumer.getNativeData(NATIVE_SESSION);
         Queue queue = createQueue(baseSession, config);
 
@@ -216,10 +217,10 @@ public class ConsumerActions {
     /**
      * Creates a FlowReceiver for durable topic subscription (unified for transacted/non-transacted).
      *
-     * @param consumer       the Ballerina consumer object
-     * @param flowFactory    the factory function for creating the flow receiver
-     * @param config         the topic consumer configuration
-     * @param isTransacted   whether this is a transacted flow
+     * @param consumer     the Ballerina consumer object
+     * @param flowFactory  the factory function for creating the flow receiver
+     * @param config       the topic consumer configuration
+     * @param isTransacted whether this is a transacted flow
      * @throws Exception if flow creation fails
      */
     private static void createDurableTopicConsumer(BObject consumer, FlowReceiverFactory flowFactory,
@@ -508,43 +509,27 @@ public class ConsumerActions {
                     SUBSCRIPTION_TYPE_DURABLE_TOPIC.equals(subscriptionType)) {
                 FlowReceiver flowReceiver = (FlowReceiver) consumer.getNativeData(NATIVE_FLOW);
                 if (flowReceiver != null) {
-                    try {
-                        flowReceiver.stop();
-                        flowReceiver.close();
-                    } catch (Exception e) {
-                        // Log but continue
-                    }
+                    flowReceiver.stop();
+                    flowReceiver.close();
                 }
             } else if (SUBSCRIPTION_TYPE_DIRECT_TOPIC.equals(subscriptionType)) {
                 XMLMessageConsumer xmlConsumer = (XMLMessageConsumer) consumer.getNativeData(NATIVE_CONSUMER);
                 if (xmlConsumer != null) {
-                    try {
-                        xmlConsumer.stop();
-                        xmlConsumer.close();
-                    } catch (Exception e) {
-                        // Log but continue
-                    }
+                    xmlConsumer.stop();
+                    xmlConsumer.close();
                 }
             }
 
             // Close transacted session if present
             TransactedSession txSession = (TransactedSession) consumer.getNativeData(NATIVE_TX_SESSION);
             if (txSession != null) {
-                try {
-                    txSession.close();
-                } catch (Exception e) {
-                    // Log but continue
-                }
+                txSession.close();
             }
 
             // Close base session
             JCSMPSession session = (JCSMPSession) consumer.getNativeData(NATIVE_SESSION);
             if (session != null) {
-                try {
-                    session.closeSession();
-                } catch (Exception e) {
-                    // Log but continue
-                }
+                session.closeSession();
             }
 
             // Mark as closed and clear native data

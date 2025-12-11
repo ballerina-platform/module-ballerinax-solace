@@ -5,15 +5,16 @@ import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
 
 /**
- * Sealed interface for consumer subscription configuration.
- * Can be either QueueConsumerConfig or TopicConsumerConfig.
+ * Interface for consumer subscription configuration.
+ * <p>
+ * Can be either {@link QueueConsumerConfig} or {@link TopicConsumerConfig}.
+ * <p>
  * Contains common flow control properties shared by both queue and topic consumers.
  */
 public sealed interface ConsumerSubscriptionConfig permits QueueConsumerConfig, TopicConsumerConfig {
 
     /**
-     * Factory method to create the appropriate ConsumerSubscriptionConfig type
-     * based on the configuration map.
+     * Factory method to create the appropriate ConsumerSubscriptionConfig type based on the configuration map.
      *
      * @param config the configuration map containing either queueName or topicName
      * @return a QueueConsumerConfig or TopicConsumerConfig instance
@@ -29,20 +30,29 @@ public sealed interface ConsumerSubscriptionConfig permits QueueConsumerConfig, 
             return new TopicConsumerConfig(config);
         } else {
             throw new IllegalArgumentException(
-                "Consumer subscription config must have either 'queueName' or 'topicName' field"
+                    "Consumer subscription config must have either 'queueName' or 'topicName' field"
             );
         }
     }
 
     // Common flow control properties (from CommonConsumerConfig in types.bal)
     String ackMode();
+
     String selector();
+
     Integer transportWindowSize();
+
     Integer ackThreshold();
+
     Integer ackTimerInMsecs();
+
     Boolean startState();
+
     Boolean noLocal();
+
     Boolean activeFlowIndication();
+
     Integer reconnectTries();
+
     Integer reconnectRetryIntervalInMsecs();
 }

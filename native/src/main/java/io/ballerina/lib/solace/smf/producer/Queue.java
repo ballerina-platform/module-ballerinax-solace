@@ -5,9 +5,12 @@ import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
 
 /**
- * Queue destination implementation for point-to-point messaging.
+ * Queue destination for point-to-point messaging.
+ *
+ * @param queueName name of the queue to publish messages to
  */
 public record Queue(String queueName) implements Destination {
+
     private static final BString QUEUE_NAME_KEY = StringUtils.fromString("queueName");
 
     /**
