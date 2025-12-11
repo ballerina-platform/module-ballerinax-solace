@@ -89,7 +89,7 @@ public class ConsumerUtils {
     }
 
     /**
-     * Creates a FlowReceiver for queue consumption
+     * Creates a FlowReceiver for queue consumption.
      *
      * @param consumer     the Ballerina consumer object
      * @param flowFactory  the factory function for creating the flow receiver
@@ -98,7 +98,7 @@ public class ConsumerUtils {
      * @throws Exception if flow creation fails
      */
     public static void createQueueConsumer(BObject consumer, FlowReceiverFactory flowFactory,
-                                            QueueConsumerConfig config, boolean isTransacted) throws Exception {
+                                           QueueConsumerConfig config, boolean isTransacted) throws Exception {
         JCSMPSession baseSession = (JCSMPSession) consumer.getNativeData(NATIVE_SESSION);
         Queue queue = createQueue(baseSession, config);
 
@@ -120,7 +120,7 @@ public class ConsumerUtils {
     }
 
     /**
-     * Creates a FlowReceiver for durable topic subscription
+     * Creates a FlowReceiver for durable topic subscription.
      *
      * @param consumer     the Ballerina consumer object
      * @param flowFactory  the factory function for creating the flow receiver

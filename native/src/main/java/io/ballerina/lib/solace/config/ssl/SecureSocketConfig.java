@@ -22,6 +22,15 @@ public record SecureSocketConfig(
         KeyStoreConfig keyStore,
         List<String> trustedCommonNames) {
 
+    /**
+     * Canonical constructor with defensive copying to prevent external modification.
+     */
+    public SecureSocketConfig {
+        // Defensive copy to prevent external modification
+        trustedCommonNames = trustedCommonNames == null ? null :
+                List.copyOf(trustedCommonNames);
+    }
+
     private static final BString VALIDATION_KEY = StringUtils.fromString("validation");
     private static final BString TRUST_STORE_KEY = StringUtils.fromString("trustStore");
     private static final BString KEY_STORE_KEY = StringUtils.fromString("keyStore");
