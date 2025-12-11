@@ -153,6 +153,37 @@ task commitTomlFiles {
     }
 }
 
+task startSolaceServer() {
+    doLast {
+        if (!Os.isFamily(Os.FAMILY_WINDOWS)) {
+            def dockerComposeFile = "${project.projectDir}/tests/resources/docker-compose.yaml"
+            def initScript = "${project.projectDir}/tests/resources/init-solace.sh"
+            exec {
+                commandLine 'sh', '-c', "docker compose -f $dockerComposeFile up -d"
+            }
+            sleep(20 * 1000)
+            // Initialize queues
+            exec {
+                commandLine 'sh', '-c', "chmod +x $initScript && $initScript"
+                ignoreExitValue false
+            }
+        }
+    }
+}
+
+task stopSolaceServer() {
+    doLast {
+        if (!Os.isFamily(Os.FAMILY_WINDOWS)) {
+            def dockerComposeFile = "${project.projectDir}/tests/resources/docker-compose.yaml"
+            exec {
+                commandLine 'sh', '-c', "docker compose -f $dockerComposeFile rm -svf"
+            }
+            sleep(5 * 1000)
+        }
+    }
+}
+
+
 publishing {
     publications {
         maven(MavenPublication) {
@@ -180,6 +211,8 @@ build.dependsOn copyToLib
 build.dependsOn ":${packageName}-native:build"
 
 test.dependsOn ":${packageName}-native:build"
+test.dependsOn startSolaceServer
+test.finalizedBy stopSolaceServer
 
 publish.dependsOn build
 publishToMavenLocal.dependsOn build
