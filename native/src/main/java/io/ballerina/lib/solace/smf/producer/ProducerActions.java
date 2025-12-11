@@ -8,6 +8,7 @@ import com.solacesystems.jcsmp.XMLMessage;
 import com.solacesystems.jcsmp.XMLMessageProducer;
 import com.solacesystems.jcsmp.transaction.TransactedSession;
 import io.ballerina.lib.solace.smf.common.CommonUtils;
+import io.ballerina.lib.solace.smf.common.DestinationConverter;
 import io.ballerina.lib.solace.smf.config.ConfigurationUtils;
 import io.ballerina.lib.solace.smf.config.ProducerConfiguration;
 import io.ballerina.runtime.api.utils.StringUtils;
@@ -113,7 +114,7 @@ public class ProducerActions {
 
             Destination destination = createDestinationFromMap(destinationMap);
             com.solacesystems.jcsmp.Destination jcsmpDestination =
-                    MessageConverter.fromDestinationInterface(destination);
+                    DestinationConverter.fromDestinationInterface(destination);
 
             final XMLMessage finalMessage = jcsmpMessage;
             final com.solacesystems.jcsmp.Destination finalDestination = jcsmpDestination;
@@ -125,7 +126,7 @@ public class ProducerActions {
                 return CommonUtils.createError(bError.getMessage());
             }
 
-            return null; // Success
+            return null;
         } catch (Exception e) {
             return CommonUtils.createError("Failed to send message", e);
         }
@@ -245,7 +246,7 @@ public class ProducerActions {
             producer.addNativeData(NATIVE_PRODUCER, null);
             producer.addNativeData(NATIVE_SESSION, null);
 
-            return null; // Success
+            return null;
         } catch (Exception e) {
             return CommonUtils.createError("Failed to close producer", e);
         }

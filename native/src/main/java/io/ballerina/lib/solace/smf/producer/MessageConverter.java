@@ -3,43 +3,34 @@ package io.ballerina.lib.solace.smf.producer;
 import com.solacesystems.jcsmp.BytesMessage;
 import com.solacesystems.jcsmp.DeliveryMode;
 import com.solacesystems.jcsmp.Destination;
-import com.solacesystems.jcsmp.JCSMPFactory;
 import com.solacesystems.jcsmp.SDTException;
 import com.solacesystems.jcsmp.SDTMap;
 import com.solacesystems.jcsmp.XMLMessage;
 import com.solacesystems.jcsmp.XMLMessageProducer;
-import io.ballerina.runtime.api.utils.StringUtils;
+import io.ballerina.lib.solace.smf.common.DestinationConverter;
+import io.ballerina.lib.solace.smf.common.PropertyConverter;
 import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
+
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.APPLICATION_MESSAGE_ID_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.APPLICATION_MESSAGE_TYPE_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.CORRELATION_ID_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.DELIVERY_MODE_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.PAYLOAD_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.PRIORITY_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.PROPERTIES_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.REPLY_TO_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.SENDER_ID_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.SENDER_TIMESTAMP_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.SEQUENCE_NUMBER_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.TIME_TO_LIVE_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.USER_DATA_KEY;
 
 /**
  * Converter for translating Ballerina messages to JCSMP message types.
  */
 public class MessageConverter {
-
-    // Ballerina Message record field keys
-    private static final BString PAYLOAD_KEY = StringUtils.fromString("payload");
-    private static final BString DELIVERY_MODE_KEY = StringUtils.fromString("deliveryMode");
-    private static final BString PRIORITY_KEY = StringUtils.fromString("priority");
-    private static final BString TIME_TO_LIVE_KEY = StringUtils.fromString("timeToLive");
-    private static final BString APPLICATION_MESSAGE_ID_KEY = StringUtils.fromString("applicationMessageId");
-    private static final BString APPLICATION_MESSAGE_TYPE_KEY = StringUtils.fromString("applicationMessageType");
-    private static final BString CORRELATION_ID_KEY = StringUtils.fromString("correlationId");
-    private static final BString REPLY_TO_KEY = StringUtils.fromString("replyTo");
-    private static final BString SENDER_ID_KEY = StringUtils.fromString("senderId");
-    private static final BString SENDER_TIMESTAMP_KEY = StringUtils.fromString("senderTimestamp");
-    private static final BString SEQUENCE_NUMBER_KEY = StringUtils.fromString("sequenceNumber");
-    private static final BString PROPERTIES_KEY = StringUtils.fromString("properties");
-    private static final BString USER_DATA_KEY = StringUtils.fromString("userData");
-
-    // Destination field keys
-    private static final BString TOPIC_NAME_KEY = StringUtils.fromString("topicName");
-    private static final BString QUEUE_NAME_KEY = StringUtils.fromString("queueName");
-
-    // DeliveryMode values (matching Ballerina types.bal)
-    private static final String DELIVERY_MODE_DIRECT = "DIRECT";
-    private static final String DELIVERY_MODE_PERSISTENT = "PERSISTENT";
 
     /**
      * Converts a Ballerina Message to a JCSMP XMLMessage.
@@ -82,35 +73,35 @@ public class MessageConverter {
         }
 
         // Priority (0-255)
-        Object priority = message.get(PRIORITY_KEY);
+        Long priority = message.getIntValue(PRIORITY_KEY);
         if (priority != null) {
-            int priorityValue = ((Number) priority).intValue();
+            int priorityValue = priority.intValue();
             jcsmpMessage.setPriority(priorityValue);
         }
 
         // Time to live in milliseconds
-        Object timeToLive = message.get(TIME_TO_LIVE_KEY);
+        Long timeToLive = message.getIntValue(TIME_TO_LIVE_KEY);
         if (timeToLive != null) {
-            long ttl = ((Number) timeToLive).longValue();
+            long ttl = timeToLive;
             jcsmpMessage.setTimeToLive(ttl);
         }
 
         // Application message ID
-        Object appMsgId = message.get(APPLICATION_MESSAGE_ID_KEY);
+        BString appMsgId = message.getStringValue(APPLICATION_MESSAGE_ID_KEY);
         if (appMsgId != null) {
-            jcsmpMessage.setApplicationMessageId(appMsgId.toString());
+            jcsmpMessage.setApplicationMessageId(appMsgId.getValue());
         }
 
         // Application message type
-        Object appMsgType = message.get(APPLICATION_MESSAGE_TYPE_KEY);
+        BString appMsgType = message.getStringValue(APPLICATION_MESSAGE_TYPE_KEY);
         if (appMsgType != null) {
-            jcsmpMessage.setApplicationMessageType(appMsgType.toString());
+            jcsmpMessage.setApplicationMessageType(appMsgType.getValue());
         }
 
         // Correlation ID
-        Object correlationId = message.get(CORRELATION_ID_KEY);
+        BString correlationId = message.getStringValue(CORRELATION_ID_KEY);
         if (correlationId != null) {
-            jcsmpMessage.setCorrelationId(correlationId.toString());
+            jcsmpMessage.setCorrelationId(correlationId.getValue());
         }
 
         // Reply-to destination
@@ -118,36 +109,36 @@ public class MessageConverter {
         if (replyTo instanceof BMap) {
             @SuppressWarnings("unchecked")
             BMap<BString, Object> replyToMap = (BMap<BString, Object>) replyTo;
-            Destination replyToDestination = convertBallerinaDestination(replyToMap);
+            Destination replyToDestination = DestinationConverter.toJCSMPDestination(replyToMap);
             if (replyToDestination != null) {
                 jcsmpMessage.setReplyTo(replyToDestination);
             }
         }
 
         // Sender ID
-        Object senderId = message.get(SENDER_ID_KEY);
+        BString senderId = message.getStringValue(SENDER_ID_KEY);
         if (senderId != null) {
-            jcsmpMessage.setSenderId(senderId.toString());
+            jcsmpMessage.setSenderId(senderId.getValue());
         }
 
         // Sender timestamp (milliseconds from epoch)
-        Object senderTimestamp = message.get(SENDER_TIMESTAMP_KEY);
+        Long senderTimestamp = message.getIntValue(SENDER_TIMESTAMP_KEY);
         if (senderTimestamp != null) {
-            long timestamp = ((Number) senderTimestamp).longValue();
+            long timestamp = senderTimestamp;
             jcsmpMessage.setSenderTimestamp(timestamp);
         }
 
         // Sequence number
-        Object sequenceNumber = message.get(SEQUENCE_NUMBER_KEY);
+        Long sequenceNumber = message.getIntValue(SEQUENCE_NUMBER_KEY);
         if (sequenceNumber != null) {
-            long seqNum = ((Number) sequenceNumber).longValue();
+            long seqNum = sequenceNumber;
             jcsmpMessage.setSequenceNumber(seqNum);
         }
 
         // User data (max 36 bytes)
-        Object userData = message.get(USER_DATA_KEY);
-        if (userData instanceof BArray) {
-            byte[] userDataBytes = ((BArray) userData).getBytes();
+        BArray userData = message.getArrayValue(USER_DATA_KEY);
+        if (userData != null) {
+            byte[] userDataBytes = userData.getBytes();
             if (userDataBytes.length > 36) {
                 throw new IllegalArgumentException("userData cannot exceed 36 bytes, got " + userDataBytes.length);
             }
@@ -158,78 +149,11 @@ public class MessageConverter {
         Object properties = message.get(PROPERTIES_KEY);
         if (properties instanceof BMap) {
             BMap<BString, Object> propsMap = (BMap<BString, Object>) properties;
-            SDTMap sdtMap = convertToSDTMap(propsMap);
+            SDTMap sdtMap = PropertyConverter.ballerinaToSDTMap(propsMap);
             if (sdtMap != null && !sdtMap.isEmpty()) {
                 jcsmpMessage.setProperties(sdtMap);
             }
         }
-    }
-
-    /**
-     * Converts a Ballerina Destination (Topic or Queue) to a JCSMP Destination.
-     *
-     * @param destinationMap the Ballerina destination map
-     * @return the JCSMP Destination, or null if invalid
-     */
-    private static Destination convertBallerinaDestination(BMap<BString, Object> destinationMap) {
-        if (destinationMap == null) {
-            return null;
-        }
-
-        // Check for topic
-        Object topicName = destinationMap.get(TOPIC_NAME_KEY);
-        if (topicName != null) {
-            return JCSMPFactory.onlyInstance().createTopic(topicName.toString());
-        }
-
-        // Check for queue
-        Object queueName = destinationMap.get(QUEUE_NAME_KEY);
-        if (queueName != null) {
-            return JCSMPFactory.onlyInstance().createQueue(queueName.toString());
-        }
-
-        return null;
-    }
-
-    /**
-     * Converts a Ballerina map to an SDTMap for message properties.
-     *
-     * @param propsMap the Ballerina properties map
-     * @return the SDTMap
-     * @throws SDTException if conversion fails
-     */
-    private static SDTMap convertToSDTMap(BMap<BString, Object> propsMap) throws SDTException {
-        if (propsMap == null || propsMap.isEmpty()) {
-            return null;
-        }
-
-        SDTMap sdtMap = JCSMPFactory.onlyInstance().createMap();
-
-        for (BString key : propsMap.getKeys()) {
-            Object value = propsMap.get(key);
-            String keyStr = key.getValue();
-
-            switch (value) {
-                case null -> {
-                    continue;
-                }
-
-                // Convert Ballerina value to SDT-compatible value
-                case BString bString -> sdtMap.putString(keyStr, value.toString());
-                case Boolean b -> sdtMap.putBoolean(keyStr, b);
-                case Long l -> sdtMap.putLong(keyStr, l);
-                case Integer i -> sdtMap.putInteger(keyStr, i);
-                case Double v -> sdtMap.putDouble(keyStr, v);
-                case Float v -> sdtMap.putFloat(keyStr, v);
-                case BArray bArray -> sdtMap.putBytes(keyStr, bArray.getBytes());
-                default ->
-                    // For other types, convert to string
-                        sdtMap.putString(keyStr, value.toString());
-            }
-
-        }
-
-        return sdtMap;
     }
 
     /**
@@ -254,26 +178,4 @@ public class MessageConverter {
         return message;
     }
 
-    /**
-     * Converts a sealed Destination interface to a JCSMP Destination.
-     *
-     * @param destination the Ballerina Destination (Topic or Queue)
-     * @return the JCSMP Destination
-     * @throws Exception if destination is null or invalid type
-     */
-    public static Destination fromDestinationInterface(
-            io.ballerina.lib.solace.smf.producer.Destination destination)
-            throws Exception {
-        if (destination == null) {
-            throw new Exception("Destination cannot be null");
-        }
-
-        if (destination instanceof Topic(String topicName)) {
-            return JCSMPFactory.onlyInstance().createTopic(topicName);
-        } else if (destination instanceof Queue(String queueName)) {
-            return JCSMPFactory.onlyInstance().createQueue(queueName);
-        } else {
-            throw new Exception("Unknown destination type: " + destination.getClass().getName());
-        }
-    }
 }

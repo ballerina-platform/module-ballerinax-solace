@@ -1,16 +1,14 @@
 package io.ballerina.lib.solace.smf.consumer;
 
 import com.solacesystems.jcsmp.Destination;
-import com.solacesystems.jcsmp.Queue;
-import com.solacesystems.jcsmp.SDTException;
 import com.solacesystems.jcsmp.SDTMap;
 import com.solacesystems.jcsmp.TextMessage;
-import com.solacesystems.jcsmp.Topic;
 import com.solacesystems.jcsmp.XMLMessage;
 import io.ballerina.lib.solace.smf.ModuleUtils;
+import io.ballerina.lib.solace.smf.common.DestinationConverter;
+import io.ballerina.lib.solace.smf.common.PropertyConverter;
 import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
-import io.ballerina.runtime.api.types.ArrayType;
 import io.ballerina.runtime.api.types.MapType;
 import io.ballerina.runtime.api.types.PredefinedTypes;
 import io.ballerina.runtime.api.types.RecordType;
@@ -22,6 +20,22 @@ import io.ballerina.runtime.api.values.BString;
 import java.nio.charset.StandardCharsets;
 
 import static io.ballerina.lib.solace.smf.common.Constants.NATIVE_MESSAGE;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.APPLICATION_MESSAGE_ID_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.APPLICATION_MESSAGE_TYPE_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.CORRELATION_ID_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.DELIVERY_COUNT_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.DELIVERY_MODE_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.PAYLOAD_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.PRIORITY_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.PROPERTIES_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.RECEIVE_TIMESTAMP_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.REDELIVERED_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.REPLY_TO_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.SENDER_ID_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.SENDER_TIMESTAMP_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.SEQUENCE_NUMBER_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.TIME_TO_LIVE_KEY;
+import static io.ballerina.lib.solace.smf.common.MessageFieldConstants.USER_DATA_KEY;
 
 /**
  * Converter for translating JCSMP XMLMessage to Ballerina Message record.
@@ -32,34 +46,10 @@ public class MessageConverter {
     private static final UnionType MSG_PROPERTY_TYPE = TypeCreator.createUnionType(
             PredefinedTypes.TYPE_BOOLEAN, PredefinedTypes.TYPE_INT, PredefinedTypes.TYPE_BYTE,
             PredefinedTypes.TYPE_FLOAT, PredefinedTypes.TYPE_STRING);
-    private static final ArrayType BYTE_ARR_TYPE = TypeCreator.createArrayType(PredefinedTypes.TYPE_BYTE);
-    private static final UnionType MSG_VALUE_TYPE = TypeCreator.createUnionType(MSG_PROPERTY_TYPE, BYTE_ARR_TYPE);
 
     // Create typed MapType instances matching Ballerina types
     private static final MapType BALLERINA_MSG_PROPERTY_TYPE = TypeCreator.createMapType(
             "Property", MSG_PROPERTY_TYPE, ModuleUtils.getModule());
-
-    // Ballerina Message record field keys
-    private static final BString PAYLOAD_KEY = StringUtils.fromString("payload");
-    private static final BString DELIVERY_MODE_KEY = StringUtils.fromString("deliveryMode");
-    private static final BString PRIORITY_KEY = StringUtils.fromString("priority");
-    private static final BString TIME_TO_LIVE_KEY = StringUtils.fromString("timeToLive");
-    private static final BString APPLICATION_MESSAGE_ID_KEY = StringUtils.fromString("applicationMessageId");
-    private static final BString APPLICATION_MESSAGE_TYPE_KEY = StringUtils.fromString("applicationMessageType");
-    private static final BString CORRELATION_ID_KEY = StringUtils.fromString("correlationId");
-    private static final BString REPLY_TO_KEY = StringUtils.fromString("replyTo");
-    private static final BString SENDER_ID_KEY = StringUtils.fromString("senderId");
-    private static final BString SENDER_TIMESTAMP_KEY = StringUtils.fromString("senderTimestamp");
-    private static final BString RECEIVE_TIMESTAMP_KEY = StringUtils.fromString("receiveTimestamp");
-    private static final BString SEQUENCE_NUMBER_KEY = StringUtils.fromString("sequenceNumber");
-    private static final BString REDELIVERED_KEY = StringUtils.fromString("redelivered");
-    private static final BString DELIVERY_COUNT_KEY = StringUtils.fromString("deliveryCount");
-    private static final BString PROPERTIES_KEY = StringUtils.fromString("properties");
-    private static final BString USER_DATA_KEY = StringUtils.fromString("userData");
-
-    // Destination field keys
-    private static final BString TOPIC_NAME_KEY = StringUtils.fromString("topicName");
-    private static final BString QUEUE_NAME_KEY = StringUtils.fromString("queueName");
 
     /**
      * Converts a JCSMP XMLMessage to a Ballerina Message record.
@@ -113,7 +103,7 @@ public class MessageConverter {
         // Set reply-to destination if present
         Destination replyTo = xmlMessage.getReplyTo();
         if (replyTo != null) {
-            BMap<BString, Object> replyToMap = convertDestination(replyTo);
+            BMap<BString, Object> replyToMap = DestinationConverter.fromJCSMPDestination(replyTo);
             if (replyToMap != null) {
                 message.put(REPLY_TO_KEY, replyToMap);
             }
@@ -157,7 +147,8 @@ public class MessageConverter {
         // Set properties if present
         SDTMap sdtProperties = xmlMessage.getProperties();
         if (sdtProperties != null) {
-            BMap<BString, Object> properties = convertSDTMapToBallerina(sdtProperties);
+            BMap<BString, Object> properties = PropertyConverter.sdtMapToBallerina(sdtProperties,
+                    BALLERINA_MSG_PROPERTY_TYPE);
             if (!properties.isEmpty()) {
                 message.put(PROPERTIES_KEY, properties);
             }
@@ -221,77 +212,6 @@ public class MessageConverter {
         }
 
         return new byte[0];
-    }
-
-    /**
-     * Converts a JCSMP Destination to a Ballerina Topic or Queue record.
-     */
-    private static BMap<BString, Object> convertDestination(Destination destination) {
-        BMap<BString, Object> destMap = ValueCreator.createMapValue();
-        if (destination instanceof Topic topic) {
-            destMap.put(TOPIC_NAME_KEY, StringUtils.fromString(topic.getName()));
-        } else if (destination instanceof Queue queue) {
-            destMap.put(QUEUE_NAME_KEY, StringUtils.fromString(queue.getName()));
-        }
-        return null;
-    }
-
-    /**
-     * Converts an SDTMap to a Ballerina map<anydata>.
-     */
-    private static BMap<BString, Object> convertSDTMapToBallerina(SDTMap sdtMap) throws SDTException {
-        // Create typed map with BALLERINA_MSG_PROPERTY_TYPE
-        BMap<BString, Object> messageProperties = ValueCreator.createMapValue(BALLERINA_MSG_PROPERTY_TYPE);
-
-        for (String key : sdtMap.keySet()) {
-            Object value = sdtMap.get(key);
-
-            if (value == null) {
-                continue;
-            }
-
-            // Convert SDT value to Ballerina value
-            Object ballerinaValue = convertSDTValue(value);
-            if (ballerinaValue != null) {
-                messageProperties.put(StringUtils.fromString(key), ballerinaValue);
-            }
-        }
-
-        return messageProperties;
-    }
-
-    /**
-     * Converts an SDT value to a Ballerina-compatible value.
-     */
-    private static Object convertSDTValue(Object value) throws SDTException {
-        if (value == null) {
-            return null;
-        }
-
-        if (value instanceof String) {
-            return StringUtils.fromString((String) value);
-        } else if (value instanceof Boolean) {
-            return value;
-        } else if (value instanceof Integer) {
-            return ((Integer) value).longValue();
-        } else if (value instanceof Long) {
-            return value;
-        } else if (value instanceof Float) {
-            return ((Float) value).doubleValue();
-        } else if (value instanceof Double) {
-            return value;
-        } else if (value instanceof Byte) {
-            return ((Byte) value).longValue();
-        } else if (value instanceof Short) {
-            return ((Short) value).longValue();
-        } else if (value instanceof byte[]) {
-            return ValueCreator.createArrayValue((byte[]) value);
-        } else if (value instanceof SDTMap nestedMap) {
-            return convertSDTMapToBallerina(nestedMap);
-        }
-
-        // For unsupported types, convert to string
-        return StringUtils.fromString(value.toString());
     }
 
     /**
