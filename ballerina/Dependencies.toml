@@ -66,13 +66,13 @@ modules = [
 
 [[package]]
 org = "ballerinax"
-name = "solace.smf"
+name = "solace"
 version = "0.1.0"
 dependencies = [
 	{org = "ballerina", name = "jballerina.java"},
 	{org = "ballerina", name = "test"}
 ]
 modules = [
-	{org = "ballerinax", packageName = "solace.smf", moduleName = "solace.smf"}
+	{org = "ballerinax", packageName = "solace", moduleName = "solace"}
 ]
 
