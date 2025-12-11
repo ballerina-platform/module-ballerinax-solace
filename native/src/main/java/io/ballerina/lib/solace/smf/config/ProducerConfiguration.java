@@ -4,18 +4,15 @@ import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
 
 /**
- * Producer-specific configuration containing connection configuration.
- * Maps to ProducerConfiguration in Ballerina types.bal.
- *
- * Note: Destination is NOT part of producer configuration - it's specified at send-time.
+ * Producer-specific configuration containing connection configuration. Maps to ProducerConfiguration in Ballerina
+ * types.bal.
  *
  * @param connectionConfig connection configuration for broker connection
  */
 public record ProducerConfiguration(ConnectionConfiguration connectionConfig) {
 
     /**
-     * Creates a ProducerConfiguration from a Ballerina map record.
-     * The map contains connection configuration fields.
+     * Creates a ProducerConfiguration from a Ballerina map record. The map contains connection configuration fields.
      *
      * @param config the Ballerina configuration map
      */

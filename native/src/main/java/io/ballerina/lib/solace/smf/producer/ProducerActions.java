@@ -16,16 +16,16 @@ import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
 
+import static io.ballerina.lib.solace.smf.common.Constants.NATIVE_CLOSED;
+import static io.ballerina.lib.solace.smf.common.Constants.NATIVE_PRODUCER;
+import static io.ballerina.lib.solace.smf.common.Constants.NATIVE_SESSION;
+import static io.ballerina.lib.solace.smf.common.Constants.NATIVE_TRANSACTED;
+import static io.ballerina.lib.solace.smf.common.Constants.NATIVE_TX_SESSION;
+
 /**
  * Producer actions - main entry point for Ballerina MessageProducer interop.
  */
 public class ProducerActions {
-
-    private static final String NATIVE_PRODUCER = "native.producer";
-    private static final String NATIVE_SESSION = "native.session";
-    private static final String NATIVE_TX_SESSION = "native.tx.session";
-    private static final String NATIVE_TRANSACTED = "native.transacted";
-    private static final String NATIVE_CLOSED = "native.closed";
 
     private static final BString QUEUE_NAME_KEY = StringUtils.fromString("queueName");
     private static final BString TOPIC_NAME_KEY = StringUtils.fromString("topicName");
@@ -74,12 +74,12 @@ public class ProducerActions {
 
             // Store session references in native data
             producer.addNativeData(NATIVE_SESSION, session);
-            producer.addNativeData(NATIVE_TX_SESSION, txSession);  // null if non-transacted
+            producer.addNativeData(NATIVE_TX_SESSION, txSession);
             producer.addNativeData(NATIVE_TRANSACTED, isTransacted);
             producer.addNativeData(NATIVE_PRODUCER, xmlProducer);
             producer.addNativeData(NATIVE_CLOSED, false);
 
-            return null; // Success
+            return null;
         } catch (Exception e) {
             return CommonUtils.createError("Failed to initialize producer", e);
         }
@@ -105,20 +105,16 @@ public class ProducerActions {
                 return CommonUtils.createError("Producer is closed");
             }
 
-            // Convert Ballerina message to JCSMP message
             XMLMessage jcsmpMessage = MessageConverter.toJCSMPMessage(xmlProducer, message);
 
-            // Get destination - convert map to sealed interface then to JCSMP destination
             if (destinationMap == null || destinationMap.isEmpty()) {
                 return CommonUtils.createError("Destination must be specified");
             }
 
-            // Convert BMap to sealed Destination interface using factory method
             Destination destination = createDestinationFromMap(destinationMap);
             com.solacesystems.jcsmp.Destination jcsmpDestination =
                     MessageConverter.fromDestinationInterface(destination);
 
-            // Execute send on virtual thread (blocking operation)
             final XMLMessage finalMessage = jcsmpMessage;
             final com.solacesystems.jcsmp.Destination finalDestination = jcsmpDestination;
             Object result = CommonUtils.executeBlocking(() -> {

@@ -71,7 +71,6 @@ public record ConnectionConfiguration(
      *
      * @param config the Ballerina configuration map
      */
-    @SuppressWarnings("unchecked")
     public ConnectionConfiguration(BMap<BString, Object> config) {
         this(
                 config.getStringValue(VPN_NAME_KEY).getValue(),

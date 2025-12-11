@@ -1,6 +1,6 @@
 package io.ballerina.lib.solace.smf.config;
 
-import com.solacesystems.jcsmp.JCSMPProperties;
+import io.ballerina.lib.solace.smf.consumer.AcknowledgementMode;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
@@ -29,7 +29,7 @@ import io.ballerina.runtime.api.values.BString;
  */
 public record TopicConsumerConfig(
         String topicName,
-        String ackMode,
+        AcknowledgementMode ackMode,
         String selector,
         String endpointType,
         String endpointName,
@@ -57,7 +57,6 @@ public record TopicConsumerConfig(
     private static final BString RECONNECT_TRIES_KEY = StringUtils.fromString("reconnectTries");
     private static final BString RECONNECT_RETRY_INTERVAL_KEY = StringUtils.fromString("reconnectRetryIntervalInMsecs");
 
-    private static final String DEFAULT_ACK_MODE = JCSMPProperties.SUPPORTED_MESSAGE_ACK_AUTO;
     private static final String DEFAULT_ENDPOINT_TYPE = "DEFAULT";
 
     /**
@@ -68,16 +67,17 @@ public record TopicConsumerConfig(
     public TopicConsumerConfig(BMap<BString, Object> config) {
         this(
                 extractTopicName(config),
-                extractAckMode(config),
+                AcknowledgementMode.valueOf(config.getStringValue(ACK_MODE_KEY).getValue()),
                 extractSelector(config),
                 extractEndpointType(config),
                 extractEndpointName(config),
                 extractOptionalInteger(config, TRANSPORT_WINDOW_SIZE_KEY),
                 extractOptionalInteger(config, ACK_THRESHOLD_KEY),
                 extractOptionalInteger(config, ACK_TIMER_IN_MSECS_KEY),
-                extractOptionalBoolean(config, START_STATE_KEY),
-                extractOptionalBoolean(config, NO_LOCAL_KEY),
-                extractOptionalBoolean(config, ACTIVE_FLOW_INDICATION_KEY),
+                config.containsKey(START_STATE_KEY) ? config.getBooleanValue(START_STATE_KEY) : null,
+                config.containsKey(NO_LOCAL_KEY) ? config.getBooleanValue(NO_LOCAL_KEY) : null,
+                config.containsKey(ACTIVE_FLOW_INDICATION_KEY) ? config.getBooleanValue(ACTIVE_FLOW_INDICATION_KEY) :
+                        null,
                 extractOptionalInteger(config, RECONNECT_TRIES_KEY),
                 extractOptionalInteger(config, RECONNECT_RETRY_INTERVAL_KEY)
         );
@@ -89,22 +89,6 @@ public record TopicConsumerConfig(
             throw new IllegalArgumentException("topicName is required for TopicConsumerConfig");
         }
         return value.toString();
-    }
-
-    private static String extractAckMode(BMap<BString, Object> config) {
-        Object value = config.get(ACK_MODE_KEY);
-        if (value == null) {
-            return DEFAULT_ACK_MODE;
-        }
-
-        // Map Ballerina AcknowledgementMode enum to JCSMP constants
-        String ballerinaAckMode = value.toString();
-        return switch (ballerinaAckMode) {
-            case "CLIENT_ACK" -> JCSMPProperties.SUPPORTED_MESSAGE_ACK_CLIENT;
-            case "AUTO_ACK" -> JCSMPProperties.SUPPORTED_MESSAGE_ACK_AUTO;
-            default -> throw new IllegalArgumentException(
-                    "Invalid ackMode: " + ballerinaAckMode + ". Expected AUTO_ACK or CLIENT_ACK");
-        };
     }
 
     private static String extractSelector(BMap<BString, Object> config) {
@@ -131,17 +115,6 @@ public record TopicConsumerConfig(
             return number.intValue();
         }
         return Integer.parseInt(value.toString());
-    }
-
-    private static Boolean extractOptionalBoolean(BMap<BString, Object> config, BString key) {
-        Object value = config.get(key);
-        if (value == null) {
-            return null;
-        }
-        if (value instanceof Boolean bool) {
-            return bool;
-        }
-        return Boolean.parseBoolean(value.toString());
     }
 
     /**

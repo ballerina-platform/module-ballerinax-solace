@@ -1,13 +1,12 @@
 package io.ballerina.lib.solace.smf.config.ssl;
 
 import io.ballerina.runtime.api.utils.StringUtils;
-import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+
+import static io.ballerina.lib.solace.smf.common.CommonUtils.convertToStringArray;
 
 /**
  * SSL/TLS configuration for secure connections.
@@ -33,47 +32,16 @@ public record SecureSocketConfig(
      */
     public SecureSocketConfig(BMap<BString, Object> config) {
         this(
-                getValidationConfig(config),
-                getTrustStoreConfig(config),
-                getKeyStoreConfig(config),
-                getTrustedCommonNames(config)
+                config.containsKey(VALIDATION_KEY) ?
+                        new ValidationConfig((BMap<BString, Object>) config.getMapValue(VALIDATION_KEY)) : null,
+                config.containsKey(TRUST_STORE_KEY) ?
+                        new TrustStoreConfig((BMap<BString, Object>) config.getMapValue(TRUST_STORE_KEY)) : null,
+                config.containsKey(KEY_STORE_KEY) ?
+                        new KeyStoreConfig((BMap<BString, Object>) config.getMapValue(KEY_STORE_KEY)) : null,
+                config.containsKey(TRUSTED_COMMON_NAMES_KEY) ?
+                        List.of(convertToStringArray(config.getArrayValue(TRUSTED_COMMON_NAMES_KEY).getValues())) : null
+
         );
     }
 
-    private static ValidationConfig getValidationConfig(BMap<BString, Object> config) {
-        if (config.containsKey(VALIDATION_KEY)) {
-            BMap<BString, Object> validationMap = (BMap<BString, Object>) config.getMapValue(VALIDATION_KEY);
-            return new ValidationConfig(validationMap);
-        }
-        // Default validation config
-        return new ValidationConfig(true, true, true);
-    }
-
-    private static TrustStoreConfig getTrustStoreConfig(BMap<BString, Object> config) {
-        if (config.containsKey(TRUST_STORE_KEY)) {
-            BMap<BString, Object> trustStoreMap = (BMap<BString, Object>) config.getMapValue(TRUST_STORE_KEY);
-            return new TrustStoreConfig(trustStoreMap);
-        }
-        return null;
-    }
-
-    private static KeyStoreConfig getKeyStoreConfig(BMap<BString, Object> config) {
-        if (config.containsKey(KEY_STORE_KEY)) {
-            BMap<BString, Object> keyStoreMap = (BMap<BString, Object>) config.getMapValue(KEY_STORE_KEY);
-            return new KeyStoreConfig(keyStoreMap);
-        }
-        return null;
-    }
-
-    private static List<String> getTrustedCommonNames(BMap<BString, Object> config) {
-        if (config.containsKey(TRUSTED_COMMON_NAMES_KEY)) {
-            BArray array = (BArray) config.getArrayValue(TRUSTED_COMMON_NAMES_KEY);
-            List<String> names = new ArrayList<>();
-            for (int i = 0; i < array.size(); i++) {
-                names.add(((BString) array.get(i)).getValue());
-            }
-            return Collections.unmodifiableList(names);
-        }
-        return Collections.emptyList();
-    }
 }

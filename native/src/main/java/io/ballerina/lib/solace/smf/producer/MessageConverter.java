@@ -1,6 +1,6 @@
 package io.ballerina.lib.solace.smf.producer;
 
-import com.solacesystems.jcsmp.BytesXMLMessage;
+import com.solacesystems.jcsmp.BytesMessage;
 import com.solacesystems.jcsmp.DeliveryMode;
 import com.solacesystems.jcsmp.Destination;
 import com.solacesystems.jcsmp.JCSMPFactory;
@@ -76,9 +76,9 @@ public class MessageConverter {
      */
     private static void setMessageFields(XMLMessage jcsmpMessage, BMap<BString, Object> message) throws SDTException {
         // Delivery mode
-        Object deliveryMode = message.get(DELIVERY_MODE_KEY);
+        String deliveryMode = message.getStringValue(DELIVERY_MODE_KEY).getValue();
         if (deliveryMode != null) {
-            jcsmpMessage.setDeliveryMode(mapToJCSMPDeliveryMode(deliveryMode.toString()));
+            jcsmpMessage.setDeliveryMode(DeliveryMode.valueOf(deliveryMode));
         }
 
         // Priority (0-255)
@@ -157,29 +157,12 @@ public class MessageConverter {
         // Custom properties (SDTMap)
         Object properties = message.get(PROPERTIES_KEY);
         if (properties instanceof BMap) {
-            @SuppressWarnings("unchecked")
             BMap<BString, Object> propsMap = (BMap<BString, Object>) properties;
             SDTMap sdtMap = convertToSDTMap(propsMap);
             if (sdtMap != null && !sdtMap.isEmpty()) {
                 jcsmpMessage.setProperties(sdtMap);
             }
         }
-    }
-
-    /**
-     * Maps Ballerina DeliveryMode string to JCSMP DeliveryMode.
-     *
-     * @param deliveryMode the Ballerina delivery mode string
-     * @return the JCSMP DeliveryMode
-     */
-    private static DeliveryMode mapToJCSMPDeliveryMode(String deliveryMode) {
-        if (deliveryMode == null) {
-            return DeliveryMode.DIRECT;
-        }
-        return switch (deliveryMode.toUpperCase()) {
-            case DELIVERY_MODE_PERSISTENT -> DeliveryMode.PERSISTENT;
-            default -> DeliveryMode.DIRECT;
-        };
     }
 
     /**
@@ -226,43 +209,48 @@ public class MessageConverter {
             Object value = propsMap.get(key);
             String keyStr = key.getValue();
 
-            if (value == null) {
-                continue;
+            switch (value) {
+                case null -> {
+                    continue;
+                }
+
+                // Convert Ballerina value to SDT-compatible value
+                case BString bString -> sdtMap.putString(keyStr, value.toString());
+                case Boolean b -> sdtMap.putBoolean(keyStr, b);
+                case Long l -> sdtMap.putLong(keyStr, l);
+                case Integer i -> sdtMap.putInteger(keyStr, i);
+                case Double v -> sdtMap.putDouble(keyStr, v);
+                case Float v -> sdtMap.putFloat(keyStr, v);
+                case BArray bArray -> sdtMap.putBytes(keyStr, bArray.getBytes());
+                default ->
+                    // For other types, convert to string
+                        sdtMap.putString(keyStr, value.toString());
             }
 
-            // Convert Ballerina value to SDT-compatible value
-            if (value instanceof BString) {
-                sdtMap.putString(keyStr, value.toString());
-            } else if (value instanceof Boolean) {
-                sdtMap.putBoolean(keyStr, (Boolean) value);
-            } else if (value instanceof Long) {
-                sdtMap.putLong(keyStr, (Long) value);
-            } else if (value instanceof Integer) {
-                sdtMap.putInteger(keyStr, (Integer) value);
-            } else if (value instanceof Double) {
-                sdtMap.putDouble(keyStr, (Double) value);
-            } else if (value instanceof Float) {
-                sdtMap.putFloat(keyStr, (Float) value);
-            } else if (value instanceof BArray) {
-                sdtMap.putBytes(keyStr, ((BArray) value).getBytes());
-            } else {
-                // For other types, convert to string
-                sdtMap.putString(keyStr, value.toString());
-            }
         }
 
         return sdtMap;
     }
 
     /**
-     * Creates a BytesXMLMessage from byte array payload.
-     * Uses attachment part instead of content part for the payload.
+     * Creates a BytesMessage from byte array payload. Uses attachment part instead of content part for the payload.
      */
-    public static BytesXMLMessage toByteMessage(XMLMessageProducer producer, byte[] content)
+    public static BytesMessage toByteMessage(XMLMessageProducer producer, byte[] content)
             throws Exception {
-        BytesXMLMessage message = producer.createBytesXMLMessage();
+        if (producer == null) {
+            throw new Exception("XMLMessageProducer cannot be null");
+        }
+        if (content == null) {
+            throw new Exception("Message content cannot be null");
+        }
+
+        BytesMessage message = producer.createBytesMessage();
+        if (message == null) {
+            throw new Exception("Failed to create BytesXMLMessage");
+        }
+
         // Use attachment instead of content
-        message.writeAttachment(content);
+        message.setData(content);
         return message;
     }
 
@@ -280,10 +268,10 @@ public class MessageConverter {
             throw new Exception("Destination cannot be null");
         }
 
-        if (destination instanceof Topic topic) {
-            return JCSMPFactory.onlyInstance().createTopic(topic.topicName());
-        } else if (destination instanceof Queue queue) {
-            return JCSMPFactory.onlyInstance().createQueue(queue.queueName());
+        if (destination instanceof Topic(String topicName)) {
+            return JCSMPFactory.onlyInstance().createTopic(topicName);
+        } else if (destination instanceof Queue(String queueName)) {
+            return JCSMPFactory.onlyInstance().createQueue(queueName);
         } else {
             throw new Exception("Unknown destination type: " + destination.getClass().getName());
         }

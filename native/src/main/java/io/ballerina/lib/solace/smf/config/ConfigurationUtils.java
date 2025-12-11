@@ -17,7 +17,6 @@ import io.ballerina.lib.solace.smf.config.ssl.TrustStoreConfig;
 public final class ConfigurationUtils {
 
     private ConfigurationUtils() {
-        // Utility class - no instantiation
     }
 
     /**
@@ -106,11 +105,11 @@ public final class ConfigurationUtils {
             return;
         }
 
-        if (auth instanceof BasicAuthConfig basicAuth) {
+        if (auth instanceof BasicAuthConfig(String username, String password)) {
             props.setProperty(JCSMPProperties.AUTHENTICATION_SCHEME, JCSMPProperties.AUTHENTICATION_SCHEME_BASIC);
-            props.setProperty(JCSMPProperties.USERNAME, basicAuth.username());
-            if (basicAuth.password() != null) {
-                props.setProperty(JCSMPProperties.PASSWORD, basicAuth.password());
+            props.setProperty(JCSMPProperties.USERNAME, username);
+            if (password != null) {
+                props.setProperty(JCSMPProperties.PASSWORD, password);
             }
         } else if (auth instanceof KerberosConfig kerberosAuth) {
             props.setProperty(JCSMPProperties.AUTHENTICATION_SCHEME, JCSMPProperties.AUTHENTICATION_SCHEME_GSS_KRB);
@@ -118,16 +117,16 @@ public final class ConfigurationUtils {
             props.setProperty(JCSMPProperties.JAAS_LOGIN_CONTEXT, kerberosAuth.jaasLoginContext());
             props.setProperty(JCSMPProperties.JAAS_CONFIG_FILE_RELOAD_ENABLED,
                     kerberosAuth.jaasConfigFileReloadEnabled());
-        } else if (auth instanceof OAuth2Config oauth2Auth) {
+        } else if (auth instanceof OAuth2Config(String issuer, String accessToken, String oidcToken)) {
             props.setProperty(JCSMPProperties.AUTHENTICATION_SCHEME, JCSMPProperties.AUTHENTICATION_SCHEME_OAUTH2);
-            if (oauth2Auth.issuer() != null) {
-                props.setProperty(JCSMPProperties.OAUTH2_ISSUER_IDENTIFIER, oauth2Auth.issuer());
+            if (issuer != null) {
+                props.setProperty(JCSMPProperties.OAUTH2_ISSUER_IDENTIFIER, issuer);
             }
-            if (oauth2Auth.accessToken() != null) {
-                props.setProperty(JCSMPProperties.OAUTH2_ACCESS_TOKEN, oauth2Auth.accessToken());
+            if (accessToken != null) {
+                props.setProperty(JCSMPProperties.OAUTH2_ACCESS_TOKEN, accessToken);
             }
-            if (oauth2Auth.oidcToken() != null) {
-                props.setProperty(JCSMPProperties.OIDC_ID_TOKEN, oauth2Auth.oidcToken());
+            if (oidcToken != null) {
+                props.setProperty(JCSMPProperties.OIDC_ID_TOKEN, oidcToken);
             }
         }
     }

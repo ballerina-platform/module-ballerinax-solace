@@ -1,5 +1,6 @@
 package io.ballerina.lib.solace.smf.config;
 
+import io.ballerina.lib.solace.smf.consumer.AcknowledgementMode;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
@@ -35,8 +36,7 @@ public sealed interface ConsumerSubscriptionConfig permits QueueConsumerConfig, 
         }
     }
 
-    // Common flow control properties (from CommonConsumerConfig in types.bal)
-    String ackMode();
+    AcknowledgementMode ackMode();
 
     String selector();
 

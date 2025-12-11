@@ -5,6 +5,8 @@ import io.ballerina.runtime.api.creators.ErrorCreator;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BError;
 
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -50,6 +52,22 @@ public class CommonUtils {
         });
 
         return future.get();
+    }
+
+    /**
+     * Converts an array of Objects to an array of Strings.
+     *
+     * @param objectArray array of Objects
+     * @return array of Strings
+     */
+    public static String[] convertToStringArray(Object[] objectArray) {
+        if (Objects.isNull(objectArray)) {
+            return new String[]{ };
+        }
+        return Arrays.stream(objectArray)
+                .filter(Objects::nonNull)
+                .map(Object::toString)
+                .toArray(String[]::new);
     }
 
     /**

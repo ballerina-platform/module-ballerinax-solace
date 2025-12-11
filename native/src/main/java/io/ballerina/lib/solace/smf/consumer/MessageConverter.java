@@ -1,7 +1,5 @@
 package io.ballerina.lib.solace.smf.consumer;
 
-import com.solacesystems.jcsmp.BytesXMLMessage;
-import com.solacesystems.jcsmp.DeliveryMode;
 import com.solacesystems.jcsmp.Destination;
 import com.solacesystems.jcsmp.Queue;
 import com.solacesystems.jcsmp.SDTException;
@@ -10,24 +8,36 @@ import com.solacesystems.jcsmp.TextMessage;
 import com.solacesystems.jcsmp.Topic;
 import com.solacesystems.jcsmp.XMLMessage;
 import io.ballerina.lib.solace.smf.ModuleUtils;
+import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
+import io.ballerina.runtime.api.types.ArrayType;
+import io.ballerina.runtime.api.types.MapType;
+import io.ballerina.runtime.api.types.PredefinedTypes;
 import io.ballerina.runtime.api.types.RecordType;
-import io.ballerina.runtime.api.types.Type;
+import io.ballerina.runtime.api.types.UnionType;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
 
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+
+import static io.ballerina.lib.solace.smf.common.Constants.NATIVE_MESSAGE;
 
 /**
  * Converter for translating JCSMP XMLMessage to Ballerina Message record.
  */
 public class MessageConverter {
 
-    private static final String NATIVE_MESSAGE = "native.message";
+    // Define union types for map values
+    private static final UnionType MSG_PROPERTY_TYPE = TypeCreator.createUnionType(
+            PredefinedTypes.TYPE_BOOLEAN, PredefinedTypes.TYPE_INT, PredefinedTypes.TYPE_BYTE,
+            PredefinedTypes.TYPE_FLOAT, PredefinedTypes.TYPE_STRING);
+    private static final ArrayType BYTE_ARR_TYPE = TypeCreator.createArrayType(PredefinedTypes.TYPE_BYTE);
+    private static final UnionType MSG_VALUE_TYPE = TypeCreator.createUnionType(MSG_PROPERTY_TYPE, BYTE_ARR_TYPE);
+
+    // Create typed MapType instances matching Ballerina types
+    private static final MapType BALLERINA_MSG_PROPERTY_TYPE = TypeCreator.createMapType(
+            "Property", MSG_PROPERTY_TYPE, ModuleUtils.getModule());
 
     // Ballerina Message record field keys
     private static final BString PAYLOAD_KEY = StringUtils.fromString("payload");
@@ -51,10 +61,6 @@ public class MessageConverter {
     private static final BString TOPIC_NAME_KEY = StringUtils.fromString("topicName");
     private static final BString QUEUE_NAME_KEY = StringUtils.fromString("queueName");
 
-    // DeliveryMode values (matching Ballerina types.bal)
-    private static final String DELIVERY_MODE_DIRECT = "DIRECT";
-    private static final String DELIVERY_MODE_PERSISTENT = "PERSISTENT";
-
     /**
      * Converts a JCSMP XMLMessage to a Ballerina Message record.
      *
@@ -72,7 +78,7 @@ public class MessageConverter {
         message.put(PAYLOAD_KEY, ValueCreator.createArrayValue(payload));
 
         // Set delivery mode
-        message.put(DELIVERY_MODE_KEY, StringUtils.fromString(mapDeliveryMode(xmlMessage.getDeliveryMode())));
+        message.put(DELIVERY_MODE_KEY, StringUtils.fromString(xmlMessage.getDeliveryMode().toString()));
 
         // Set priority if present (getPriority returns -1 if not set)
         int priority = xmlMessage.getPriority();
@@ -140,14 +146,12 @@ public class MessageConverter {
         // Set redelivered flag
         message.put(REDELIVERED_KEY, xmlMessage.getRedelivered());
 
-        // Set delivery count if available (JCSMP 10.x+)
         try {
             int deliveryCount = xmlMessage.getDeliveryCount();
             if (deliveryCount > 0) {
                 message.put(DELIVERY_COUNT_KEY, deliveryCount);
             }
-        } catch (Exception e) {
-            // Delivery count may not be available on older versions or for direct messages
+        } catch (UnsupportedOperationException ignored) {
         }
 
         // Set properties if present
@@ -188,8 +192,7 @@ public class MessageConverter {
     }
 
     /**
-     * Extracts the binary payload from an XMLMessage.
-     * Reads from attachment part instead of content part.
+     * Extracts the binary payload from an XMLMessage. Reads from attachment part instead of content part.
      */
     private static byte[] extractPayload(XMLMessage xmlMessage) {
         // Check if message has attachment (primary payload location)
@@ -221,30 +224,14 @@ public class MessageConverter {
     }
 
     /**
-     * Maps JCSMP DeliveryMode to Ballerina DeliveryMode string.
-     */
-    private static String mapDeliveryMode(DeliveryMode deliveryMode) {
-        if (deliveryMode == null) {
-            return DELIVERY_MODE_DIRECT;
-        }
-        return switch (deliveryMode) {
-            case PERSISTENT, NON_PERSISTENT -> DELIVERY_MODE_PERSISTENT;
-            case DIRECT -> DELIVERY_MODE_DIRECT;
-        };
-    }
-
-    /**
      * Converts a JCSMP Destination to a Ballerina Topic or Queue record.
      */
     private static BMap<BString, Object> convertDestination(Destination destination) {
+        BMap<BString, Object> destMap = ValueCreator.createMapValue();
         if (destination instanceof Topic topic) {
-            Map<String, Object> topicMap = new HashMap<>();
-            topicMap.put("topicName", topic.getName());
-//            return ValueCreator.createMapValue(topicMap);
+            destMap.put(TOPIC_NAME_KEY, StringUtils.fromString(topic.getName()));
         } else if (destination instanceof Queue queue) {
-            Map<String, Object> queueMap = new HashMap<>();
-            queueMap.put("queueName", queue.getName());
-//            return ValueCreator.createMapValue(queueMap);
+            destMap.put(QUEUE_NAME_KEY, StringUtils.fromString(queue.getName()));
         }
         return null;
     }
@@ -253,11 +240,10 @@ public class MessageConverter {
      * Converts an SDTMap to a Ballerina map<anydata>.
      */
     private static BMap<BString, Object> convertSDTMapToBallerina(SDTMap sdtMap) throws SDTException {
-        Map<String, Object> resultMap = new HashMap<>();
+        // Create typed map with BALLERINA_MSG_PROPERTY_TYPE
+        BMap<BString, Object> messageProperties = ValueCreator.createMapValue(BALLERINA_MSG_PROPERTY_TYPE);
 
-        Iterator<String> keys = sdtMap.keySet().iterator();
-        while (keys.hasNext()) {
-            String key = keys.next();
+        for (String key : sdtMap.keySet()) {
             Object value = sdtMap.get(key);
 
             if (value == null) {
@@ -267,11 +253,11 @@ public class MessageConverter {
             // Convert SDT value to Ballerina value
             Object ballerinaValue = convertSDTValue(value);
             if (ballerinaValue != null) {
-                resultMap.put(key, ballerinaValue);
+                messageProperties.put(StringUtils.fromString(key), ballerinaValue);
             }
         }
 
-        return ValueCreator.createMapValue((Type) resultMap);
+        return messageProperties;
     }
 
     /**
