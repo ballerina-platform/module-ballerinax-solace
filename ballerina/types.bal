@@ -257,9 +257,14 @@ public type ConsumerConfiguration record {|
 
 # Delivery modes for messages
 public enum DeliveryMode {
-    # This mode provides at-most-once message delivery.
+    # At-most-once delivery mode. Direct messages are not retained for disconnected clients and can be discarded
+    # during congestion or failures. They can be reordered during network topology changes.
+    # Most appropriate for high-rate, low-latency messaging applications.
     DIRECT,
-    # This mode provides once-and-only-once message delivery. 
+    # Once-and-only-once delivery mode for Guaranteed Messaging. Persistent messages cannot be lost once acknowledged,
+    # cannot be reordered during topology changes, and cannot be delivered more than once (unless redelivered flag is set).
+    # Retained on durable endpoints for disconnected clients. Recommended for applications requiring persistent storage
+    # and reliable message delivery.
     PERSISTENT
 }
 
