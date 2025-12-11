@@ -1,10 +1,10 @@
 [package]
 org = "ballerinax"
-name = "solace.smf"
+name = "solace"
 version = "@toml.version@"
 authors = ["Ballerina"]
 keywords = ["service", "client", "messaging", "network", "pubsub"]
-repository = "https://github.com/ballerina-platform/module-ballerinax-solace.smf"
+repository = "https://github.com/ballerina-platform/module-ballerinax-solace"
 icon = "icon.png"
 license = ["Apache-2.0"]
 distribution = "2201.12.10"
@@ -16,7 +16,7 @@ graalvmCompatible = true
 groupId = "io.ballerina.lib"
 artifactId = "solace-native"
 version = "@project.version@"
-path = "../native/build/libs/solace.smf-native-@project.version@.jar"
+path = "../native/build/libs/solace-native-@project.version@.jar"
 
 [[platform.java21.dependency]]
 groupId = "com.solacesystems"

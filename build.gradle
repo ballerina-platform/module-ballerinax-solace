@@ -59,8 +59,8 @@ allprojects {
 }
 
 task build {
-    dependsOn(":solace.smf-native:build")
-    dependsOn(":solace.smf-ballerina:build")
+    dependsOn(":solace-native:build")
+    dependsOn(":solace-ballerina:build")
 }
 
 def moduleVersion = project.version.replace("-SNAPSHOT", "")
