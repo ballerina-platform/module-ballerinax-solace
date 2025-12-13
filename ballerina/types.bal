@@ -44,18 +44,18 @@ public type KerberosConfig record {|
 
 # OAuth2 Access Token authentication configuration
 public type OAuth2AccessTokenAuth record {|
+    # Issuer identifier URI for token validation
+    string issuer;
     # The OAuth 2.0 access token for authentication
     string accessToken;
-    # Optional issuer identifier URI for token validation
-    string issuerIdentifier?;
 |};
 
 # OpenID Connect (OIDC) ID Token authentication configuration
 public type OidcIdTokenAuth record {|
+    # Issuer identifier URI for token validation
+    string issuer;
     # The OpenID Connect (OIDC) ID token for authentication
     string idToken;
-    # Optional issuer identifier URI for token validation
-    string issuerIdentifier?;
 |};
 
 # OAuth2 authentication configuration (mutually exclusive - use either access token or ID token)
