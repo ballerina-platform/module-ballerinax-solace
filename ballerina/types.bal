@@ -1,3 +1,4 @@
+import ballerina/time;
 # The Solace service type.
 public type Service distinct service object {
     // remote function onMessage(solace:Message message, solace:Caller caller) returns error?;
@@ -55,7 +56,7 @@ public type OidcIdTokenAuth record {|
     # Issuer identifier URI for token validation
     string issuer;
     # The OpenID Connect (OIDC) ID token for authentication
-    string idToken;
+    string oidcToken;
 |};
 
 # OAuth2 authentication configuration (mutually exclusive - use either access token or ID token)
@@ -295,16 +296,16 @@ public type CommonServiceConfig record {|
     int transportWindowSize?;
     # Acknowledgement threshold as percentage of window size (1-75, default 0) - FlowReceiver only
     int ackThreshold?;
-    # Acknowledgement timer in milliseconds (20-1500, default 0) - FlowReceiver only
-    int ackTimerInMsecs?;
+    # Acknowledgement timer in seconds (0.02 - 1.5 seconds, default 0.0 seconds) - FlowReceiver only
+    decimal ackTimer = 0.0;
     # Prevent receiving messages published on same session (default false) - FlowReceiver only
     boolean noLocal?;
     # Enable active/inactive flow indication (default false) - FlowReceiver only
     boolean activeFlowIndication?;
     # Number of reconnection attempts after flow goes down (-1 = infinite, default -1) - FlowReceiver only
     int reconnectTries?;
-    # Wait time between reconnection attempts in milliseconds (min 50, default 3000) - FlowReceiver only
-    int reconnectRetryIntervalInMsecs?;
+    # Wait time between reconnection attempts in seconds (min 0.05 seconds, default 3.0 seconds) - FlowReceiver only
+    decimal reconnectRetryInterval = 3.0;
 |};
 
 # Queue service configuration for asynchronous (push-based) consumption via Listener
