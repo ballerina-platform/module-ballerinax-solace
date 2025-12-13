@@ -62,7 +62,7 @@ public sealed interface ConsumerSubscriptionConfig permits QueueConsumerConfig, 
 
     Integer ackThreshold();
 
-    Integer ackTimerInMsecs();
+    int ackTimerInMsecs();
 
     Boolean startState();
 
@@ -72,5 +72,5 @@ public sealed interface ConsumerSubscriptionConfig permits QueueConsumerConfig, 
 
     Integer reconnectTries();
 
-    Integer reconnectRetryIntervalInMsecs();
+    int reconnectRetryIntervalInMsecs();
 }

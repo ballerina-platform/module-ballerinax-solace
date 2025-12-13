@@ -69,9 +69,7 @@ public class ConsumerUtils {
         if (config.ackThreshold() != null) {
             flowProps.setAckThreshold(config.ackThreshold());
         }
-        if (config.ackTimerInMsecs() != null) {
-            flowProps.setAckTimerInMsecs(config.ackTimerInMsecs());
-        }
+        flowProps.setAckTimerInMsecs(config.ackTimerInMsecs());
         if (config.startState() != null) {
             flowProps.setStartState(config.startState());
         }
@@ -84,9 +82,7 @@ public class ConsumerUtils {
         if (config.reconnectTries() != null) {
             flowProps.setReconnectTries(config.reconnectTries());
         }
-        if (config.reconnectRetryIntervalInMsecs() != null) {
-            flowProps.setReconnectRetryIntervalInMsecs(config.reconnectRetryIntervalInMsecs());
-        }
+        flowProps.setReconnectRetryIntervalInMsecs(config.reconnectRetryIntervalInMsecs());
     }
 
     /**

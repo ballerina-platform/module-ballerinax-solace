@@ -20,9 +20,12 @@ package io.xlibb.config;
 
 import com.solacesystems.jcsmp.JCSMPProperties;
 import io.ballerina.runtime.api.utils.StringUtils;
+import io.ballerina.runtime.api.values.BDecimal;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
 import io.xlibb.consumer.AcknowledgementMode;
+
+import java.math.BigDecimal;
 
 /**
  * Queue consumer configuration for synchronous (pull-based) consumption. Represents the subscription to a queue
@@ -49,12 +52,12 @@ public record QueueConsumerConfig(
         String selector,
         Integer transportWindowSize,
         Integer ackThreshold,
-        Integer ackTimerInMsecs,
+        int ackTimerInMsecs,
         Boolean startState,
         Boolean noLocal,
         Boolean activeFlowIndication,
         Integer reconnectTries,
-        Integer reconnectRetryIntervalInMsecs
+        int reconnectRetryIntervalInMsecs
 ) implements ConsumerSubscriptionConfig {
 
     private static final BString QUEUE_NAME_KEY = StringUtils.fromString("queueName");
@@ -63,12 +66,12 @@ public record QueueConsumerConfig(
     private static final BString SELECTOR_KEY = StringUtils.fromString("selector");
     private static final BString TRANSPORT_WINDOW_SIZE_KEY = StringUtils.fromString("transportWindowSize");
     private static final BString ACK_THRESHOLD_KEY = StringUtils.fromString("ackThreshold");
-    private static final BString ACK_TIMER_IN_MSECS_KEY = StringUtils.fromString("ackTimerInMsecs");
+    private static final BString ACK_TIMER_KEY = StringUtils.fromString("ackTimer");
     private static final BString START_STATE_KEY = StringUtils.fromString("startState");
     private static final BString NO_LOCAL_KEY = StringUtils.fromString("noLocal");
     private static final BString ACTIVE_FLOW_INDICATION_KEY = StringUtils.fromString("activeFlowIndication");
     private static final BString RECONNECT_TRIES_KEY = StringUtils.fromString("reconnectTries");
-    private static final BString RECONNECT_RETRY_INTERVAL_KEY = StringUtils.fromString("reconnectRetryIntervalInMsecs");
+    private static final BString RECONNECT_RETRY_INTERVAL_KEY = StringUtils.fromString("reconnectRetryInterval");
 
     private static final String DEFAULT_ACK_MODE = JCSMPProperties.SUPPORTED_MESSAGE_ACK_AUTO;
     private static final int DEFAULT_WINDOW_SIZE = 255;
@@ -86,13 +89,13 @@ public record QueueConsumerConfig(
                 extractSelector(config),
                 extractOptionalInteger(config, TRANSPORT_WINDOW_SIZE_KEY),
                 extractOptionalInteger(config, ACK_THRESHOLD_KEY),
-                extractOptionalInteger(config, ACK_TIMER_IN_MSECS_KEY),
+                decimalToMillis(((BDecimal) config.get(ACK_TIMER_KEY)).decimalValue()),
                 config.containsKey(START_STATE_KEY) ? config.getBooleanValue(START_STATE_KEY) : null,
                 config.containsKey(NO_LOCAL_KEY) ? config.getBooleanValue(NO_LOCAL_KEY) : null,
                 config.containsKey(ACTIVE_FLOW_INDICATION_KEY) ? config.getBooleanValue(ACTIVE_FLOW_INDICATION_KEY) :
                         null,
                 extractOptionalInteger(config, RECONNECT_TRIES_KEY),
-                extractOptionalInteger(config, RECONNECT_RETRY_INTERVAL_KEY)
+                decimalToMillis(((BDecimal) config.get(RECONNECT_RETRY_INTERVAL_KEY)).decimalValue())
         );
     }
 
@@ -131,12 +134,7 @@ public record QueueConsumerConfig(
         return Integer.parseInt(value.toString());
     }
 
-    /**
-     * Get the effective transport window size, using the default if not specified.
-     *
-     * @return the transport window size (or default 255 if not specified)
-     */
-    public int getEffectiveTransportWindowSize() {
-        return transportWindowSize != null ? transportWindowSize : DEFAULT_WINDOW_SIZE;
+    private static int decimalToMillis(BigDecimal seconds) {
+        return seconds.multiply(BigDecimal.valueOf(1000)).intValue();
     }
 }

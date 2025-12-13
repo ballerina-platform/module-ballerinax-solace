@@ -207,8 +207,8 @@ public type CommonConsumerConfig record {|
     int transportWindowSize?;
     # Acknowledgement threshold as percentage of window size (1-75, default 0) - FlowReceiver only
     int ackThreshold?;
-    # Acknowledgement timer in milliseconds (20-1500, default 0) - FlowReceiver only
-    int ackTimerInMsecs?;
+    # Acknowledgement timer in seconds (0.02 - 1.5, default 0) - FlowReceiver only
+    decimal ackTimer = 0.0;
     # Auto-start the flow upon creation (default false) - FlowReceiver only
     boolean startState?;
     # Prevent receiving messages published on same session (default false) - FlowReceiver only
@@ -217,8 +217,8 @@ public type CommonConsumerConfig record {|
     boolean activeFlowIndication?;
     # Number of reconnection attempts after flow goes down (-1 = infinite, default -1) - FlowReceiver only
     int reconnectTries?;
-    # Wait time between reconnection attempts in milliseconds (min 50, default 3000) - FlowReceiver only
-    int reconnectRetryIntervalInMsecs?;
+    # Wait time between reconnection attempts in seconds (min 0.05 seconds, default 3.0 seconds) - FlowReceiver only
+    decimal reconnectRetryInterval = 3.0;
 |};
 
 # Queue consumer configuration for synchronous (pull-based) consumption

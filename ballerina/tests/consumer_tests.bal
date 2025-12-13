@@ -113,7 +113,7 @@ isolated function testConsumerInitWithFlowProperties() returns error? {
             queueName: CONSUMER_FLOW_QUEUE,
             transportWindowSize: 200,
             ackThreshold: 50,
-            ackTimerInMsecs: 500,
+            ackTimer: 0.5,
             startState: true
         }
     });
