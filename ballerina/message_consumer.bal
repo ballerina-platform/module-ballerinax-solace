@@ -45,7 +45,7 @@ public isolated function init(string url, *ConsumerConfiguration config) returns
     }
 
     isolated function initConsumer(string url, ConsumerConfiguration config) returns Error? = @java:Method {
-        'class: "io.ballerina.lib.solace.consumer.ConsumerActions",
+        'class: "io.xlibb.consumer.ConsumerActions",
         name: "init"
     } external;
 
@@ -57,7 +57,7 @@ public isolated function init(string url, *ConsumerConfiguration config) returns
     # + timeout - Maximum time in seconds to wait for a message. A timeout of zero never expires
     # + return - The received message, or nil if timeout occurs; Error if receive fails
     isolated remote function receive(decimal timeout = 0.0) returns Message|Error? = @java:Method {
-        'class: "io.ballerina.lib.solace.consumer.ConsumerActions",
+        'class: "io.xlibb.consumer.ConsumerActions",
         name: "receive"
     } external;
 
@@ -68,7 +68,7 @@ public isolated function init(string url, *ConsumerConfiguration config) returns
     #
     # + return - The received message, or nil if no message available; Error if receive fails
     isolated remote function receiveNoWait() returns Message|Error? = @java:Method {
-        'class: "io.ballerina.lib.solace.consumer.ConsumerActions",
+        'class: "io.xlibb.consumer.ConsumerActions",
         name: "receiveNoWait"
     } external;
 
@@ -80,7 +80,7 @@ public isolated function init(string url, *ConsumerConfiguration config) returns
     # + message - The message to acknowledge
     # + return - Error if acknowledgement fails
     isolated remote function ack(Message message) returns Error? = @java:Method {
-        'class: "io.ballerina.lib.solace.consumer.ConsumerActions",
+        'class: "io.xlibb.consumer.ConsumerActions",
         name: "acknowledge"
     } external;
 
@@ -97,7 +97,7 @@ public isolated function init(string url, *ConsumerConfiguration config) returns
     # and the consumer flow is configured to support required settlement outcomes.
     # For transacted flows, settlement outcomes are ignored.
     isolated remote function nack(Message message, boolean requeue = true) returns Error? = @java:Method {
-        'class: "io.ballerina.lib.solace.consumer.ConsumerActions",
+        'class: "io.xlibb.consumer.ConsumerActions",
         name: "nack"
     } external;
 
@@ -107,7 +107,7 @@ public isolated function init(string url, *ConsumerConfiguration config) returns
     #
     # + return - Error if commit fails
     isolated remote function 'commit() returns Error? = @java:Method {
-        'class: "io.ballerina.lib.solace.consumer.ConsumerActions",
+        'class: "io.xlibb.consumer.ConsumerActions",
         name: "commit"
     } external;
 
@@ -117,7 +117,7 @@ public isolated function init(string url, *ConsumerConfiguration config) returns
     #
     # + return - Error if rollback fails
     isolated remote function 'rollback() returns Error? = @java:Method {
-        'class: "io.ballerina.lib.solace.consumer.ConsumerActions",
+        'class: "io.xlibb.consumer.ConsumerActions",
         name: "rollback"
     } external;
 
@@ -125,7 +125,7 @@ public isolated function init(string url, *ConsumerConfiguration config) returns
     #
     # + return - Error if close fails
     isolated remote function close() returns Error? = @java:Method {
-        'class: "io.ballerina.lib.solace.consumer.ConsumerActions",
+        'class: "io.xlibb.consumer.ConsumerActions",
         name: "close"
     } external;
 }
