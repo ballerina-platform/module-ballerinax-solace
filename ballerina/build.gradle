@@ -165,5 +165,5 @@ build.dependsOn generatePomFileForMavenPublication
 
 test.dependsOn ":${packageName}-native:build"
 
-publish.dependsOn build
 publishToMavenLocal.dependsOn build
+publish.dependsOn build
