@@ -21,5 +21,5 @@ function init() {
 }
 
 function setModule() = @java:Method {
-    'class: "io.xlibb.ModuleUtils"
+    'class: "io.xlibb.solace.ModuleUtils"
 } external;

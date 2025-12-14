@@ -1,0 +1,54 @@
+/*
+ * Copyright (c) 2025, WSO2 LLC. (http://www.wso2.org).
+ *
+ *  WSO2 LLC. licenses this file to you under the Apache License,
+ *  Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing,
+ *  software distributed under the License is distributed on an
+ *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations
+ *  under the License.
+ */
+
+package io.xlibb.solace.producer;
+
+import com.solacesystems.jcsmp.JCSMPException;
+import com.solacesystems.jcsmp.JCSMPStreamingPublishCorrelatingEventHandler;
+
+/**
+ * Handler for JCSMP streaming publish events.
+ * Manages acknowledgements and errors for guaranteed message delivery.
+ */
+public class PublishEventHandler implements JCSMPStreamingPublishCorrelatingEventHandler {
+
+    /**
+     * Called when a publisher acknowledgement is received for a guaranteed delivery message.
+     *
+     * @param key  The correlation key of the message being acknowledged
+     */
+    @Override
+    public void responseReceivedEx(Object key) {
+        // Log successful acknowledgement if needed
+        // For now, we silently acknowledge success
+    }
+
+    /**
+     * Called when an error occurs during message publishing.
+     *
+     * @param key The correlation key of the message with which the error condition is associated
+     * @param cause The error condition
+     * @param timestamp The time of the error given by `System.currentTimeMillis()`
+     */
+    @Override
+    public void handleErrorEx(Object key, JCSMPException cause, long timestamp) {
+        // Log error if needed
+        // Error handling can be enhanced in future implementations
+        // For now, we log the error
+    }
+}

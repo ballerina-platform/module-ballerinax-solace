@@ -49,7 +49,7 @@ public isolated client class MessageProducer {
     }
 
     isolated function initProducer(string url, ProducerConfiguration config) returns Error? = @java:Method {
-        'class: "io.xlibb.producer.ProducerActions",
+        'class: "io.xlibb.solace.producer.ProducerActions",
         name: "init"
     } external;
 
@@ -59,7 +59,7 @@ public isolated client class MessageProducer {
     # + message - The message to send (payload and optional properties)
     # + return - Error if send fails
     isolated remote function send(Destination destination, Message message) returns Error? = @java:Method {
-        'class: "io.xlibb.producer.ProducerActions",
+        'class: "io.xlibb.solace.producer.ProducerActions",
         name: "send"
     } external;
 
@@ -69,7 +69,7 @@ public isolated client class MessageProducer {
     #
     # + return - Error if commit fails
     isolated remote function 'commit() returns Error? = @java:Method {
-        'class: "io.xlibb.producer.ProducerActions",
+        'class: "io.xlibb.solace.producer.ProducerActions",
         name: "commit"
     } external;
 
@@ -79,7 +79,7 @@ public isolated client class MessageProducer {
     #
     # + return - Error if rollback fails
     isolated remote function 'rollback() returns Error? = @java:Method {
-        'class: "io.xlibb.producer.ProducerActions",
+        'class: "io.xlibb.solace.producer.ProducerActions",
         name: "rollback"
     } external;
 
@@ -87,7 +87,7 @@ public isolated client class MessageProducer {
     #
     # + return - True if the producer is closed, false otherwise
     isolated remote function isClosed() returns boolean = @java:Method {
-        'class: "io.xlibb.producer.ProducerActions",
+        'class: "io.xlibb.solace.producer.ProducerActions",
         name: "isClosed"
     } external;
 
@@ -97,7 +97,7 @@ public isolated client class MessageProducer {
     #
     # + return - Error if close fails
     isolated remote function close() returns Error? = @java:Method {
-        'class: "io.xlibb.producer.ProducerActions",
+        'class: "io.xlibb.solace.producer.ProducerActions",
         name: "close"
     } external;
 }
