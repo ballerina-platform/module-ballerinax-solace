@@ -133,38 +133,44 @@ public class ConsumerActions {
      * @return the received message, null if timeout, or BError on failure
      */
     public static Object receive(BObject consumer, BDecimal timeout) {
+        Boolean closed = (Boolean) consumer.getNativeData(NATIVE_CLOSED);
+        if (closed != null && closed) {
+            return CommonUtils.createError("Consumer is closed");
+        }
+        long timeoutMs = timeout.decimalValue().multiply(BigDecimal.valueOf(1000)).longValue();
+        String subscriptionType = (String) consumer.getNativeData(NATIVE_SUBSCRIPTION_TYPE);
+
         try {
-            Boolean closed = (Boolean) consumer.getNativeData(NATIVE_CLOSED);
-            if (closed != null && closed) {
-                return CommonUtils.createError("Consumer is closed");
-            }
-
-            long timeoutMs = timeout.decimalValue().multiply(BigDecimal.valueOf(1000)).longValue();
-            String subscriptionType = (String) consumer.getNativeData(NATIVE_SUBSCRIPTION_TYPE);
-
-            BytesXMLMessage message = null;
-
-            if (SUBSCRIPTION_TYPE_QUEUE.equals(subscriptionType) ||
-                    SUBSCRIPTION_TYPE_DURABLE_TOPIC.equals(subscriptionType)) {
-                FlowReceiver flowReceiver = (FlowReceiver) consumer.getNativeData(NATIVE_FLOW);
-                if (flowReceiver == null) {
-                    return CommonUtils.createError("Consumer flow not initialized");
+            Object result = CommonUtils.executeBlocking(() -> {
+                BytesXMLMessage message = null;
+                if (SUBSCRIPTION_TYPE_QUEUE.equals(subscriptionType) ||
+                        SUBSCRIPTION_TYPE_DURABLE_TOPIC.equals(subscriptionType)) {
+                    FlowReceiver flowReceiver = (FlowReceiver) consumer.getNativeData(NATIVE_FLOW);
+                    if (flowReceiver == null) {
+                        return CommonUtils.createError("Consumer flow not initialized");
+                    }
+                    message = flowReceiver.receive((int) timeoutMs);
+                } else if (SUBSCRIPTION_TYPE_DIRECT_TOPIC.equals(subscriptionType)) {
+                    XMLMessageConsumer xmlConsumer = (XMLMessageConsumer) consumer.getNativeData(NATIVE_CONSUMER);
+                    if (xmlConsumer == null) {
+                        return CommonUtils.createError("Consumer not initialized");
+                    }
+                    message = xmlConsumer.receive((int) timeoutMs);
                 }
-                message = flowReceiver.receive((int) timeoutMs);
-            } else if (SUBSCRIPTION_TYPE_DIRECT_TOPIC.equals(subscriptionType)) {
-                XMLMessageConsumer xmlConsumer = (XMLMessageConsumer) consumer.getNativeData(NATIVE_CONSUMER);
-                if (xmlConsumer == null) {
-                    return CommonUtils.createError("Consumer not initialized");
+                if (message == null) {
+                    return null; // Timeout - no message available
                 }
-                message = xmlConsumer.receive((int) timeoutMs);
-            }
+                try {
+                    return MessageConverter.toBallerinaMessage(message);
+                } catch (Exception e) {
+                    return CommonUtils.createError("Failed to receive message", e);
+                }
+            });
 
-            if (message == null) {
-                return null; // Timeout - no message available
+            if (result instanceof BError) {
+                return (BError) result;
             }
-
-            // Convert to Ballerina Message
-            return MessageConverter.toBallerinaMessage(message);
+            return result;
         } catch (Exception e) {
             return CommonUtils.createError("Failed to receive message", e);
         }
@@ -177,37 +183,42 @@ public class ConsumerActions {
      * @return the received message, null if none available, or BError on failure
      */
     public static Object receiveNoWait(BObject consumer) {
+        Boolean closed = (Boolean) consumer.getNativeData(NATIVE_CLOSED);
+        if (closed != null && closed) {
+            return CommonUtils.createError("Consumer is closed");
+        }
+        String subscriptionType = (String) consumer.getNativeData(NATIVE_SUBSCRIPTION_TYPE);
         try {
-            Boolean closed = (Boolean) consumer.getNativeData(NATIVE_CLOSED);
-            if (closed != null && closed) {
-                return CommonUtils.createError("Consumer is closed");
-            }
-
-            String subscriptionType = (String) consumer.getNativeData(NATIVE_SUBSCRIPTION_TYPE);
-
-            BytesXMLMessage message = null;
-
-            if (SUBSCRIPTION_TYPE_QUEUE.equals(subscriptionType) ||
-                    SUBSCRIPTION_TYPE_DURABLE_TOPIC.equals(subscriptionType)) {
-                FlowReceiver flowReceiver = (FlowReceiver) consumer.getNativeData(NATIVE_FLOW);
-                if (flowReceiver == null) {
-                    return CommonUtils.createError("Consumer flow not initialized");
+            Object result = CommonUtils.executeBlocking(() -> {
+                BytesXMLMessage message = null;
+                if (SUBSCRIPTION_TYPE_QUEUE.equals(subscriptionType) ||
+                        SUBSCRIPTION_TYPE_DURABLE_TOPIC.equals(subscriptionType)) {
+                    FlowReceiver flowReceiver = (FlowReceiver) consumer.getNativeData(NATIVE_FLOW);
+                    if (flowReceiver == null) {
+                        return CommonUtils.createError("Consumer flow not initialized");
+                    }
+                    message = flowReceiver.receiveNoWait();
+                } else if (SUBSCRIPTION_TYPE_DIRECT_TOPIC.equals(subscriptionType)) {
+                    XMLMessageConsumer xmlConsumer = (XMLMessageConsumer) consumer.getNativeData(NATIVE_CONSUMER);
+                    if (xmlConsumer == null) {
+                        return CommonUtils.createError("Consumer not initialized");
+                    }
+                    message = xmlConsumer.receiveNoWait();
                 }
-                message = flowReceiver.receiveNoWait();
-            } else if (SUBSCRIPTION_TYPE_DIRECT_TOPIC.equals(subscriptionType)) {
-                XMLMessageConsumer xmlConsumer = (XMLMessageConsumer) consumer.getNativeData(NATIVE_CONSUMER);
-                if (xmlConsumer == null) {
-                    return CommonUtils.createError("Consumer not initialized");
+                if (message == null) {
+                    return null;
                 }
-                message = xmlConsumer.receiveNoWait();
-            }
+                try {
+                    return MessageConverter.toBallerinaMessage(message);
+                } catch (Exception e) {
+                    return CommonUtils.createError("Failed to receive message", e);
+                }
+            });
 
-            if (message == null) {
-                return null; // No message available
+            if (result instanceof BError) {
+                return (BError) result;
             }
-
-            // Convert to Ballerina Message
-            return MessageConverter.toBallerinaMessage(message);
+            return result;
         } catch (Exception e) {
             return CommonUtils.createError("Failed to receive message", e);
         }
@@ -232,7 +243,10 @@ public class ConsumerActions {
                 return CommonUtils.createError("Cannot acknowledge: native message not found");
             }
 
-            nativeMessage.ackMessage();
+            Object result = CommonUtils.executeBlocking(nativeMessage::ackMessage);
+            if (result instanceof BError) {
+                return (BError) result;
+            }
             return null;
         } catch (Exception e) {
             return CommonUtils.createError("Failed to acknowledge message", e);
@@ -260,8 +274,14 @@ public class ConsumerActions {
             }
 
             // Use settle() with appropriate outcome
-            XMLMessage.Outcome outcome = requeue ? XMLMessage.Outcome.FAILED : XMLMessage.Outcome.REJECTED;
-            nativeMessage.settle(outcome);
+            Object result = CommonUtils.executeBlocking(() -> {
+                XMLMessage.Outcome outcome = requeue ? XMLMessage.Outcome.FAILED : XMLMessage.Outcome.REJECTED;
+                nativeMessage.settle(outcome);
+                return null;
+            });
+            if (result instanceof BError) {
+                return (BError) result;
+            }
             return null;
         } catch (Exception e) {
             return CommonUtils.createError("Failed to NACK message", e);

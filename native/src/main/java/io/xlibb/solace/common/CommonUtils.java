@@ -72,6 +72,19 @@ public class CommonUtils {
         return future.get();
     }
 
+    public static Object executeBlocking(CompletableWithException task) throws Exception {
+        CompletableFuture<Object> future = new CompletableFuture<>();
+        Thread.startVirtualThread(() -> {
+            try {
+                Object result = task.run();
+                future.complete(result);
+            } catch (Exception e) {
+                future.complete(createError("Error during blocking operation", e));
+            }
+        });
+        return future.get();
+    }
+
     /**
      * Converts an array of Objects to an array of Strings.
      *
@@ -95,5 +108,11 @@ public class CommonUtils {
     public interface RunnableWithException {
 
         void run() throws Exception;
+    }
+
+    @FunctionalInterface
+    public interface CompletableWithException {
+
+        Object run() throws Exception;
     }
 }
