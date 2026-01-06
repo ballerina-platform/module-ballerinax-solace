@@ -2,7 +2,6 @@ services:
   solace:
     image: 'solace/solace-pubsub-standard:latest'
     container_name: solace-test-server
-    platform: linux/arm64
     ports:
       - '55554:55555'  # SMF messaging
       - '55003:55003'  # Compressed messaging
