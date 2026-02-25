@@ -18,7 +18,6 @@
 
 package io.xlibb.solace.producer;
 
-import com.solacesystems.jcsmp.BytesMessage;
 import com.solacesystems.jcsmp.DeliveryMode;
 import com.solacesystems.jcsmp.Destination;
 import com.solacesystems.jcsmp.SDTException;
@@ -177,7 +176,7 @@ public class MessageConverter {
     /**
      * Creates a BytesMessage from byte array payload. Uses attachment part instead of content part for the payload.
      */
-    public static BytesMessage toByteMessage(XMLMessageProducer producer, byte[] content)
+    public static XMLMessage toByteMessage(XMLMessageProducer producer, byte[] content)
             throws Exception {
         if (producer == null) {
             throw new Exception("XMLMessageProducer cannot be null");
@@ -185,15 +184,7 @@ public class MessageConverter {
         if (content == null) {
             throw new Exception("Message content cannot be null");
         }
-
-        BytesMessage message = producer.createBytesMessage();
-        if (message == null) {
-            throw new Exception("Failed to create BytesXMLMessage");
-        }
-
-        // Use attachment instead of content
-        message.setData(content);
-        return message;
+        return producer.createBytesXMLMessage(content);
     }
 
 }
