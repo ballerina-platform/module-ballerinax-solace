@@ -18,10 +18,10 @@ import ballerina/test;
 import ballerina/http;
 import ballerina/io;
 
-final http:Client solaceRest = check new ("localhost:9000/QUEUE");
+final http:Client solaceRest = check new ("localhost:9000");
 
 @test:Config {
-    groups: ["consumer", "REST", "firstTest"]
+    groups: ["consumer", "REST"]
 }
 isolated function testReceiveJsonPayloads() returns error? {
     MessageConsumer consumer = check createQueueConsumer("jsonQueue");
@@ -29,7 +29,7 @@ isolated function testReceiveJsonPayloads() returns error? {
         "message": "This is a sample message"
     };
     
-    http:Response _ = check solaceRest->/jsonQueue.post(payload);
+    http:Response _ = check solaceRest->/QUEUE/jsonQueue.post(payload, mediaType = "application/json; charset=utf-8");
     Message? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
     test:assertTrue(msg is Message, "Should receive a message");
     if msg is () {
@@ -37,15 +37,7 @@ isolated function testReceiveJsonPayloads() returns error? {
     }
 
     string payloadStr = check string:fromBytes(msg.payload);
-    io:println("Received payload:  ", payloadStr);
-    // The Solace REST API may add prefix characters, so we need to extract the JSON portion
-    int? jsonStartNullable = payloadStr.indexOf("{");
-    if jsonStartNullable is () {
-        test:assertFail("No JSON object found in payload");
-    }
-    int jsonStart = jsonStartNullable;
-    string jsonStr = payloadStr.substring(jsonStart);
-    json receivedPayload = check jsonStr.fromJsonString();
+    json receivedPayload = check payloadStr.fromJsonString();
     test:assertEquals(receivedPayload, payload, "Received payload is different");
 }
 

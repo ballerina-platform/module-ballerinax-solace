@@ -37,6 +37,7 @@ import io.xlibb.solace.ModuleUtils;
 import io.xlibb.solace.common.DestinationConverter;
 import io.xlibb.solace.common.PropertyConverter;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import static io.xlibb.solace.common.Constants.NATIVE_MESSAGE;
@@ -203,17 +204,6 @@ public class MessageConverter {
     }
 
     private static byte[] extractPayload(XMLMessage xmlMessage) throws Exception {
-        // Check if message has attachment (primary payload location)
-        if (xmlMessage.hasAttachment()) {
-            int attachmentLength = xmlMessage.getAttachmentContentLength();
-            if (attachmentLength > 0) {
-                byte[] attachment = new byte[attachmentLength];
-                xmlMessage.readAttachmentBytes(attachment);
-                return attachment;
-            }
-        }
-
-        // Handle different message types
         if (xmlMessage instanceof TextMessage textMessage) {
             String text = textMessage.getText();
             if (text != null) {
@@ -229,12 +219,15 @@ public class MessageConverter {
         } else if (xmlMessage instanceof MapMessage mapMessage) {
             SDTMap map = mapMessage.getMap();
             if (map != null && !map.isEmpty()) {
-                // Convert MapMessage to JSON string and then to bytes
                 String jsonString = PropertyConverter.sdtMapToJson(map);
                 return jsonString.getBytes(StandardCharsets.UTF_8);
             }
+        } else {
+            ByteBuffer buf = xmlMessage.getAttachmentByteBuffer();
+            byte[] content = new byte[buf.remaining()];
+            buf.get(content);
+            return content;
         }
-
         return new byte[0];
     }
 
