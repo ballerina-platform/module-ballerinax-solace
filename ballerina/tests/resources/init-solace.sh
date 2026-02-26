@@ -90,5 +90,12 @@ create_queue "test/error/empty/payload/queue"
 create_queue "test/error/large/payload/queue"
 create_queue "test/error/special/chars/queue"
 
+# REST consumer test queues
+echo "Creating REST consumer test queues..."
+create_queue "jsonQueue"
+create_queue "textQueue"
+create_queue "xmlQueue"
+create_queue "binaryQueue"
+
 echo "Queue creation completed!"
 echo "Solace broker is ready for testing."

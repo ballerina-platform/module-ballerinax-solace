@@ -29,16 +29,24 @@ isolated function testReceiveJsonPayloads() returns error? {
         "message": "This is a sample message"
     };
     
-    http:Response s = check solaceRest->/jsonQueue.post(payload);
-    io:print("Queue publish status ", s.statusCode);
-    
+    http:Response _ = check solaceRest->/jsonQueue.post(payload);
     Message? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
     test:assertTrue(msg is Message, "Should receive a message");
     if msg is () {
         return;
     }
 
-    io:println(string:fromBytes(msg.payload));
+    string payloadStr = check string:fromBytes(msg.payload);
+    io:println("Received payload:  ", payloadStr);
+    // The Solace REST API may add prefix characters, so we need to extract the JSON portion
+    int? jsonStartNullable = payloadStr.indexOf("{");
+    if jsonStartNullable is () {
+        test:assertFail("No JSON object found in payload");
+    }
+    int jsonStart = jsonStartNullable;
+    string jsonStr = payloadStr.substring(jsonStart);
+    json receivedPayload = check jsonStr.fromJsonString();
+    test:assertEquals(receivedPayload, payload, "Received payload is different");
 }
 
 @test:Config {
