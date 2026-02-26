@@ -27,11 +27,45 @@ import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
+
 
 /**
  * Utility for bidirectional conversion between JCSMP SDTMap and Ballerina map.
  */
 public class PropertyConverter {
+
+    /**
+     * Converts a JCSMP SDTMap to a JSON string.
+     *
+     * @param sdtMap the JCSMP SDTMap
+     * @return JSON string representation
+     * @throws SDTException if SDT conversion fails
+     */
+    public static String sdtMapToJson(SDTMap sdtMap) throws SDTException {
+        Map<String, Object> map = new HashMap<>();
+        for (String key : sdtMap.keySet()) {
+            Object value = sdtMap.get(key);
+            map.put(key, convertSDTValueToJsonCompatible(value));
+        }
+        return new JSONObject(map).toString();
+    }
+
+    private static Object convertSDTValueToJsonCompatible(Object value) throws SDTException {
+        if (value instanceof SDTMap nestedMap) {
+            Map<String, Object> nestedJsonMap = new HashMap<>();
+            for (String key : nestedMap.keySet()) {
+                nestedJsonMap.put(key, convertSDTValueToJsonCompatible(nestedMap.get(key)));
+            }
+            return nestedJsonMap;
+        } else if (value instanceof byte[] bytes) {
+            return java.util.Base64.getEncoder().encodeToString(bytes);
+        }
+        return value;
+    }
 
     /**
      * Converts a JCSMP SDTMap to a Ballerina map.

@@ -18,7 +18,9 @@
 
 package io.xlibb.solace.consumer;
 
+import com.solacesystems.jcsmp.BytesMessage;
 import com.solacesystems.jcsmp.Destination;
+import com.solacesystems.jcsmp.MapMessage;
 import com.solacesystems.jcsmp.SDTMap;
 import com.solacesystems.jcsmp.TextMessage;
 import com.solacesystems.jcsmp.XMLMessage;
@@ -82,7 +84,7 @@ public class MessageConverter {
         BMap<BString, Object> message = ValueCreator.createRecordValue(messageType);
 
         // Extract and set payload
-        byte[] payload = extractPayload(xmlMessage);
+        byte[] payload = extractPayload2(xmlMessage);
         message.put(PAYLOAD_KEY, ValueCreator.createArrayValue(payload));
 
         // Set delivery mode
@@ -200,10 +202,7 @@ public class MessageConverter {
         return null;
     }
 
-    /**
-     * Extracts the binary payload from an XMLMessage. Reads from attachment part instead of content part.
-     */
-    private static byte[] extractPayload(XMLMessage xmlMessage) {
+    private static byte[] extractPayload2(XMLMessage xmlMessage) throws Exception {
         // Check if message has attachment (primary payload location)
         if (xmlMessage.hasAttachment()) {
             int attachmentLength = xmlMessage.getAttachmentContentLength();
@@ -214,18 +213,25 @@ public class MessageConverter {
             }
         }
 
-        // Fallback: If no attachment, try reading from content (for backward compatibility)
+        // Handle different message types
         if (xmlMessage instanceof TextMessage textMessage) {
             String text = textMessage.getText();
             if (text != null) {
                 return text.getBytes(StandardCharsets.UTF_8);
             }
-        } else if (xmlMessage.hasContent()) {
-            int contentLength = xmlMessage.getContentLength();
+        } else if (xmlMessage instanceof BytesMessage bytesMessage) {
+            int contentLength = bytesMessage.getContentLength();
             if (contentLength > 0) {
                 byte[] content = new byte[contentLength];
-                xmlMessage.readContentBytes(content);
+                bytesMessage.readContentBytes(content);
                 return content;
+            }
+        } else if (xmlMessage instanceof MapMessage mapMessage) {
+            SDTMap map = mapMessage.getMap();
+            if (map != null && !map.isEmpty()) {
+                // Convert MapMessage to JSON string and then to bytes
+                String jsonString = PropertyConverter.sdtMapToJson(map);
+                return jsonString.getBytes(StandardCharsets.UTF_8);
             }
         }
 
