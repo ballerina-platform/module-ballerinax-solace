@@ -84,7 +84,7 @@ public class MessageConverter {
         BMap<BString, Object> message = ValueCreator.createRecordValue(messageType);
 
         // Extract and set payload
-        byte[] payload = extractPayload2(xmlMessage);
+        byte[] payload = extractPayload(xmlMessage);
         message.put(PAYLOAD_KEY, ValueCreator.createArrayValue(payload));
 
         // Set delivery mode
@@ -202,7 +202,7 @@ public class MessageConverter {
         return null;
     }
 
-    private static byte[] extractPayload2(XMLMessage xmlMessage) throws Exception {
+    private static byte[] extractPayload(XMLMessage xmlMessage) throws Exception {
         // Check if message has attachment (primary payload location)
         if (xmlMessage.hasAttachment()) {
             int attachmentLength = xmlMessage.getAttachmentContentLength();
