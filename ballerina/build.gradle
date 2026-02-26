@@ -119,8 +119,7 @@ dependencies {
         transitive = false
     }
 
-    // implementation 'org.json:json:20231013'
-    externalJars(group: 'org.json', name: 'json', version: '20231013') {
+    externalJars(group: 'org.json', name: 'json', version: "${jsonVersion}") {
         transitive = false
     }
 }
@@ -131,6 +130,7 @@ task updateTomlFiles {
         newBallerinaToml = newBallerinaToml.replace("@toml.version@", tomlVersion)
         newBallerinaToml = newBallerinaToml.replace("@sol.jcsmp.version@", project.solaceJcsmpVersion)
         newBallerinaToml = newBallerinaToml.replace('@netty.version@', project.nettyVersion)
+        newBallerinaToml = newBallerinaToml.replace('@json.version@', project.jsonVersion)
         ballerinaTomlFile.text = newBallerinaToml
     }
 }
