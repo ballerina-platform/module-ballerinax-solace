@@ -96,6 +96,8 @@ create_queue "jsonQueue"
 create_queue "textQueue"
 create_queue "xmlQueue"
 create_queue "binaryQueue"
+create_queue "invalidJsonQueue"
+create_queue "emptyRestQueue"
 
 echo "Queue creation completed!"
 echo "Solace broker is ready for testing."

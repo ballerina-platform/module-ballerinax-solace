@@ -16,7 +16,6 @@
 
 import ballerina/test;
 import ballerina/http;
-import ballerina/io;
 
 final http:Client solaceRest = check new ("localhost:9000");
 
@@ -44,17 +43,85 @@ isolated function testReceiveJsonPayloads() returns error? {
 @test:Config {
     groups: ["consumer", "REST"]
 }
-isolated function testReceiveTextPayloads() returns error? {}
+isolated function testReceiveTextPayloads() returns error? {
+    MessageConsumer consumer = check createQueueConsumer("textQueue");
+    string payload = "Hello, Solace!";
+
+    http:Response _ = check solaceRest->/QUEUE/textQueue.post(payload, mediaType = "text/plain; charset=utf-8");
+    Message? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    test:assertTrue(msg is Message, "Should receive a message");
+    if msg is () {
+        return;
+    }
+
+    string receivedPayload = check string:fromBytes(msg.payload);
+    test:assertEquals(receivedPayload, payload, "Received payload is different");
+}
 
 @test:Config {
     groups: ["consumer", "REST"]
 }
-isolated function testReceiveXmlPayloads() returns error? {}
+isolated function testReceiveXmlPayloads() returns error? {
+    MessageConsumer consumer = check createQueueConsumer("xmlQueue");
+    xml payload = xml `<message><content>Hello, Solace!</content></message>`;
+
+    http:Response _ = check solaceRest->/QUEUE/xmlQueue.post(payload, mediaType = "application/xml; charset=utf-8");
+    Message? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    test:assertTrue(msg is Message, "Should receive a message");
+    if msg is () {
+        return;
+    }
+
+    string payloadStr = check string:fromBytes(msg.payload);
+    xml receivedPayload = check xml:fromString(payloadStr);
+    test:assertEquals(receivedPayload, payload, "Received payload is different");
+}
 
 @test:Config {
     groups: ["consumer", "REST"]
 }
-isolated function testReceiveBinaryPayload() returns error? {}
+isolated function testReceiveBinaryPayload() returns error? {
+    MessageConsumer consumer = check createQueueConsumer("binaryQueue");
+    byte[] payload = "Hello".toBytes();
+
+    http:Response _ = check solaceRest->/QUEUE/binaryQueue.post(payload, mediaType = "application/octet-stream");
+    Message? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    test:assertTrue(msg is Message, "Should receive a message");
+    if msg is () {
+        return;
+    }
+
+    test:assertEquals(msg.payload, payload, "Received payload is different");
+}
+
+@test:Config {
+    groups: ["consumer", "REST", "negative"]
+}
+isolated function testReceiveInvalidJsonPayload() returns error? {
+    MessageConsumer consumer = check createQueueConsumer("invalidJsonQueue");
+    string payload = "This is not valid JSON";
+
+    http:Response _ = check solaceRest->/QUEUE/invalidJsonQueue.post(payload, mediaType = "application/json; charset=utf-8");
+    Message? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    test:assertTrue(msg is Message, "Should receive a message");
+    if msg is () {
+        return;
+    }
+
+    string payloadStr = check string:fromBytes(msg.payload);
+    json|error receivedPayload = payloadStr.fromJsonString();
+    test:assertTrue(receivedPayload is error, "Should fail to parse invalid JSON payload");
+}
+
+@test:Config {
+    groups: ["consumer", "REST", "negative"]
+}
+isolated function testReceiveTimeoutWhenNothingPublished() returns error? {
+    MessageConsumer consumer = check createQueueConsumer("emptyRestQueue");
+
+    Message? msg = check consumer->receive(SHORT_RECEIVE_TIMEOUT);
+    test:assertTrue(msg is (), "Should return null when no message is published");
+}
 
 isolated function createQueueConsumer(string queueName) returns MessageConsumer|error {
      return new (BROKER_URL, {

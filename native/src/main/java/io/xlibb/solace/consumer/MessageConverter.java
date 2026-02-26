@@ -210,12 +210,7 @@ public class MessageConverter {
                 return text.getBytes(StandardCharsets.UTF_8);
             }
         } else if (xmlMessage instanceof BytesMessage bytesMessage) {
-            int contentLength = bytesMessage.getContentLength();
-            if (contentLength > 0) {
-                byte[] content = new byte[contentLength];
-                bytesMessage.readContentBytes(content);
-                return content;
-            }
+            return bytesMessage.getData();
         } else if (xmlMessage instanceof MapMessage mapMessage) {
             SDTMap map = mapMessage.getMap();
             if (map != null && !map.isEmpty()) {
