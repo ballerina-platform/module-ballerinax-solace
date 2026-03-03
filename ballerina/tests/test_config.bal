@@ -20,6 +20,7 @@ const string BROKER_URL_COMPRESSED = "tcp://localhost:55003";
 const string MESSAGE_VPN = "default";
 const string BROKER_USERNAME = "admin";
 const string BROKER_PASSWORD = "admin";
+const string BROKER_REST_EP_URL = "localhost:9000";
 
 // Test message content
 const string TEXT_MESSAGE_CONTENT = "Hello Solace SMF!";

@@ -17,7 +17,7 @@
 import ballerina/http;
 import ballerina/test;
 
-final http:Client solaceRest = check new ("localhost:9000");
+final http:Client solaceRest = check new (BROKER_REST_EP_URL);
 
 @test:Config {
     groups: ["consumer", "REST"]
