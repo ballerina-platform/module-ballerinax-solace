@@ -14,8 +14,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-import ballerina/test;
 import ballerina/http;
+import ballerina/test;
 
 final http:Client solaceRest = check new ("localhost:9000");
 
@@ -27,7 +27,7 @@ isolated function testReceiveJsonPayloads() returns error? {
     json payload = {
         "message": "This is a sample message"
     };
-    
+
     http:Response _ = check solaceRest->/QUEUE/jsonQueue.post(payload, mediaType = "application/json; charset=utf-8");
     Message? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
     test:assertTrue(msg is Message, "Should receive a message");
@@ -124,7 +124,7 @@ isolated function testReceiveTimeoutWhenNothingPublished() returns error? {
 }
 
 isolated function createQueueConsumer(string queueName) returns MessageConsumer|error {
-     return new (BROKER_URL, {
+    return new (BROKER_URL, {
         vpnName: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
