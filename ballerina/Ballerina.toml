@@ -2,10 +2,10 @@
 distribution = "2201.12.0"
 org = "ballerinax"
 name = "solace"
-version = "0.3.0"
+version = "0.3.1"
 license= ["Apache-2.0"]
 authors = ["Ballerina"]
-keywords = ["solace", "messaging", "network", "pubsub"]
+keywords = ["solace", "messaging", "network", "pubsub", "Vendor/Solace", "Area/Messaging", "Type/Connector", "Type/Trigger"]
 icon = "icon.png"
 repository = "https://github.com/ballerina-platform/module-ballerinax-solace"
 
@@ -15,8 +15,8 @@ graalvmCompatible = true
 [[platform.java21.dependency]]
 groupId = "io.ballerina.lib"
 artifactId = "solace-native"
-version = "0.3.0"
-path = "../native/build/libs/solace-native-0.3.0.jar"
+version = "0.3.1-SNAPSHOT"
+path = "../native/build/libs/solace-native-0.3.1-SNAPSHOT.jar"
 
 [[platform.java21.dependency]]
 groupId = "javax.jms"
