@@ -4,5 +4,10 @@ Solace PubSub+ is a powerful event broker that supports multiple protocols and m
 
 ### Key Features
 
-- Support for various messaging patterns (Pub/Sub, Request-Reply, Queuing)\n- Seamless integration with Solace PubSub+ event brokers\n- High-performance event distribution and reliable message delivery\n- Support for secure communication with TLS and authentication\n- Simplified production and consumption of events\n- GraalVM compatible for native image builds
+- Support for various messaging patterns (Pub/Sub, Request-Reply, Queuing)
+- Seamless integration with Solace PubSub+ event brokers
+- High-performance event distribution and reliable message delivery
+- Support for secure communication with TLS and authentication
+- Simplified production and consumption of events
+- GraalVM compatible for native image builds
 

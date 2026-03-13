@@ -5,7 +5,7 @@ name = "solace"
 version = "0.3.0"
 license= ["Apache-2.0"]
 authors = ["Ballerina"]
-keywords = ["solace", "messaging", "network", "pubsub"]
+keywords = ["solace", "network", "pubsub"]
 icon = "icon.png"
 repository = "https://github.com/ballerina-platform/module-ballerinax-solace"
 
