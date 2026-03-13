@@ -1,8 +1,15 @@
 ## Overview
 
-[Solace PubSub+](https://docs.solace.com/) is an advanced event-broker platform that enables event-driven communication across distributed applications using multiple messaging patterns such as publish/subscribe, request/reply, and queue-based messaging. It supports standard messaging protocols, including JMS, MQTT, AMQP, and REST, enabling seamless integration across diverse systems and environments.
+Solace PubSub+ is a powerful event broker that supports multiple protocols and messaging patterns. It provides high-performance, reliable, and scalable messaging for modern event-driven architectures. The Solace connector allows you to integrate with Solace event brokers, enabling efficient event distribution across various environments.
 
-The `ballerinax/solace` package provides APIs to interact with Solace PubSub+ brokers through the JMS API. It allows developers to programmatically produce and consume messages, manage topics and queues, and implement robust, event-driven solutions that leverage Solace’s high-performance messaging capabilities within Ballerina applications.
+### Key Features
+
+- Support for various messaging patterns (Pub/Sub, Request-Reply, Queuing)
+- Seamless integration with Solace PubSub+ event brokers
+- High-performance event distribution and reliable message delivery
+- Support for secure communication with TLS and authentication
+- Simplified production and consumption of events
+- GraalVM compatible for native image builds
 
 ## Quickstart
 
@@ -83,4 +90,3 @@ Save the changes and run the Ballerina application using the following command.
 ```bash
 bal run
 ```
-
