@@ -54,23 +54,11 @@ artifactId = "netty-buffer"
 version = "@netty.version@"
 path = "./lib/netty-buffer-@netty.version@.jar"
 
-# [[platform.java21.dependency]]
-# groupId = "io.netty"
-# artifactId = "netty-codec-base"
-# version = "@netty.version@"
-# path = "./lib/netty-codec-base-@netty.version@.jar"
-
 [[platform.java21.dependency]]
 groupId = "io.netty"
 artifactId = "netty-codec-http"
 version = "@netty.version@"
 path = "./lib/netty-codec-http-@netty.version@.jar"
-
-# [[platform.java21.dependency]]
-# groupId = "io.netty"
-# artifactId = "netty-codec-compression"
-# version = "@netty.version@"
-# path = "./lib/netty-codec-compression-@netty.version@.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
