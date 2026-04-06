@@ -21,8 +21,8 @@ path = "../native/build/libs/solace-native-0.2.4-SNAPSHOT.jar"
 [[platform.java21.dependency]]
 groupId = "com.solacesystems"
 artifactId = "sol-jcsmp"
-version = "10.29.0"
-path = "./lib/sol-jcsmp-10.29.0.jar"
+version = "10.29.1"
+path = "./lib/sol-jcsmp-10.29.1.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
