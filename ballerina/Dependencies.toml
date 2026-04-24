@@ -76,7 +76,7 @@ dependencies = [
 [[package]]
 org = "ballerina"
 name = "http"
-version = "2.14.9"
+version = "2.14.10"
 scope = "testOnly"
 dependencies = [
 	{org = "ballerina", name = "auth"},
@@ -335,7 +335,7 @@ dependencies = [
 [[package]]
 org = "xlibb"
 name = "solace"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
 	{org = "ballerina", name = "http"},
 	{org = "ballerina", name = "jballerina.java"},
