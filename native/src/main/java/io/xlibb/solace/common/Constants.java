@@ -32,5 +32,7 @@ public class Constants {
     public static final String NATIVE_CLOSED = "native.closed";
     public static final String NATIVE_PRODUCER = "native.producer";
     public static final String NATIVE_MESSAGE = "native.message";
+    public static final String NATIVE_URL = "native.url";
+    public static final String NATIVE_DESTINATION = "native.destination";
 
 }

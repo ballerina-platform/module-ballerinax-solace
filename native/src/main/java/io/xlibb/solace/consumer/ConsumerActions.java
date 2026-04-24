@@ -26,6 +26,8 @@ import com.solacesystems.jcsmp.JCSMPSession;
 import com.solacesystems.jcsmp.XMLMessage;
 import com.solacesystems.jcsmp.XMLMessageConsumer;
 import com.solacesystems.jcsmp.transaction.TransactedSession;
+import io.ballerina.runtime.api.Environment;
+import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BDecimal;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
@@ -37,22 +39,35 @@ import io.xlibb.solace.config.ConsumerConfiguration;
 import io.xlibb.solace.config.ConsumerSubscriptionConfig;
 import io.xlibb.solace.config.QueueConsumerConfig;
 import io.xlibb.solace.config.TopicConsumerConfig;
+import io.xlibb.solace.observability.SolaceMetricsUtil;
+import io.xlibb.solace.observability.SolaceTracingUtil;
 
 import java.math.BigDecimal;
 
 import static io.xlibb.solace.common.Constants.NATIVE_CLOSED;
 import static io.xlibb.solace.common.Constants.NATIVE_CONSUMER;
+import static io.xlibb.solace.common.Constants.NATIVE_DESTINATION;
 import static io.xlibb.solace.common.Constants.NATIVE_FLOW;
 import static io.xlibb.solace.common.Constants.NATIVE_SESSION;
 import static io.xlibb.solace.common.Constants.NATIVE_SUBSCRIPTION_TYPE;
 import static io.xlibb.solace.common.Constants.NATIVE_TRANSACTED;
 import static io.xlibb.solace.common.Constants.NATIVE_TX_SESSION;
+import static io.xlibb.solace.common.Constants.NATIVE_URL;
+import static io.xlibb.solace.common.MessageFieldConstants.PAYLOAD_KEY;
 import static io.xlibb.solace.consumer.ConsumerUtils.SUBSCRIPTION_TYPE_DIRECT_TOPIC;
 import static io.xlibb.solace.consumer.ConsumerUtils.SUBSCRIPTION_TYPE_DURABLE_TOPIC;
 import static io.xlibb.solace.consumer.ConsumerUtils.SUBSCRIPTION_TYPE_QUEUE;
 import static io.xlibb.solace.consumer.ConsumerUtils.createDirectTopicConsumer;
 import static io.xlibb.solace.consumer.ConsumerUtils.createDurableTopicConsumer;
 import static io.xlibb.solace.consumer.ConsumerUtils.createQueueConsumer;
+import static io.xlibb.solace.observability.SolaceObservabilityConstants.CONTEXT_CONSUMER;
+import static io.xlibb.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_ACKNOWLEDGE;
+import static io.xlibb.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_CLOSE;
+import static io.xlibb.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_COMMIT;
+import static io.xlibb.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_NACK;
+import static io.xlibb.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_RECEIVE;
+import static io.xlibb.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_ROLLBACK;
+import static io.xlibb.solace.observability.SolaceObservabilityConstants.UNKNOWN;
 
 /**
  * Consumer actions - main entry point for Ballerina MessageConsumer interop.
@@ -98,6 +113,11 @@ public class ConsumerActions {
             consumer.addNativeData(NATIVE_TX_SESSION, txSession);
             consumer.addNativeData(NATIVE_TRANSACTED, isTransacted);
             consumer.addNativeData(NATIVE_CLOSED, false);
+            consumer.addNativeData(NATIVE_URL, url.getValue());
+
+            // Store destination name for observability
+            String destinationName = extractDestinationName(subscriptionConfig);
+            consumer.addNativeData(NATIVE_DESTINATION, destinationName);
 
             // Create appropriate consumer based on subscription type
             if (subscriptionConfig instanceof QueueConsumerConfig queueConfig) {
@@ -119,20 +139,35 @@ public class ConsumerActions {
                 return CommonUtils.createError("Unknown subscription configuration type");
             }
 
+            SolaceMetricsUtil.reportNewConsumer(consumer);
             return null;
         } catch (Exception e) {
+            SolaceMetricsUtil.reportConnectionError(CONTEXT_CONSUMER);
             return CommonUtils.createError("Failed to initialize consumer", e);
         }
+    }
+
+    private static String extractDestinationName(ConsumerSubscriptionConfig subscriptionConfig) {
+        if (subscriptionConfig instanceof QueueConsumerConfig queueConfig) {
+            String name = queueConfig.queueName();
+            return name != null ? name : UNKNOWN;
+        } else if (subscriptionConfig instanceof TopicConsumerConfig topicConfig) {
+            String name = topicConfig.topicName();
+            return name != null ? name : UNKNOWN;
+        }
+        return UNKNOWN;
     }
 
     /**
      * Receive a message with timeout.
      *
+     * @param env      the Ballerina environment (injected for tracing)
      * @param consumer the Ballerina consumer object
      * @param timeout  the timeout in seconds
      * @return the received message, null if timeout, or BError on failure
      */
-    public static Object receive(BObject consumer, BDecimal timeout) {
+    public static Object receive(Environment env, BObject consumer, BDecimal timeout) {
+        SolaceTracingUtil.traceResourceInvocation(env, consumer);
         Boolean closed = (Boolean) consumer.getNativeData(NATIVE_CLOSED);
         if (closed != null && closed) {
             return CommonUtils.createError("Consumer is closed");
@@ -167,11 +202,17 @@ public class ConsumerActions {
                 }
             });
 
-            if (result instanceof BError) {
-                return (BError) result;
+            if (result instanceof BError bError) {
+                SolaceMetricsUtil.reportConsumerError(consumer, ERROR_TYPE_RECEIVE);
+                return bError;
+            }
+            if (result != null) {
+                int size = getPayloadSize((BMap<BString, Object>) result);
+                SolaceMetricsUtil.reportConsume(consumer, size);
             }
             return result;
         } catch (Exception e) {
+            SolaceMetricsUtil.reportConsumerError(consumer, ERROR_TYPE_RECEIVE);
             return CommonUtils.createError("Failed to receive message", e);
         }
     }
@@ -179,10 +220,12 @@ public class ConsumerActions {
     /**
      * Receive a message without waiting.
      *
+     * @param env      the Ballerina environment (injected for tracing)
      * @param consumer the Ballerina consumer object
      * @return the received message, null if none available, or BError on failure
      */
-    public static Object receiveNoWait(BObject consumer) {
+    public static Object receiveNoWait(Environment env, BObject consumer) {
+        SolaceTracingUtil.traceResourceInvocation(env, consumer);
         Boolean closed = (Boolean) consumer.getNativeData(NATIVE_CLOSED);
         if (closed != null && closed) {
             return CommonUtils.createError("Consumer is closed");
@@ -215,11 +258,17 @@ public class ConsumerActions {
                 }
             });
 
-            if (result instanceof BError) {
-                return (BError) result;
+            if (result instanceof BError bError) {
+                SolaceMetricsUtil.reportConsumerError(consumer, ERROR_TYPE_RECEIVE);
+                return bError;
+            }
+            if (result != null) {
+                int size = getPayloadSize((BMap<BString, Object>) result);
+                SolaceMetricsUtil.reportConsume(consumer, size);
             }
             return result;
         } catch (Exception e) {
+            SolaceMetricsUtil.reportConsumerError(consumer, ERROR_TYPE_RECEIVE);
             return CommonUtils.createError("Failed to receive message", e);
         }
     }
@@ -249,6 +298,7 @@ public class ConsumerActions {
             }
             return null;
         } catch (Exception e) {
+            SolaceMetricsUtil.reportConsumerError(consumer, ERROR_TYPE_ACKNOWLEDGE);
             return CommonUtils.createError("Failed to acknowledge message", e);
         }
     }
@@ -284,6 +334,7 @@ public class ConsumerActions {
             }
             return null;
         } catch (Exception e) {
+            SolaceMetricsUtil.reportConsumerError(consumer, ERROR_TYPE_NACK);
             return CommonUtils.createError("Failed to NACK message", e);
         }
     }
@@ -316,11 +367,13 @@ public class ConsumerActions {
             Object result = CommonUtils.executeBlocking(txSession::commit);
 
             if (result instanceof BError) {
+                SolaceMetricsUtil.reportConsumerError(consumer, ERROR_TYPE_COMMIT);
                 return (BError) result;
             }
 
             return null;
         } catch (Exception e) {
+            SolaceMetricsUtil.reportConsumerError(consumer, ERROR_TYPE_COMMIT);
             return CommonUtils.createError("Failed to commit transaction", e);
         }
     }
@@ -353,11 +406,13 @@ public class ConsumerActions {
             Object result = CommonUtils.executeBlocking(txSession::rollback);
 
             if (result instanceof BError) {
+                SolaceMetricsUtil.reportConsumerError(consumer, ERROR_TYPE_ROLLBACK);
                 return (BError) result;
             }
 
             return null;
         } catch (Exception e) {
+            SolaceMetricsUtil.reportConsumerError(consumer, ERROR_TYPE_ROLLBACK);
             return CommonUtils.createError("Failed to rollback transaction", e);
         }
     }
@@ -366,10 +421,12 @@ public class ConsumerActions {
      * Close the consumer and release resources. Closes flow receiver/consumer, transacted session (if any), and base
      * session in that order.
      *
+     * @param env      the Ballerina environment (injected for tracing)
      * @param consumer the Ballerina consumer object
      * @return null on success, BError on failure
      */
-    public static BError close(BObject consumer) {
+    public static BError close(Environment env, BObject consumer) {
+        SolaceTracingUtil.traceResourceInvocation(env, consumer);
         try {
             String subscriptionType = (String) consumer.getNativeData(NATIVE_SUBSCRIPTION_TYPE);
 
@@ -409,9 +466,23 @@ public class ConsumerActions {
             consumer.addNativeData(NATIVE_TRANSACTED, null);
             consumer.addNativeData(NATIVE_SESSION, null);
 
+            SolaceMetricsUtil.reportConsumerClose(consumer);
             return null;
         } catch (Exception e) {
+            SolaceMetricsUtil.reportConsumerError(consumer, ERROR_TYPE_CLOSE);
             return CommonUtils.createError("Failed to close consumer", e);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static int getPayloadSize(BMap<BString, Object> message) {
+        if (message == null) {
+            return 0;
+        }
+        Object payload = message.get(PAYLOAD_KEY);
+        if (payload instanceof BArray arr) {
+            return arr.size();
+        }
+        return 0;
     }
 }

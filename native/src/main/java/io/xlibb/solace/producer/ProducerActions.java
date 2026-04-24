@@ -25,7 +25,9 @@ import com.solacesystems.jcsmp.ProducerFlowProperties;
 import com.solacesystems.jcsmp.XMLMessage;
 import com.solacesystems.jcsmp.XMLMessageProducer;
 import com.solacesystems.jcsmp.transaction.TransactedSession;
+import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.utils.StringUtils;
+import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
@@ -34,12 +36,22 @@ import io.xlibb.solace.common.CommonUtils;
 import io.xlibb.solace.common.DestinationConverter;
 import io.xlibb.solace.config.ConfigurationUtils;
 import io.xlibb.solace.config.ProducerConfiguration;
+import io.xlibb.solace.observability.SolaceMetricsUtil;
+import io.xlibb.solace.observability.SolaceTracingUtil;
 
 import static io.xlibb.solace.common.Constants.NATIVE_CLOSED;
 import static io.xlibb.solace.common.Constants.NATIVE_PRODUCER;
 import static io.xlibb.solace.common.Constants.NATIVE_SESSION;
 import static io.xlibb.solace.common.Constants.NATIVE_TRANSACTED;
 import static io.xlibb.solace.common.Constants.NATIVE_TX_SESSION;
+import static io.xlibb.solace.common.Constants.NATIVE_URL;
+import static io.xlibb.solace.common.MessageFieldConstants.PAYLOAD_KEY;
+import static io.xlibb.solace.observability.SolaceObservabilityConstants.CONTEXT_PRODUCER;
+import static io.xlibb.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_CLOSE;
+import static io.xlibb.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_COMMIT;
+import static io.xlibb.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_PUBLISH;
+import static io.xlibb.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_ROLLBACK;
+import static io.xlibb.solace.observability.SolaceObservabilityConstants.UNKNOWN;
 
 /**
  * Producer actions - main entry point for Ballerina MessageProducer interop.
@@ -97,9 +109,12 @@ public class ProducerActions {
             producer.addNativeData(NATIVE_TRANSACTED, isTransacted);
             producer.addNativeData(NATIVE_PRODUCER, xmlProducer);
             producer.addNativeData(NATIVE_CLOSED, false);
+            producer.addNativeData(NATIVE_URL, url.getValue());
 
+            SolaceMetricsUtil.reportNewProducer(producer);
             return null;
         } catch (Exception e) {
+            SolaceMetricsUtil.reportConnectionError(CONTEXT_PRODUCER);
             return CommonUtils.createError("Failed to initialize producer", e);
         }
     }
@@ -107,12 +122,16 @@ public class ProducerActions {
     /**
      * Send a message to the specified destination.
      *
+     * @param env            the Ballerina environment (injected for tracing)
      * @param producer       the Ballerina producer object
      * @param destinationMap the destination (Topic or Queue)
      * @param message        the message to send
      * @return null on success, BError on failure
      */
-    public static BError send(BObject producer, BMap<BString, Object> destinationMap, BMap<BString, Object> message) {
+    public static BError send(Environment env, BObject producer, BMap<BString, Object> destinationMap,
+                              BMap<BString, Object> message) {
+        String destinationName = getDestinationName(destinationMap);
+        SolaceTracingUtil.traceResourceInvocation(env, producer, destinationName);
         try {
             XMLMessageProducer xmlProducer = (XMLMessageProducer) producer.getNativeData(NATIVE_PRODUCER);
             if (xmlProducer == null) {
@@ -141,11 +160,15 @@ public class ProducerActions {
             });
 
             if (result instanceof BError bError) {
+                SolaceMetricsUtil.reportProducerError(producer, destinationName, ERROR_TYPE_PUBLISH);
                 return CommonUtils.createError(bError.getMessage());
             }
 
+            int size = getPayloadSize(message);
+            SolaceMetricsUtil.reportPublish(producer, destinationName, size);
             return null;
         } catch (Exception e) {
+            SolaceMetricsUtil.reportProducerError(producer, destinationName, ERROR_TYPE_PUBLISH);
             return CommonUtils.createError("Failed to send message", e);
         }
     }
@@ -180,11 +203,13 @@ public class ProducerActions {
             Object result = CommonUtils.executeBlocking(txSession::commit);
 
             if (result instanceof BError) {
+                SolaceMetricsUtil.reportProducerError(producer, ERROR_TYPE_COMMIT);
                 return (BError) result;
             }
 
             return null;
         } catch (Exception e) {
+            SolaceMetricsUtil.reportProducerError(producer, ERROR_TYPE_COMMIT);
             return CommonUtils.createError("Failed to commit transaction", e);
         }
     }
@@ -219,11 +244,13 @@ public class ProducerActions {
             Object result = CommonUtils.executeBlocking(txSession::rollback);
 
             if (result instanceof BError) {
+                SolaceMetricsUtil.reportProducerError(producer, ERROR_TYPE_ROLLBACK);
                 return (BError) result;
             }
 
             return null;
         } catch (Exception e) {
+            SolaceMetricsUtil.reportProducerError(producer, ERROR_TYPE_ROLLBACK);
             return CommonUtils.createError("Failed to rollback transaction", e);
         }
     }
@@ -242,10 +269,12 @@ public class ProducerActions {
     /**
      * Close the producer and release resources.
      *
+     * @param env      the Ballerina environment (injected for tracing)
      * @param producer the Ballerina producer object
      * @return null on success, BError on failure
      */
-    public static BError close(BObject producer) {
+    public static BError close(Environment env, BObject producer) {
+        SolaceTracingUtil.traceResourceInvocation(env, producer);
         try {
             XMLMessageProducer xmlProducer = (XMLMessageProducer) producer.getNativeData(NATIVE_PRODUCER);
             JCSMPSession session = (JCSMPSession) producer.getNativeData(NATIVE_SESSION);
@@ -264,8 +293,10 @@ public class ProducerActions {
             producer.addNativeData(NATIVE_PRODUCER, null);
             producer.addNativeData(NATIVE_SESSION, null);
 
+            SolaceMetricsUtil.reportProducerClose(producer);
             return null;
         } catch (Exception e) {
+            SolaceMetricsUtil.reportProducerError(producer, ERROR_TYPE_CLOSE);
             return CommonUtils.createError("Failed to close producer", e);
         }
     }
@@ -284,5 +315,31 @@ public class ProducerActions {
             return new Topic(destinationMap);
         }
         throw new IllegalArgumentException("Destination must have 'queueName' or 'topicName' field");
+    }
+
+    private static String getDestinationName(BMap<BString, Object> destinationMap) {
+        if (destinationMap == null || destinationMap.isEmpty()) {
+            return UNKNOWN;
+        }
+        Object queueName = destinationMap.get(QUEUE_NAME_KEY);
+        if (queueName instanceof BString bStr) {
+            return bStr.getValue();
+        }
+        Object topicName = destinationMap.get(TOPIC_NAME_KEY);
+        if (topicName instanceof BString bStr) {
+            return bStr.getValue();
+        }
+        return UNKNOWN;
+    }
+
+    private static int getPayloadSize(BMap<BString, Object> message) {
+        if (message == null) {
+            return 0;
+        }
+        Object payload = message.get(PAYLOAD_KEY);
+        if (payload instanceof BArray arr) {
+            return arr.size();
+        }
+        return 0;
     }
 }
