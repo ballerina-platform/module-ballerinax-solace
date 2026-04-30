@@ -33,11 +33,11 @@ public class SolaceObservabilityConstants {
     static final String[] METRIC_CONSUMED_SIZE = {"consumed_size", "Total size in bytes of messages consumed"};
     static final String[] METRIC_ERRORS = {"errors", "Number of errors"};
 
-    static final String TAG_URL = "url";
-    static final String TAG_DESTINATION = "destination";
-    static final String TAG_ERROR_TYPE = "error_type";
-    static final String TAG_CONTEXT = "context";
-    static final String TAG_LISTENER_NAME = "listener.name";
+    static final String TAG_KEY_URL = "url";
+    static final String TAG_KEY_DESTINATION = "destination";
+    static final String TAG_KEY_ERROR_TYPE = "error_type";
+    static final String TAG_KEY_CONTEXT = "context";
+    static final String TAG_KEY_LISTENER_NAME = "listener.name";
 
     public static final String ERROR_TYPE_CONNECTION = "connection";
     public static final String ERROR_TYPE_PUBLISH = "publish";

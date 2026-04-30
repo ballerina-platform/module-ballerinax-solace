@@ -37,7 +37,7 @@ import static io.xlibb.solace.observability.SolaceObservabilityConstants.METRIC_
 import static io.xlibb.solace.observability.SolaceObservabilityConstants.METRIC_PUBLISHED;
 import static io.xlibb.solace.observability.SolaceObservabilityConstants.METRIC_PUBLISHED_SIZE;
 import static io.xlibb.solace.observability.SolaceObservabilityConstants.METRIC_PUBLISHERS;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.TAG_ERROR_TYPE;
+import static io.xlibb.solace.observability.SolaceObservabilityConstants.TAG_KEY_ERROR_TYPE;
 import static io.xlibb.solace.observability.SolaceObservabilityConstants.UNKNOWN;
 
 /**
@@ -103,7 +103,7 @@ public class SolaceMetricsUtil {
             return;
         }
         SolaceObserverContext ctx = new SolaceObserverContext(CONTEXT_PRODUCER, getUrl(producer));
-        ctx.addTag(TAG_ERROR_TYPE, errorType);
+        ctx.addTag(TAG_KEY_ERROR_TYPE, errorType);
         incrementCounter(ctx, METRIC_ERRORS[0], METRIC_ERRORS[1], 1);
     }
 
@@ -112,7 +112,7 @@ public class SolaceMetricsUtil {
             return;
         }
         SolaceObserverContext ctx = new SolaceObserverContext(CONTEXT_PRODUCER, getUrl(producer), destination);
-        ctx.addTag(TAG_ERROR_TYPE, errorType);
+        ctx.addTag(TAG_KEY_ERROR_TYPE, errorType);
         incrementCounter(ctx, METRIC_ERRORS[0], METRIC_ERRORS[1], 1);
     }
 
@@ -121,7 +121,7 @@ public class SolaceMetricsUtil {
             return;
         }
         SolaceObserverContext ctx = new SolaceObserverContext(CONTEXT_CONSUMER, getUrl(consumer));
-        ctx.addTag(TAG_ERROR_TYPE, errorType);
+        ctx.addTag(TAG_KEY_ERROR_TYPE, errorType);
         incrementCounter(ctx, METRIC_ERRORS[0], METRIC_ERRORS[1], 1);
     }
 
@@ -130,7 +130,7 @@ public class SolaceMetricsUtil {
             return;
         }
         SolaceObserverContext ctx = new SolaceObserverContext(context);
-        ctx.addTag(TAG_ERROR_TYPE, ERROR_TYPE_CONNECTION);
+        ctx.addTag(TAG_KEY_ERROR_TYPE, ERROR_TYPE_CONNECTION);
         incrementCounter(ctx, METRIC_ERRORS[0], METRIC_ERRORS[1], 1);
     }
 

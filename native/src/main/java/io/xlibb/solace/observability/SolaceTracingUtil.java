@@ -25,8 +25,8 @@ import io.ballerina.runtime.observability.ObserverContext;
 
 import static io.xlibb.solace.observability.SolaceMetricsUtil.getDestination;
 import static io.xlibb.solace.observability.SolaceMetricsUtil.getUrl;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.TAG_DESTINATION;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.TAG_URL;
+import static io.xlibb.solace.observability.SolaceObservabilityConstants.TAG_KEY_DESTINATION;
+import static io.xlibb.solace.observability.SolaceObservabilityConstants.TAG_KEY_URL;
 
 /**
  * Tracing utility for the Solace connector.
@@ -42,8 +42,8 @@ public class SolaceTracingUtil {
             ctx = new ObserverContext();
             ObserveUtils.setObserverContextToCurrentFrame(env, ctx);
         }
-        ctx.addTag(TAG_URL, getUrl(object));
-        ctx.addTag(TAG_DESTINATION, destination);
+        ctx.addTag(TAG_KEY_URL, getUrl(object));
+        ctx.addTag(TAG_KEY_DESTINATION, destination);
     }
 
     public static void traceResourceInvocation(Environment env, BObject object) {
@@ -55,8 +55,8 @@ public class SolaceTracingUtil {
             ctx = new ObserverContext();
             ObserveUtils.setObserverContextToCurrentFrame(env, ctx);
         }
-        ctx.addTag(TAG_URL, getUrl(object));
-        ctx.addTag(TAG_DESTINATION, getDestination(object));
+        ctx.addTag(TAG_KEY_URL, getUrl(object));
+        ctx.addTag(TAG_KEY_DESTINATION, getDestination(object));
     }
 
     private SolaceTracingUtil() {

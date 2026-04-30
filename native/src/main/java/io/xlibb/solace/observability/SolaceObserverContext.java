@@ -26,21 +26,21 @@ import io.ballerina.runtime.observability.ObserverContext;
 public class SolaceObserverContext extends ObserverContext {
 
     private SolaceObserverContext() {
-        addTag(SolaceObservabilityConstants.TAG_LISTENER_NAME, SolaceObservabilityConstants.CONNECTOR_NAME);
+        addTag(SolaceObservabilityConstants.TAG_KEY_LISTENER_NAME, SolaceObservabilityConstants.CONNECTOR_NAME);
     }
 
     SolaceObserverContext(String context) {
         this();
-        addTag(SolaceObservabilityConstants.TAG_CONTEXT, context);
+        addTag(SolaceObservabilityConstants.TAG_KEY_CONTEXT, context);
     }
 
     public SolaceObserverContext(String context, String url) {
         this(context);
-        addTag(SolaceObservabilityConstants.TAG_URL, url);
+        addTag(SolaceObservabilityConstants.TAG_KEY_URL, url);
     }
 
     public SolaceObserverContext(String context, String url, String destination) {
         this(context, url);
-        addTag(SolaceObservabilityConstants.TAG_DESTINATION, destination);
+        addTag(SolaceObservabilityConstants.TAG_KEY_DESTINATION, destination);
     }
 }
