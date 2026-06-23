@@ -18,8 +18,8 @@ observabilityIncluded=true
 [[platform.java21.dependency]]
 groupId = "io.xlibb"
 artifactId = "solace-native"
-version = "0.4.2-SNAPSHOT"
-path = "../native/build/libs/solace-native-0.4.2-SNAPSHOT.jar"
+version = "0.4.2"
+path = "../native/build/libs/solace-native-0.4.2.jar"
 
 [[platform.java21.dependency]]
 groupId = "com.solacesystems"
