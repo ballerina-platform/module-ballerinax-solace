@@ -18,10 +18,10 @@
 
 package io.xlibb.solace.common;
 
+import io.ballerina.lib.solace.ModuleUtils;
 import io.ballerina.runtime.api.creators.ErrorCreator;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BError;
-import io.xlibb.solace.ModuleUtils;
 
 import java.util.Arrays;
 import java.util.Objects;

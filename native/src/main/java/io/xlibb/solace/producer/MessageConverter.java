@@ -25,11 +25,11 @@ import com.solacesystems.jcsmp.SDTException;
 import com.solacesystems.jcsmp.SDTMap;
 import com.solacesystems.jcsmp.XMLMessage;
 import com.solacesystems.jcsmp.XMLMessageProducer;
+import io.ballerina.lib.solace.common.DestinationConverter;
+import io.ballerina.lib.solace.common.PropertyConverter;
 import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
-import io.xlibb.solace.common.DestinationConverter;
-import io.xlibb.solace.common.PropertyConverter;
 
 import static io.xlibb.solace.common.MessageFieldConstants.APPLICATION_MESSAGE_ID_KEY;
 import static io.xlibb.solace.common.MessageFieldConstants.APPLICATION_MESSAGE_TYPE_KEY;
