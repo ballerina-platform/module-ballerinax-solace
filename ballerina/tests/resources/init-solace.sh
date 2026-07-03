@@ -2,35 +2,37 @@
 
 # SEMP API configuration
 SEMP_URL="http://localhost:8080/SEMP/v2/config"
+MONITOR_URL="http://localhost:8080/SEMP/v2/monitor"
 AUTH="admin:admin"
 VPN="default"
 MOCK_IDP_URL="http://localhost:9090"
 
-# Wait for the Solace broker's SEMP API to be reachable
-echo "Waiting for Solace broker to start..."
-for i in $(seq 1 30); do
-    code=$(curl -s -o /dev/null -w "%{http_code}" -u "$AUTH" "$SEMP_URL/about")
-    if [ "$code" = "200" ]; then
-        echo "Solace broker is up."
+# Wait for the broker's message VPN to become operationally "up" before provisioning and testing.
+# SEMP (config plane) responds well before guaranteed messaging (message spool) is ready, so a fixed
+# sleep is not enough: queue/durable/transacted tests fail intermittently if they run while the VPN
+# state is still "down". Poll the monitor API for state == "up".
+echo "Waiting for Solace message VPN '$VPN' to become operational..."
+vpn_up=false
+for i in $(seq 1 60); do
+    state=$(curl -s -u "$AUTH" "$MONITOR_URL/msgVpns/$VPN?select=state" 2>/dev/null \
+        | grep -o '"state"[[:space:]]*:[[:space:]]*"[^"]*"' | grep -o '[^"]*"$' | tr -d '"')
+    if [ "$state" = "up" ]; then
+        echo "Message VPN is up after ~$((i * 3))s"
+        vpn_up=true
         break
     fi
-    sleep 2
+    sleep 3
 done
 
-# Wait for the mock OAuth2/OIDC identity provider to be reachable
-echo "Waiting for mock IdP to start..."
-for i in $(seq 1 30); do
-    code=$(curl -s -o /dev/null -w "%{http_code}" "$MOCK_IDP_URL/default/.well-known/openid-configuration")
-    if [ "$code" = "200" ]; then
-        echo "Mock IdP is up."
-        break
-    fi
-    sleep 2
-done
+if [ "$vpn_up" != "true" ]; then
+    echo "WARNING: Message VPN did not report 'up' within the timeout; proceeding anyway."
+fi
 
-# Function to create a queue. Retries a few times: the SEMP API can report the broker as
-# reachable (see the readiness poll above) before its message-spool subsystem is actually
-# ready to accept queue creation, which otherwise fails with MESSAGE_SPOOL_DATA_NOT_AVAILABLE.
+# Settle margin after the VPN reports up. The transaction subsystem needs a little longer than plain
+# guaranteed messaging to stabilize, so give it extra headroom to avoid flaky transacted tests.
+sleep 10
+
+# Function to create a queue
 create_queue() {
     local queue_name=$1
     echo "Creating queue: $queue_name"
@@ -165,6 +167,14 @@ curl -X POST "$SEMP_URL/msgVpns/$VPN/authorizationGroups" \
 
 create_oauth_profile "test_access_profile" "resource-server"
 create_oauth_profile "test_oidc_profile" "client"
+
+# Listener test queues
+echo "Creating listener test queues..."
+create_queue "test/listener/autoack/queue"
+create_queue "test/listener/clientack/queue"
+create_queue "test/listener/nack/queue"
+create_queue "test/listener/tx/commit/queue"
+create_queue "test/listener/tx/rollback/queue"
 
 # Error test queues
 echo "Creating error test queues..."

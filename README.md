@@ -4,6 +4,12 @@
 
 The `xlibb/solace` package provides APIs to interact with Solace PubSub+ brokers through the JCSMP API. It allows developers to programmatically produce and consume messages, manage topics and queues, and implement robust, event-driven solutions that leverage Solace’s high-performance messaging capabilities within Ballerina applications.
 
+## Examples
+
+The [examples](examples) directory contains complete, runnable samples:
+
+- [Order listener](examples/order-listener) — asynchronous (push-based) message consumption from a queue using the `solace:Listener`, with explicit acknowledgement through the `solace:Caller`.
+
 ## Build from the source
 
 ### Setting up the prerequisites

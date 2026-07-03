@@ -14,9 +14,18 @@
 // specific language governing permissions and limitations
 // under the License.
 
-# The Solace service type.
+# The Solace service type attached to a `solace:Listener` for asynchronous (push-based) consumption.
+#
+# An attached service must declare a remote `onMessage` method and may optionally declare an
+# `onError` method. The accepted signatures are:
+# ```ballerina
+# remote function onMessage(solace:Message message) returns solace:Error?;
+# remote function onMessage(solace:Message message, solace:Caller caller) returns solace:Error?;
+# remote function onError(solace:Error err) returns solace:Error?;
+# ```
+# The subscription (queue or topic) and flow options are supplied via the
+# `@solace:ServiceConfig` annotation on the service.
 public type Service distinct service object {
-    // remote function onMessage(solace:Message message, solace:Caller caller) returns error?;
 };
 
 # Destination types - Topic and Queue
@@ -290,7 +299,7 @@ public enum EndpointType {
     DURABLE
 }
 
-# Common service subscription fields (listener polling configuration)
+# Common service subscription fields (listener subscription configuration)
 # Note: Flow control properties below only apply to FlowReceiver usage (queues and durable topic endpoints)
 # They are ignored for direct topic subscriptions which use XMLMessageConsumer
 public type CommonServiceConfig record {|
@@ -301,11 +310,8 @@ public type CommonServiceConfig record {|
     # Not supported for direct topic subscriptions. Filters messages based on their properties and headers.
     # Example: "OrderType = 'URGENT' AND Priority > 5" - only messages matching this condition will be delivered.
     string selector?;
-    # Polling interval in seconds (how often to poll for messages)
-    decimal pollingInterval = 10;
-    # Receive timeout in seconds (how long to wait per polling cycle)
-    decimal receiveTimeout = 10.0;
-    # Whether to auto-start polling when listener starts
+    # Whether the service starts receiving messages as soon as the listener starts.
+    # When false, the service is attached but remains paused until the listener is (re)started.
     boolean autoStart = true;
     # JCSMP flow control transport window size (1-255, default 255) - FlowReceiver only
     int transportWindowSize?;

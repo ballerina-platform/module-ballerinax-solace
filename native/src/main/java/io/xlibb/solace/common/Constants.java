@@ -35,4 +35,9 @@ public class Constants {
     public static final String NATIVE_URL = "native.url";
     public static final String NATIVE_DESTINATION = "native.destination";
 
+    // Listener-specific native data keys
+    public static final String NATIVE_RUNTIME = "native.runtime";
+    public static final String NATIVE_SERVICES = "native.services";
+    public static final String NATIVE_STARTED = "native.started";
+
 }

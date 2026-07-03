@@ -53,3 +53,6 @@ examples/**/Dependencies.toml
 
 CLAUDE.md
 .claude-tasks/
+
+# In-progress migration notes (tracked on the messaging-api-migration branch, not here)
+MIGRATION.md
