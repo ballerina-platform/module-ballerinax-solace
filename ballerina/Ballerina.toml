@@ -59,6 +59,12 @@ path = "./lib/netty-buffer-4.1.135.Final.jar"
 
 [[platform.java21.dependency]]
 groupId = "io.netty"
+artifactId = "netty-codec"
+version = "4.1.135.Final"
+path = "./lib/netty-codec-4.1.135.Final.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
 artifactId = "netty-codec-http"
 version = "4.1.135.Final"
 path = "./lib/netty-codec-http-4.1.135.Final.jar"
