@@ -34,34 +34,27 @@ import static io.xlibb.solace.consumer.ConsumerUtils.SUBSCRIPTION_TYPE_DIRECT_TO
 final class AttachedService {
 
     private final String subscriptionType;
-    private final boolean autoStart;
     private final FlowReceiver flow;
     private final XMLMessageConsumer consumer;
     private final Topic directTopic;
     private final JCSMPSession session;
     private boolean started;
 
-    private AttachedService(String subscriptionType, boolean autoStart, FlowReceiver flow,
+    private AttachedService(String subscriptionType, FlowReceiver flow,
                             XMLMessageConsumer consumer, Topic directTopic, JCSMPSession session) {
         this.subscriptionType = subscriptionType;
-        this.autoStart = autoStart;
         this.flow = flow;
         this.consumer = consumer;
         this.directTopic = directTopic;
         this.session = session;
     }
 
-    static AttachedService forFlow(String subscriptionType, boolean autoStart, FlowReceiver flow) {
-        return new AttachedService(subscriptionType, autoStart, flow, null, null, null);
+    static AttachedService forFlow(String subscriptionType, FlowReceiver flow) {
+        return new AttachedService(subscriptionType, flow, null, null, null);
     }
 
-    static AttachedService forDirectTopic(boolean autoStart, XMLMessageConsumer consumer, Topic directTopic,
-                                          JCSMPSession session) {
-        return new AttachedService(SUBSCRIPTION_TYPE_DIRECT_TOPIC, autoStart, null, consumer, directTopic, session);
-    }
-
-    boolean autoStart() {
-        return autoStart;
+    static AttachedService forDirectTopic(XMLMessageConsumer consumer, Topic directTopic, JCSMPSession session) {
+        return new AttachedService(SUBSCRIPTION_TYPE_DIRECT_TOPIC, null, consumer, directTopic, session);
     }
 
     String subscriptionType() {

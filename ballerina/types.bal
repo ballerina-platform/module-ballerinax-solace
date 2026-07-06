@@ -1,4 +1,4 @@
-// Copyright (c) 2025 WSO2 LLC. (http://www.wso2.org).
+// Copyright (c) 2026 WSO2 LLC. (http://www.wso2.org).
 //
 // WSO2 LLC. licenses this file to you under the Apache License,
 // Version 2.0 (the "License"); you may not use this file except
@@ -310,9 +310,6 @@ public type CommonServiceConfig record {|
     # Not supported for direct topic subscriptions. Filters messages based on their properties and headers.
     # Example: "OrderType = 'URGENT' AND Priority > 5" - only messages matching this condition will be delivered.
     string selector?;
-    # Whether the service starts receiving messages as soon as the listener starts.
-    # When false, the service is attached but remains paused until the listener is (re)started.
-    boolean autoStart = true;
     # JCSMP flow control transport window size (1-255, default 255) - FlowReceiver only
     int transportWindowSize?;
     # Acknowledgement threshold as percentage of window size (1-75, default 0) - FlowReceiver only

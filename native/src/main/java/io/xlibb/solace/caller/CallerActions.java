@@ -27,6 +27,8 @@ import io.ballerina.runtime.api.values.BString;
 import io.xlibb.solace.common.CommonUtils;
 import io.xlibb.solace.consumer.MessageConverter;
 
+import java.util.logging.Logger;
+
 import static io.xlibb.solace.common.Constants.NATIVE_TX_SESSION;
 
 /**
@@ -36,6 +38,15 @@ import static io.xlibb.solace.common.Constants.NATIVE_TX_SESSION;
  */
 public class CallerActions {
 
+    private static final Logger LOGGER = Logger.getLogger(CallerActions.class.getName());
+    private static final String TRANSACTED_SETTLE_WARNING =
+            "%s is ignored on a transacted listener connection; message settlement is controlled by "
+                    + "commit()/rollback().";
+
+    private static boolean isTransacted(BObject caller) {
+        return caller.getNativeData(NATIVE_TX_SESSION) != null;
+    }
+
     /**
      * Acknowledge a message (CLIENT_ACK mode).
      *
@@ -43,7 +54,11 @@ public class CallerActions {
      * @param message the Ballerina message to acknowledge
      * @return null on success, BError on failure
      */
-    public static BError acknowledge(BObject caller, BMap<BString, Object> message) {
+    public static BError ack(BObject caller, BMap<BString, Object> message) {
+        if (isTransacted(caller)) {
+            LOGGER.warning(String.format(TRANSACTED_SETTLE_WARNING, "ack()"));
+            return null;
+        }
         try {
             XMLMessage nativeMessage = MessageConverter.extractNativeMessage(message);
             if (nativeMessage == null) {
@@ -68,6 +83,10 @@ public class CallerActions {
      * @return null on success, BError on failure
      */
     public static BError nack(BObject caller, BMap<BString, Object> message, boolean requeue) {
+        if (isTransacted(caller)) {
+            LOGGER.warning(String.format(TRANSACTED_SETTLE_WARNING, "nack()"));
+            return null;
+        }
         try {
             XMLMessage nativeMessage = MessageConverter.extractNativeMessage(message);
             if (nativeMessage == null) {

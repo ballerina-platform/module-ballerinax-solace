@@ -78,7 +78,6 @@ public class ListenerActions {
     private static final String ON_MESSAGE = "onMessage";
     private static final String ON_ERROR = "onError";
     private static final String SERVICE_CONFIG_ANNOTATION = "ServiceConfig";
-    private static final BString AUTO_START_KEY = StringUtils.fromString("autoStart");
 
     /**
      * Initialize the listener: create and connect the JCSMP session (and a transacted session if requested).
@@ -116,8 +115,8 @@ public class ListenerActions {
 
     /**
      * Attach a service to the listener. Reads the {@code @solace:ServiceConfig} annotation, validates the service's
-     * {@code onMessage} method, and creates the backing receiver. If the listener is already started and the service
-     * is configured with {@code autoStart}, delivery begins immediately.
+     * {@code onMessage} method, and creates the backing receiver. If the listener is already started, delivery to the
+     * newly attached service begins immediately.
      *
      * @param listener the Ballerina listener object
      * @param service  the Ballerina service object
@@ -163,7 +162,6 @@ public class ListenerActions {
             boolean directTopic = subscriptionConfig instanceof TopicConsumerConfig topicConfig
                     && !topicConfig.isDurable();
             boolean autoAck = subscriptionConfig.ackMode() == AcknowledgementMode.AUTO_ACK && !directTopic;
-            boolean autoStart = extractAutoStart(serviceConfig);
 
             Runtime runtime = (Runtime) listener.getNativeData(NATIVE_RUNTIME);
             JCSMPSession session = (JCSMPSession) listener.getNativeData(NATIVE_SESSION);
@@ -178,12 +176,13 @@ public class ListenerActions {
                     new SolaceMessageListener(runtime, service, caller, hasCaller, hasOnError, autoAck);
 
             AttachedService attached = createReceiver(session, txSession, isTransacted, subscriptionConfig,
-                    autoStart, messageListener);
+                    messageListener);
 
             servicesMap(listener).put(service, attached);
 
+            // If the listener is already running, begin delivering to the newly attached service immediately.
             boolean started = (Boolean) listener.getNativeData(NATIVE_STARTED);
-            if (started && autoStart) {
+            if (started) {
                 attached.start();
             }
             return null;
@@ -212,7 +211,7 @@ public class ListenerActions {
     }
 
     /**
-     * Start the listener: begin delivery for all attached services configured with autoStart.
+     * Start the listener: begin delivery for all attached services.
      *
      * @param listener the Ballerina listener object
      * @return null on success, BError on failure
@@ -223,9 +222,7 @@ public class ListenerActions {
                 return CommonUtils.createError("Listener is closed");
             }
             for (AttachedService attached : servicesMap(listener).values()) {
-                if (attached.autoStart()) {
-                    attached.start();
-                }
+                attached.start();
             }
             listener.addNativeData(NATIVE_STARTED, true);
             return null;
@@ -284,7 +281,7 @@ public class ListenerActions {
 
     private static AttachedService createReceiver(JCSMPSession session, TransactedSession txSession,
                                                   boolean isTransacted, ConsumerSubscriptionConfig subscriptionConfig,
-                                                  boolean autoStart, SolaceMessageListener messageListener)
+                                                  SolaceMessageListener messageListener)
             throws Exception {
         if (subscriptionConfig instanceof QueueConsumerConfig queueConfig) {
             Queue queue = JCSMPFactory.onlyInstance().createQueue(queueConfig.queueName());
@@ -297,7 +294,7 @@ public class ListenerActions {
             FlowReceiver flow = isTransacted
                     ? txSession.createFlow(messageListener, flowProps, null)
                     : session.createFlow(messageListener, flowProps, null);
-            return AttachedService.forFlow(SUBSCRIPTION_TYPE_QUEUE, autoStart, flow);
+            return AttachedService.forFlow(SUBSCRIPTION_TYPE_QUEUE, flow);
         }
 
         TopicConsumerConfig topicConfig = (TopicConsumerConfig) subscriptionConfig;
@@ -317,14 +314,14 @@ public class ListenerActions {
             FlowReceiver flow = isTransacted
                     ? txSession.createFlow(messageListener, flowProps, null)
                     : session.createFlow(messageListener, flowProps, null);
-            return AttachedService.forFlow(SUBSCRIPTION_TYPE_DURABLE_TOPIC, autoStart, flow);
+            return AttachedService.forFlow(SUBSCRIPTION_TYPE_DURABLE_TOPIC, flow);
         }
 
         // Direct topic: asynchronous XMLMessageConsumer bound to the session.
         Topic topic = JCSMPFactory.onlyInstance().createTopic(topicConfig.topicName());
         XMLMessageConsumer consumer = session.getMessageConsumer(messageListener);
         session.addSubscription(topic);
-        return AttachedService.forDirectTopic(autoStart, consumer, topic, session);
+        return AttachedService.forDirectTopic(consumer, topic, session);
     }
 
     private static boolean hasDirectTopicService(BObject listener) {
@@ -382,11 +379,6 @@ public class ListenerActions {
             return networkObjectType.getRemoteMethods();
         }
         return new MethodType[0];
-    }
-
-    private static boolean extractAutoStart(BMap<BString, Object> serviceConfig) {
-        Object value = serviceConfig.get(AUTO_START_KEY);
-        return !(value instanceof Boolean bool) || bool;
     }
 
     @SuppressWarnings("unchecked")

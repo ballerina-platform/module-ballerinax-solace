@@ -20,7 +20,7 @@ import ballerina/jballerina.java;
 #
 # Uses the Ballerina listener pattern for event-driven message processing. Services are attached to
 # the listener and receive messages through the `onMessage` remote method as soon as the broker
-# delivers them (native JCSMP asynchronous delivery - no polling).
+# delivers them.
 #
 # Each attached service declares its subscription via the `@solace:ServiceConfig` annotation.
 # - Queue subscriptions: guaranteed delivery via a `FlowReceiver`.
@@ -47,7 +47,7 @@ import ballerina/jballerina.java;
 # ```
 public isolated class Listener {
 
-    # Initialize a new Listener with the given connection configuration.
+    # Initialize a new listener with the given connection configuration.
     #
     # + url - The broker URL with format: [protocol:]host[:port]
     # + config - The connection configuration (auth, SSL/TLS, retry, etc.)
