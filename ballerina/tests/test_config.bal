@@ -17,6 +17,16 @@
 // Broker connection configuration
 const string BROKER_URL = "tcp://localhost:55554";
 const string BROKER_URL_COMPRESSED = "tcp://localhost:55003";
+const string BROKER_URL_TLS = "tcps://localhost:55443";
+const string CLIENT_TRUSTSTORE_PATH = "tests/resources/certs/generated/client-truststore.p12";
+const string CLIENT_TRUSTSTORE_PASSWORD = "changeit";
+
+// Mock OAuth2/OIDC identity provider (see docker-compose.yaml's mock-idp service).
+const string MOCK_IDP_URL = "http://localhost:9090";
+const string OAUTH_ISSUER = "http://mock-idp:8080/default";
+const string OAUTH_HOST_HEADER = "mock-idp:8080";
+const string CONSUMER_OAUTH_ACCESS_QUEUE = "test/consumer/auth/oauth/access/queue";
+const string CONSUMER_OAUTH_OIDC_QUEUE = "test/consumer/auth/oauth/oidc/queue";
 const string MESSAGE_VPN = "default";
 const string BROKER_USERNAME = "admin";
 const string BROKER_PASSWORD = "admin";
@@ -74,6 +84,11 @@ const string ACK_MULTIPLE_QUEUE = "test/consumer/ack/multiple/queue";
 const string NACK_REQUEUE_QUEUE = "test/consumer/nack/requeue/queue";
 const string NACK_REJECT_QUEUE = "test/consumer/nack/reject/queue";
 const string ACK_REDELIVERY_QUEUE = "test/consumer/ack/redelivery/queue";
+const string ACK_DEFAULT_MODE_QUEUE = "test/consumer/ack/defaultmode/queue";
+
+// Auth test queues
+const string CONSUMER_BASIC_AUTH_QUEUE = "test/consumer/auth/basic/queue";
+const string CONSUMER_TLS_QUEUE = "test/consumer/auth/tls/queue";
 
 // Error test queues
 const string ERROR_EMPTY_PAYLOAD_QUEUE = "test/error/empty/payload/queue";
@@ -84,3 +99,7 @@ const string ERROR_SPECIAL_CHARS_QUEUE = "test/error/special/chars/queue";
 const decimal DEFAULT_RECEIVE_TIMEOUT = 5.0;
 const decimal SHORT_RECEIVE_TIMEOUT = 1.0;
 const decimal NO_WAIT_TIMEOUT = 0.0;
+
+// receiveNoWait retry configs
+const decimal NOWAIT_POLL_INTERVAL = 0.1;
+const int NOWAIT_POLL_MAX_ATTEMPTS = 50;

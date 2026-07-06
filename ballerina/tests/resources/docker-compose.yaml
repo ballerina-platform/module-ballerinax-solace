@@ -5,6 +5,7 @@ services:
     ports:
       - '55554:55555'  # SMF messaging
       - '55003:55003'  # Compressed messaging
+      - '55443:55443'  # SMF over TLS
       - '8080:8080'    # Web/SEMP API
       - '5672:5672'    # AMQP
       - '1883:1883'    # MQTT
@@ -13,8 +14,21 @@ services:
     environment:
       - username_admin_globalaccesslevel=admin
       - username_admin_password=admin
+      - tls_servercertificate_filepath=/certs/broker-combined.pem
+    volumes:
+      - ./certs/generated:/certs:ro
     shm_size: 1g
     ulimits:
       nofile:
         soft: 2448
         hard: 1048576
+
+  mock-idp:
+    image: 'ghcr.io/navikt/mock-oauth2-server:2.1.10'
+    container_name: solace-test-mock-idp
+    ports:
+      - '9090:8080'  # OIDC/JWKS endpoints, host-facing for the Ballerina test process
+    environment:
+      # Tags OAuth2 access tokens issued for scope=solace with the claims the Solace broker's
+      # authenticationOauthProfiles / authorizationGroups config expects (see init-solace.sh).
+      - JSON_CONFIG={"interactiveLogin":false,"httpServer":"NettyWrapper","tokenCallbacks":[{"issuerId":"default","tokenExpiry":3600,"requestMappings":[{"requestParam":"scope","match":"solace","claims":{"groups":["solace-group"],"aud":"solace","sub":"test-client"}}]}]}

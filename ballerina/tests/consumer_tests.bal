@@ -14,6 +14,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+import ballerina/lang.runtime;
 import ballerina/test;
 
 // ========================================
@@ -202,8 +203,7 @@ isolated function testConsumerReceiveTimeout() returns error? {
     check consumer->close();
 }
 
-// TODO: recieveNoWait fails intermittently
-@test:Config {groups: ["consumer", "receive"], enable: false}
+@test:Config {groups: ["consumer", "receive"]}
 isolated function testConsumerReceiveNoWait() returns error? {
     // Send message first
     check sendMessageToQueue(CONSUMER_NOWAIT_QUEUE, "NoWait Message");
@@ -217,8 +217,14 @@ isolated function testConsumerReceiveNoWait() returns error? {
         subscriptionConfig: {queueName: CONSUMER_NOWAIT_QUEUE}
     });
 
-    // Non-blocking receive
-    Message? msg = check consumer->receiveNoWait();
+    Message? msg = ();
+    foreach int _attempt in 0 ..< NOWAIT_POLL_MAX_ATTEMPTS {
+        msg = check consumer->receiveNoWait();
+        if msg is Message {
+            break;
+        }
+        runtime:sleep(NOWAIT_POLL_INTERVAL);
+    }
 
     test:assertTrue(msg is Message, "Should receive a message with receiveNoWait");
     if msg is Message {
@@ -528,4 +534,61 @@ isolated function testConsumerReceiveMultipleMessages() returns error? {
     }
 
     check consumer->close();
+}
+
+// ========================================
+// Default Acknowledgement Mode Tests
+// ========================================
+
+@test:Config {groups: ["consumer", "ackmode"]}
+isolated function testConsumerDefaultAckModeDoesNotRedeliver() returns error? {
+    MessageProducer producer = check new (BROKER_URL, {
+        vpnName: MESSAGE_VPN,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        }
+    });
+
+    check producer->send(
+        {queueName: ACK_DEFAULT_MODE_QUEUE},
+        {payload: "Message for default ack mode test".toBytes()}
+    );
+
+    check producer->close();
+
+    // First consumer - ackMode intentionally omitted, must default to AUTO_ACK. Receive the
+    // message without calling ack(), then close.
+    MessageConsumer consumer1 = check new (BROKER_URL, {
+        vpnName: MESSAGE_VPN,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        subscriptionConfig: {queueName: ACK_DEFAULT_MODE_QUEUE}
+    });
+
+    Message? msg1 = check consumer1->receive(DEFAULT_RECEIVE_TIMEOUT);
+    test:assertTrue(msg1 is Message, "First consumer should receive message");
+    if msg1 is Message {
+        test:assertTrue(msg1.redelivered != true, "First delivery should not be marked as redelivered");
+    }
+
+    check consumer1->close();
+
+    // Second consumer on the same queue - if the default AUTO_ACK mode actually behaved as
+    // CLIENT_ACK, the never-acknowledged message would be redelivered here.
+    MessageConsumer consumer2 = check new (BROKER_URL, {
+        vpnName: MESSAGE_VPN,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        subscriptionConfig: {queueName: ACK_DEFAULT_MODE_QUEUE}
+    });
+
+    Message? msg2 = check consumer2->receive(SHORT_RECEIVE_TIMEOUT);
+    test:assertTrue(msg2 is (), "Message must not be redelivered under the default (AUTO_ACK) mode");
+
+    check consumer2->close();
 }
