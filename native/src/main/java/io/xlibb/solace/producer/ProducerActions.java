@@ -71,6 +71,8 @@ public class ProducerActions {
      * @return null on success, BError on failure
      */
     public static BError init(BObject producer, BString url, BMap<BString, Object> config) {
+        JCSMPSession session = null;
+        TransactedSession txSession = null;
         try {
             // Create configuration objects from Ballerina map
             ProducerConfiguration producerConfig = new ProducerConfiguration(config);
@@ -81,12 +83,11 @@ public class ProducerActions {
                     producerConfig.connectionConfig());
 
             // Create and connect base JCSMP session
-            JCSMPSession session = JCSMPFactory.onlyInstance().createSession(jcsmpProps);
+            session = JCSMPFactory.onlyInstance().createSession(jcsmpProps);
             session.connect();
 
             boolean isTransacted = producerConfig.connectionConfig().transacted();
             XMLMessageProducer xmlProducer;
-            TransactedSession txSession = null;
 
             if (isTransacted) {
                 // Transacted mode: Create TransactedSession and producer within it
@@ -114,6 +115,12 @@ public class ProducerActions {
             SolaceMetricsUtil.reportNewProducer(producer);
             return null;
         } catch (Exception e) {
+            if (txSession != null) {
+                CommonUtils.closeQuietly(txSession::close);
+            }
+            if (session != null) {
+                CommonUtils.closeQuietly(session::closeSession);
+            }
             SolaceMetricsUtil.reportConnectionError(CONTEXT_PRODUCER);
             return CommonUtils.createError("Failed to initialize producer", e);
         }
@@ -275,30 +282,37 @@ public class ProducerActions {
      */
     public static BError close(Environment env, BObject producer) {
         SolaceTracingUtil.traceResourceInvocation(env, producer);
-        try {
-            XMLMessageProducer xmlProducer = (XMLMessageProducer) producer.getNativeData(NATIVE_PRODUCER);
-            JCSMPSession session = (JCSMPSession) producer.getNativeData(NATIVE_SESSION);
+        XMLMessageProducer xmlProducer = (XMLMessageProducer) producer.getNativeData(NATIVE_PRODUCER);
+        TransactedSession txSession = (TransactedSession) producer.getNativeData(NATIVE_TX_SESSION);
+        JCSMPSession session = (JCSMPSession) producer.getNativeData(NATIVE_SESSION);
 
-            // Close in reverse order: producer, then session
-            if (xmlProducer != null) {
-                xmlProducer.close();
-            }
-
-            if (session != null) {
-                session.closeSession();
-            }
-
-            // Mark as closed and clear native data
-            producer.addNativeData(NATIVE_CLOSED, true);
-            producer.addNativeData(NATIVE_PRODUCER, null);
-            producer.addNativeData(NATIVE_SESSION, null);
-
-            SolaceMetricsUtil.reportProducerClose(producer);
-            return null;
-        } catch (Exception e) {
-            SolaceMetricsUtil.reportProducerError(producer, ERROR_TYPE_CLOSE);
-            return CommonUtils.createError("Failed to close producer", e);
+        // Attempt to close every resource independently so one failure doesn't block the rest.
+        Exception firstError = null;
+        if (xmlProducer != null) {
+            firstError = CommonUtils.attemptClose(xmlProducer::close);
         }
+        if (txSession != null) {
+            Exception e = CommonUtils.attemptClose(txSession::close);
+            firstError = firstError == null ? e : firstError;
+        }
+        if (session != null) {
+            Exception e = CommonUtils.attemptClose(session::closeSession);
+            firstError = firstError == null ? e : firstError;
+        }
+
+        // Mark as closed and clear native data regardless of partial failures above.
+        producer.addNativeData(NATIVE_CLOSED, true);
+        producer.addNativeData(NATIVE_PRODUCER, null);
+        producer.addNativeData(NATIVE_TX_SESSION, null);
+        producer.addNativeData(NATIVE_SESSION, null);
+
+        if (firstError != null) {
+            SolaceMetricsUtil.reportProducerError(producer, ERROR_TYPE_CLOSE);
+            return CommonUtils.createError("Failed to close producer", firstError);
+        }
+
+        SolaceMetricsUtil.reportProducerClose(producer);
+        return null;
     }
 
     /**

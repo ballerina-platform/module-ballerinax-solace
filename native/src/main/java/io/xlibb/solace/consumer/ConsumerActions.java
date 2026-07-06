@@ -84,6 +84,8 @@ public class ConsumerActions {
      * @return null on success, BError on failure
      */
     public static BError init(BObject consumer, BString url, BMap<BString, Object> config) {
+        JCSMPSession session = null;
+        TransactedSession txSession = null;
         try {
             // Parse configuration
             ConsumerConfiguration consumerConfig = new ConsumerConfiguration(config);
@@ -95,18 +97,21 @@ public class ConsumerActions {
                     ConfigurationUtils.buildJCSMPProperties(url.getValue(), consumerConfig.connectionConfig());
 
             // Create and connect base JCSMP session
-            final JCSMPSession session = JCSMPFactory.onlyInstance().createSession(jcsmpProps);
+            session = JCSMPFactory.onlyInstance().createSession(jcsmpProps);
             session.connect();
 
             // Validate: Direct topic subscriptions cannot be transacted
             if (isTransacted && subscriptionConfig instanceof TopicConsumerConfig topicConfig &&
                     !topicConfig.isDurable()) {
+                cleanupOnInitFailure(session, null);
                 return CommonUtils.createError("Transacted mode is not supported for direct topic subscriptions. " +
                         "Use DURABLE endpoint type for guaranteed delivery with transactions.");
             }
 
             // Create TransactedSession if in transacted mode
-            final TransactedSession txSession = isTransacted ? session.createTransactedSession() : null;
+            txSession = isTransacted ? session.createTransactedSession() : null;
+            final JCSMPSession finalSession = session;
+            final TransactedSession finalTxSession = txSession;
 
             // Store session references and transacted flag
             consumer.addNativeData(NATIVE_SESSION, session);
@@ -122,28 +127,43 @@ public class ConsumerActions {
             // Create appropriate consumer based on subscription type
             if (subscriptionConfig instanceof QueueConsumerConfig queueConfig) {
                 FlowReceiverFactory factory = isTransacted
-                        ? props -> txSession.createFlow(null, props, null)
-                        : props -> session.createFlow(null, props);
+                        ? props -> finalTxSession.createFlow(null, props, null)
+                        : props -> finalSession.createFlow(null, props);
                 createQueueConsumer(consumer, factory, queueConfig, isTransacted);
             } else if (subscriptionConfig instanceof TopicConsumerConfig topicConfig) {
                 topicConfig.validate();
                 if (topicConfig.isDurable()) {
                     FlowReceiverFactory factory = isTransacted
-                            ? props -> txSession.createFlow(null, props, null)
-                            : props -> session.createFlow(null, props);
+                            ? props -> finalTxSession.createFlow(null, props, null)
+                            : props -> finalSession.createFlow(null, props);
                     createDurableTopicConsumer(consumer, factory, topicConfig, isTransacted);
                 } else {
                     createDirectTopicConsumer(consumer, session, topicConfig);
                 }
             } else {
+                cleanupOnInitFailure(session, txSession);
                 return CommonUtils.createError("Unknown subscription configuration type");
             }
 
             SolaceMetricsUtil.reportNewConsumer(consumer);
             return null;
         } catch (Exception e) {
+            cleanupOnInitFailure(session, txSession);
             SolaceMetricsUtil.reportConnectionError(CONTEXT_CONSUMER);
             return CommonUtils.createError("Failed to initialize consumer", e);
+        }
+    }
+
+    /**
+     * Best-effort cleanup of resources already created by init() when a later step fails, since nothing else
+     * will ever call close() on a consumer whose init() returned an error.
+     */
+    private static void cleanupOnInitFailure(JCSMPSession session, TransactedSession txSession) {
+        if (txSession != null) {
+            CommonUtils.closeQuietly(txSession::close);
+        }
+        if (session != null) {
+            CommonUtils.closeQuietly(session::closeSession);
         }
     }
 
@@ -163,16 +183,17 @@ public class ConsumerActions {
      *
      * @param env      the Ballerina environment (injected for tracing)
      * @param consumer the Ballerina consumer object
-     * @param timeout  the timeout in seconds
+     * @param timeout  the timeout in seconds, or {@code null} to never expire
      * @return the received message, null if timeout, or BError on failure
      */
-    public static Object receive(Environment env, BObject consumer, BDecimal timeout) {
+    public static Object receive(Environment env, BObject consumer, Object timeout) {
         SolaceTracingUtil.traceResourceInvocation(env, consumer);
         Boolean closed = (Boolean) consumer.getNativeData(NATIVE_CLOSED);
         if (closed != null && closed) {
             return CommonUtils.createError("Consumer is closed");
         }
-        long timeoutMs = timeout.decimalValue().multiply(BigDecimal.valueOf(1000)).longValue();
+        BigDecimal timeoutDecimal = timeout instanceof BDecimal bDecimal ? bDecimal.decimalValue() : BigDecimal.ZERO;
+        long timeoutMs = timeoutDecimal.multiply(BigDecimal.valueOf(1000)).longValue();
         String subscriptionType = (String) consumer.getNativeData(NATIVE_SUBSCRIPTION_TYPE);
 
         try {
@@ -427,51 +448,56 @@ public class ConsumerActions {
      */
     public static BError close(Environment env, BObject consumer) {
         SolaceTracingUtil.traceResourceInvocation(env, consumer);
-        try {
-            String subscriptionType = (String) consumer.getNativeData(NATIVE_SUBSCRIPTION_TYPE);
+        String subscriptionType = (String) consumer.getNativeData(NATIVE_SUBSCRIPTION_TYPE);
+        FlowReceiver flowReceiver = (FlowReceiver) consumer.getNativeData(NATIVE_FLOW);
+        XMLMessageConsumer xmlConsumer = (XMLMessageConsumer) consumer.getNativeData(NATIVE_CONSUMER);
+        TransactedSession txSession = (TransactedSession) consumer.getNativeData(NATIVE_TX_SESSION);
+        JCSMPSession session = (JCSMPSession) consumer.getNativeData(NATIVE_SESSION);
 
-            // Close flow receiver or XML consumer
-            if (SUBSCRIPTION_TYPE_QUEUE.equals(subscriptionType) ||
-                    SUBSCRIPTION_TYPE_DURABLE_TOPIC.equals(subscriptionType)) {
-                FlowReceiver flowReceiver = (FlowReceiver) consumer.getNativeData(NATIVE_FLOW);
-                if (flowReceiver != null) {
+        // Attempt to close every resource independently so one failure doesn't block the rest.
+        Exception firstError = null;
+        if (SUBSCRIPTION_TYPE_QUEUE.equals(subscriptionType) ||
+                SUBSCRIPTION_TYPE_DURABLE_TOPIC.equals(subscriptionType)) {
+            if (flowReceiver != null) {
+                firstError = CommonUtils.attemptClose(() -> {
                     flowReceiver.stop();
                     flowReceiver.close();
-                }
-            } else if (SUBSCRIPTION_TYPE_DIRECT_TOPIC.equals(subscriptionType)) {
-                XMLMessageConsumer xmlConsumer = (XMLMessageConsumer) consumer.getNativeData(NATIVE_CONSUMER);
-                if (xmlConsumer != null) {
+                });
+            }
+        } else if (SUBSCRIPTION_TYPE_DIRECT_TOPIC.equals(subscriptionType)) {
+            if (xmlConsumer != null) {
+                firstError = CommonUtils.attemptClose(() -> {
                     xmlConsumer.stop();
                     xmlConsumer.close();
-                }
+                });
             }
-
-            // Close transacted session if present
-            TransactedSession txSession = (TransactedSession) consumer.getNativeData(NATIVE_TX_SESSION);
-            if (txSession != null) {
-                txSession.close();
-            }
-
-            // Close base session
-            JCSMPSession session = (JCSMPSession) consumer.getNativeData(NATIVE_SESSION);
-            if (session != null) {
-                session.closeSession();
-            }
-
-            // Mark as closed and clear native data
-            consumer.addNativeData(NATIVE_CLOSED, true);
-            consumer.addNativeData(NATIVE_FLOW, null);
-            consumer.addNativeData(NATIVE_CONSUMER, null);
-            consumer.addNativeData(NATIVE_TX_SESSION, null);
-            consumer.addNativeData(NATIVE_TRANSACTED, null);
-            consumer.addNativeData(NATIVE_SESSION, null);
-
-            SolaceMetricsUtil.reportConsumerClose(consumer);
-            return null;
-        } catch (Exception e) {
-            SolaceMetricsUtil.reportConsumerError(consumer, ERROR_TYPE_CLOSE);
-            return CommonUtils.createError("Failed to close consumer", e);
         }
+
+        if (txSession != null) {
+            Exception e = CommonUtils.attemptClose(txSession::close);
+            firstError = firstError == null ? e : firstError;
+        }
+
+        if (session != null) {
+            Exception e = CommonUtils.attemptClose(session::closeSession);
+            firstError = firstError == null ? e : firstError;
+        }
+
+        // Mark as closed and clear native data regardless of partial failures above.
+        consumer.addNativeData(NATIVE_CLOSED, true);
+        consumer.addNativeData(NATIVE_FLOW, null);
+        consumer.addNativeData(NATIVE_CONSUMER, null);
+        consumer.addNativeData(NATIVE_TX_SESSION, null);
+        consumer.addNativeData(NATIVE_TRANSACTED, null);
+        consumer.addNativeData(NATIVE_SESSION, null);
+
+        if (firstError != null) {
+            SolaceMetricsUtil.reportConsumerError(consumer, ERROR_TYPE_CLOSE);
+            return CommonUtils.createError("Failed to close consumer", firstError);
+        }
+
+        SolaceMetricsUtil.reportConsumerClose(consumer);
+        return null;
     }
 
     @SuppressWarnings("unchecked")

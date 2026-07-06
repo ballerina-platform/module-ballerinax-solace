@@ -26,6 +26,8 @@ import io.ballerina.runtime.api.values.BError;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Utility class for common operations like error creation and virtual thread execution.
@@ -33,6 +35,7 @@ import java.util.concurrent.CompletableFuture;
 public class CommonUtils {
 
     private static final String SOLACE_ERROR = "Error";
+    private static final Logger LOGGER = Logger.getLogger(CommonUtils.class.getName());
 
     /**
      * Creates a Ballerina error from a message and Java exception.
@@ -83,6 +86,33 @@ public class CommonUtils {
             }
         });
         return future.get();
+    }
+
+    /**
+     * Runs a best-effort cleanup action, silently discarding any exception. Use when a secondary failure during
+     * cleanup should not surface to the caller (e.g. releasing resources already created before an init() failure).
+     */
+    public static void closeQuietly(RunnableWithException action) {
+        try {
+            action.run();
+        } catch (Exception e) {
+            LOGGER.log(Level.FINE, "Ignoring exception during best-effort cleanup", e);
+        }
+    }
+
+    /**
+     * Runs a cleanup action and returns any exception instead of throwing it, so callers can attempt several
+     * independent cleanup steps without one failure blocking the rest.
+     *
+     * @return the caught exception, or null if the action succeeded
+     */
+    public static Exception attemptClose(RunnableWithException action) {
+        try {
+            action.run();
+            return null;
+        } catch (Exception e) {
+            return e;
+        }
     }
 
     /**

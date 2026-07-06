@@ -54,8 +54,6 @@ public isolated client class MessageConsumer {
     # + url - The broker URL with format: [protocol:]host[:port]
     # + config - The consumer configuration (composed of connection config + subscription config)
     # + return - Error if initialization fails
-    // We need to pass url here as well
-    // And use *ConsumerConfiguration
 public isolated function init(string url, *ConsumerConfiguration config) returns Error? {
         return self.initConsumer(url, config);
     }
@@ -70,10 +68,10 @@ public isolated function init(string url, *ConsumerConfiguration config) returns
     # Blocks up to the specified timeout waiting for a message. Returns nil if no message
     # arrives within the timeout period.
     #
-    # + timeout - Maximum time in seconds to wait for a message. A timeout of zero never expires
+    # + timeout - Maximum time in seconds to wait for a message. A nil or zero timeout never expires
     # + return - The received message, or nil if timeout occurs; Error if receive fails
-    isolated remote function receive(decimal timeout = 0.0) returns Message|Error? = @java:Method {
-        'class: "io.xlibb.solace.consumer.ConsumerActions",
+    isolated remote function receive(decimal? timeout = ()) returns Message|Error? = @java:Method {
+        'class: "io.ballerina.lib.solace.consumer.ConsumerActions",
         name: "receive"
     } external;
 
@@ -90,8 +88,10 @@ public isolated function init(string url, *ConsumerConfiguration config) returns
 
     # Acknowledge a message in CLIENT_ACKNOWLEDGE mode.
     #
-    # Only use this method if the subscription is configured with ackMode = "SUPPORTED_MESSAGE_ACK_CLIENT".
+    # Only use this method if the subscription is configured with ackMode = CLIENT_ACK.
     # In AUTO mode, messages are acknowledged automatically.
+    #
+    # For transacted flows, calling this method has no effect.
     #
     # + message - The message to acknowledge
     # + return - Error if acknowledgement fails
@@ -104,14 +104,14 @@ public isolated function init(string url, *ConsumerConfiguration config) returns
     #
     # Sends a negative acknowledgement for the message, indicating processing failure.
     #
-    # + message - The message to negatively acknowledge
-    # + requeue - If true, message will be requeued for redelivery (FAILED outcome);
-    # If false, message moves to DMQ immediately (REJECTED outcome)
-    # + return - Error if NACK fails
-    #
-    # Only use this method if the subscription is configured with ackMode = "SUPPORTED_MESSAGE_ACK_CLIENT"
+    # Only use this method if the subscription is configured with ackMode = CLIENT_ACK
     # and the consumer flow is configured to support required settlement outcomes.
     # For transacted flows, settlement outcomes are ignored.
+    #
+    # + message - The message to negatively acknowledge
+    # + requeue - If false, the message moves to the DMQ immediately, if configured.
+    # If not, the message is simply discarded. (REJECTED outcome)
+    # + return - Error if NACK fails
     isolated remote function nack(Message message, boolean requeue = true) returns Error? = @java:Method {
         'class: "io.xlibb.solace.consumer.ConsumerActions",
         name: "nack"
