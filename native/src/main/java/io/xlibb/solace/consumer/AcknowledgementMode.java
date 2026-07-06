@@ -21,7 +21,7 @@ package io.xlibb.solace.consumer;
 import com.solacesystems.jcsmp.JCSMPProperties;
 
 public enum AcknowledgementMode {
-    AUTO_ACK(JCSMPProperties.SUPPORTED_MESSAGE_ACK_CLIENT),
+    AUTO_ACK(JCSMPProperties.SUPPORTED_MESSAGE_ACK_AUTO),
     CLIENT_ACK(JCSMPProperties.SUPPORTED_MESSAGE_ACK_CLIENT);
 
     private final String jcsmpMode;
