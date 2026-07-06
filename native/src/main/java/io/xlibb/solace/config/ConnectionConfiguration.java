@@ -144,12 +144,12 @@ public record ConnectionConfiguration(
     private static AuthConfig createAuthConfig(BMap<BString, Object> authMap) {
         BString usernameKey = StringUtils.fromString("username");
         BString accessTokenKey = StringUtils.fromString("accessToken");
-        BString idTokenKey = StringUtils.fromString("idToken");
+        BString oidcTokenKey = StringUtils.fromString("oidcToken");
         BString serviceNameKey = StringUtils.fromString("serviceName");
 
         if (authMap.containsKey(usernameKey)) {
             return new BasicAuthConfig(authMap);
-        } else if (authMap.containsKey(accessTokenKey) || authMap.containsKey(idTokenKey)) {
+        } else if (authMap.containsKey(accessTokenKey) || authMap.containsKey(oidcTokenKey)) {
             return new OAuth2Config(authMap);
         } else if (authMap.containsKey(serviceNameKey)) {
             return new KerberosConfig(authMap);

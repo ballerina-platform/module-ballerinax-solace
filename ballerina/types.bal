@@ -54,6 +54,8 @@ public type KerberosConfig record {|
     string serviceName = "solace";
     # The JAAS login context name to use for authentication
     string jaasLoginContext = "SolaceGSS";
+    # Specifies whether to enable Kerberos mutual authentication
+    boolean mutualAuthentication = false;
     # Specifies whether to enable automatic reload of the JAAS configuration file
     boolean jaasConfigFileReloadEnabled = false;
 |};
@@ -151,8 +153,6 @@ public type SecureSocket record {|
 |};
 
 # Retry configuration for connection attempts
-// Check if a backoff stragey is availble in JCSMP
-// Ans: No backoff strategy is available in JCSMP
 public type RetryConfig record {|
     # Number of times to retry connecting during initial connection (0 = no retries, -1 = infinite)
     int connectRetries = 0;

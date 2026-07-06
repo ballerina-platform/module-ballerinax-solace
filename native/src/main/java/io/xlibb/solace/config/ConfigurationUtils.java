@@ -133,6 +133,7 @@ public final class ConfigurationUtils {
             props.setProperty(JCSMPProperties.AUTHENTICATION_SCHEME, JCSMPProperties.AUTHENTICATION_SCHEME_GSS_KRB);
             props.setProperty(JCSMPProperties.KRB_SERVICE_NAME, kerberosAuth.serviceName());
             props.setProperty(JCSMPProperties.JAAS_LOGIN_CONTEXT, kerberosAuth.jaasLoginContext());
+            props.setProperty(JCSMPProperties.KRB_MUTUAL_AUTHENTICATION, kerberosAuth.mutualAuthentication());
             props.setProperty(JCSMPProperties.JAAS_CONFIG_FILE_RELOAD_ENABLED,
                     kerberosAuth.jaasConfigFileReloadEnabled());
         } else if (auth instanceof OAuth2Config(String issuer, String accessToken, String oidcToken)) {
@@ -182,7 +183,7 @@ public final class ConfigurationUtils {
                 secureSocket.validation().validateHostname());
 
         // Set trusted common names
-        if (!secureSocket.trustedCommonNames().isEmpty()) {
+        if (secureSocket.trustedCommonNames() != null && !secureSocket.trustedCommonNames().isEmpty()) {
             StringBuilder cnList = new StringBuilder();
             for (String cn : secureSocket.trustedCommonNames()) {
                 if (cnList.length() > 0) {
