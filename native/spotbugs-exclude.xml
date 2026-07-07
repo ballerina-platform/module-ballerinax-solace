@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!--
+        CommonUtils.closeQuietly() intentionally discards the exception: it is a best-effort cleanup
+        helper for releasing resources already created before an init() failure, where a secondary
+        failure during cleanup must not surface to (or replace) the caller's original error.
+    -->
+    <Match>
+        <Class name="io.ballerina.lib.solace.common.CommonUtils"/>
+        <Method name="closeQuietly"/>
+        <Bug pattern="DE_MIGHT_IGNORE"/>
+    </Match>
+</FindBugsFilter>
