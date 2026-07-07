@@ -148,6 +148,16 @@ public class ListenerActions {
             ConsumerSubscriptionConfig subscriptionConfig = ConsumerSubscriptionConfig.fromBMap(serviceConfig);
             boolean isTransacted = (Boolean) listener.getNativeData(NATIVE_TRANSACTED);
 
+            // On a transacted listener, settlement only happens via caller->commit()/rollback() on the shared
+            // transacted session; AUTO_ACK would call message.ackMessage(), which is a no-op on a transacted
+            // flow, so messages would never actually be committed and would redeliver indefinitely.
+            if (isTransacted && subscriptionConfig.ackMode() == AcknowledgementMode.AUTO_ACK) {
+                return CommonUtils.createError(
+                        "AUTO_ACK is not supported on a transacted listener; message settlement must be driven "
+                                + "explicitly via caller->commit()/caller->rollback(). Set ackMode: "
+                                + "solace:CLIENT_ACK on the service configuration.");
+            }
+
             if (subscriptionConfig instanceof TopicConsumerConfig topicConfig) {
                 topicConfig.validate();
                 if (isTransacted && !topicConfig.isDurable()) {
