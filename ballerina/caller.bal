@@ -37,8 +37,9 @@ public isolated client class Caller {
 
     # Negatively acknowledge a message (NACK).
     #
-    # When the listener connection is transacted, settlement is governed by `commit`/`rollback`, so
-    # this method does not apply.
+    # When the listener connection is transacted, this method returns an `Error`: JCSMP's settle()
+    # is a documented no-op on transacted flows, so calling `nack` there would silently have no
+    # effect. Use `commit`/`rollback` instead to control settlement.
     #
     # + message - The message to negatively acknowledge
     # + requeue - If true, the message is requeued for redelivery (FAILED outcome).

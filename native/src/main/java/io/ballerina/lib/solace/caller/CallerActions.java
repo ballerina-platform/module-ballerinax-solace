@@ -42,6 +42,10 @@ public class CallerActions {
     private static final String TRANSACTED_SETTLE_WARNING =
             "%s is ignored on a transacted listener connection; message settlement is controlled by "
                     + "commit()/rollback().";
+    private static final String TRANSACTED_NACK_ERROR =
+            "nack() has no effect on a transacted listener connection; JCSMP's settle() is a documented no-op "
+                    + "on transacted flows. Use caller->rollback() to have the broker redeliver the message, or "
+                    + "caller->commit() to accept it.";
 
     private static boolean isTransacted(BObject caller) {
         return caller.getNativeData(NATIVE_TX_SESSION) != null;
@@ -84,8 +88,7 @@ public class CallerActions {
      */
     public static BError nack(BObject caller, BMap<BString, Object> message, boolean requeue) {
         if (isTransacted(caller)) {
-            LOGGER.warning(String.format(TRANSACTED_SETTLE_WARNING, "nack()"));
-            return null;
+            return CommonUtils.createError(TRANSACTED_NACK_ERROR);
         }
         try {
             XMLMessage nativeMessage = MessageConverter.extractNativeMessage(message);
