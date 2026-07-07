@@ -16,7 +16,7 @@
  *  under the License.
  */
 
-package io.xlibb.solace.listener;
+package io.ballerina.lib.solace.listener;
 
 import com.solacesystems.jcsmp.FlowReceiver;
 import com.solacesystems.jcsmp.JCSMPException;
@@ -24,7 +24,7 @@ import com.solacesystems.jcsmp.JCSMPSession;
 import com.solacesystems.jcsmp.Topic;
 import com.solacesystems.jcsmp.XMLMessageConsumer;
 
-import static io.xlibb.solace.consumer.ConsumerUtils.SUBSCRIPTION_TYPE_DIRECT_TOPIC;
+import static io.ballerina.lib.solace.consumer.ConsumerUtils.SUBSCRIPTION_TYPE_DIRECT_TOPIC;
 
 /**
  * Holds the native JCSMP receiver and lifecycle state for a single service attached to a {@link ListenerActions}

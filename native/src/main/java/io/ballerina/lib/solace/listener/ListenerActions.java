@@ -16,7 +16,7 @@
  *  under the License.
  */
 
-package io.xlibb.solace.listener;
+package io.ballerina.lib.solace.listener;
 
 import com.solacesystems.jcsmp.ConsumerFlowProperties;
 import com.solacesystems.jcsmp.DurableTopicEndpoint;
@@ -30,6 +30,15 @@ import com.solacesystems.jcsmp.Topic;
 import com.solacesystems.jcsmp.XMLMessage;
 import com.solacesystems.jcsmp.XMLMessageConsumer;
 import com.solacesystems.jcsmp.transaction.TransactedSession;
+import io.ballerina.lib.solace.ModuleUtils;
+import io.ballerina.lib.solace.common.CommonUtils;
+import io.ballerina.lib.solace.config.ConfigurationUtils;
+import io.ballerina.lib.solace.config.ConnectionConfiguration;
+import io.ballerina.lib.solace.config.ConsumerSubscriptionConfig;
+import io.ballerina.lib.solace.config.QueueConsumerConfig;
+import io.ballerina.lib.solace.config.TopicConsumerConfig;
+import io.ballerina.lib.solace.consumer.AcknowledgementMode;
+import io.ballerina.lib.solace.consumer.ConsumerUtils;
 import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.Module;
 import io.ballerina.runtime.api.Runtime;
@@ -43,30 +52,21 @@ import io.ballerina.runtime.api.utils.TypeUtils;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
-import io.xlibb.solace.ModuleUtils;
-import io.xlibb.solace.common.CommonUtils;
-import io.xlibb.solace.config.ConfigurationUtils;
-import io.xlibb.solace.config.ConnectionConfiguration;
-import io.xlibb.solace.config.ConsumerSubscriptionConfig;
-import io.xlibb.solace.config.QueueConsumerConfig;
-import io.xlibb.solace.config.TopicConsumerConfig;
-import io.xlibb.solace.consumer.AcknowledgementMode;
-import io.xlibb.solace.consumer.ConsumerUtils;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static io.xlibb.solace.common.Constants.NATIVE_CLOSED;
-import static io.xlibb.solace.common.Constants.NATIVE_RUNTIME;
-import static io.xlibb.solace.common.Constants.NATIVE_SERVICES;
-import static io.xlibb.solace.common.Constants.NATIVE_SESSION;
-import static io.xlibb.solace.common.Constants.NATIVE_STARTED;
-import static io.xlibb.solace.common.Constants.NATIVE_TRANSACTED;
-import static io.xlibb.solace.common.Constants.NATIVE_TX_SESSION;
-import static io.xlibb.solace.common.Constants.NATIVE_URL;
-import static io.xlibb.solace.consumer.ConsumerUtils.SUBSCRIPTION_TYPE_DIRECT_TOPIC;
-import static io.xlibb.solace.consumer.ConsumerUtils.SUBSCRIPTION_TYPE_DURABLE_TOPIC;
-import static io.xlibb.solace.consumer.ConsumerUtils.SUBSCRIPTION_TYPE_QUEUE;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_CLOSED;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_RUNTIME;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_SERVICES;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_SESSION;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_STARTED;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_TRANSACTED;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_TX_SESSION;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_URL;
+import static io.ballerina.lib.solace.consumer.ConsumerUtils.SUBSCRIPTION_TYPE_DIRECT_TOPIC;
+import static io.ballerina.lib.solace.consumer.ConsumerUtils.SUBSCRIPTION_TYPE_DURABLE_TOPIC;
+import static io.ballerina.lib.solace.consumer.ConsumerUtils.SUBSCRIPTION_TYPE_QUEUE;
 
 /**
  * Listener actions - entry point for the Ballerina Solace {@code Listener} interop. Manages a JCSMP session and a set

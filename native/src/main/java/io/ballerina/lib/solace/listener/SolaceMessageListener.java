@@ -16,19 +16,19 @@
  *  under the License.
  */
 
-package io.xlibb.solace.listener;
+package io.ballerina.lib.solace.listener;
 
 import com.solacesystems.jcsmp.BytesXMLMessage;
 import com.solacesystems.jcsmp.JCSMPException;
 import com.solacesystems.jcsmp.XMLMessageListener;
+import io.ballerina.lib.solace.common.CommonUtils;
+import io.ballerina.lib.solace.consumer.MessageConverter;
 import io.ballerina.runtime.api.Runtime;
 import io.ballerina.runtime.api.concurrent.StrandMetadata;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
-import io.xlibb.solace.common.CommonUtils;
-import io.xlibb.solace.consumer.MessageConverter;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

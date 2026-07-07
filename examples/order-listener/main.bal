@@ -15,7 +15,7 @@
 // under the License.
 
 import ballerina/io;
-import xlibb/solace;
+import ballerinax/solace;
 
 // Broker connection settings (override via Config.toml, e.g. for Solace Cloud).
 configurable string brokerUrl = "tcp://localhost:55554";

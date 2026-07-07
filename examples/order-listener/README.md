@@ -1,6 +1,6 @@
 # Order listener — asynchronous message consumption
 
-Consumes messages from a Solace queue **asynchronously** using the `xlibb/solace` `Listener`
+Consumes messages from a Solace queue **asynchronously** using the `ballerinax/solace` `Listener`
 (push-based delivery via `onMessage`, with explicit acknowledgement through the `Caller`).
 On startup the example also publishes a few sample messages, so a single `bal run` demonstrates
 the complete flow:
@@ -92,20 +92,13 @@ or the broker's "Try Me!" console) and they appear in `onMessage` as they arrive
 
 ## Testing against an unreleased build of the module
 
-To run this example against a locally-built `xlibb/solace` (instead of the release on Ballerina
-Central), publish the package to your local repository first:
+To run this example against a locally-built `ballerinax/solace` (instead of the release on
+Ballerina Central), use the examples' shared build script from the `examples` directory:
 
 ```bash
-cd ../../ballerina
-bal pack && bal push --repository=local
+cd ..
+./build.sh run
 ```
 
-and add the following to this example's `Ballerina.toml`:
-
-```toml
-[[dependency]]
-org = "xlibb"
-name = "solace"
-version = "0.4.3"
-repository = "local"
-```
+This packs and pushes the local module, then builds and runs every example (including this one)
+against it. See `examples/README.md` for details.

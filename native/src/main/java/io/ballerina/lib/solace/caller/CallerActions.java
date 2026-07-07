@@ -16,20 +16,20 @@
  *  under the License.
  */
 
-package io.xlibb.solace.caller;
+package io.ballerina.lib.solace.caller;
 
 import com.solacesystems.jcsmp.XMLMessage;
 import com.solacesystems.jcsmp.transaction.TransactedSession;
+import io.ballerina.lib.solace.common.CommonUtils;
+import io.ballerina.lib.solace.consumer.MessageConverter;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
-import io.xlibb.solace.common.CommonUtils;
-import io.xlibb.solace.consumer.MessageConverter;
 
 import java.util.logging.Logger;
 
-import static io.xlibb.solace.common.Constants.NATIVE_TX_SESSION;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_TX_SESSION;
 
 /**
  * Caller actions - interop for the Ballerina Solace {@code Caller} supplied to a service's {@code onMessage} method.

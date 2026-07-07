@@ -32,7 +32,7 @@ public isolated client class Caller {
     # + message - The message to acknowledge
     # + return - Error if acknowledgement fails
     isolated remote function ack(Message message) returns Error? = @java:Method {
-        'class: "io.xlibb.solace.caller.CallerActions"
+        'class: "io.ballerina.lib.solace.caller.CallerActions"
     } external;
 
     # Negatively acknowledge a message (NACK).
@@ -46,7 +46,7 @@ public isolated client class Caller {
     # discarded. (REJECTED outcome)
     # + return - Error if NACK fails
     isolated remote function nack(Message message, boolean requeue = true) returns Error? = @java:Method {
-        'class: "io.xlibb.solace.caller.CallerActions"
+        'class: "io.ballerina.lib.solace.caller.CallerActions"
     } external;
 
     # Commit the current transaction.
@@ -55,7 +55,7 @@ public isolated client class Caller {
     #
     # + return - Error if commit fails
     isolated remote function 'commit() returns Error? = @java:Method {
-        'class: "io.xlibb.solace.caller.CallerActions"
+        'class: "io.ballerina.lib.solace.caller.CallerActions"
     } external;
 
     # Rollback the current transaction.
@@ -64,6 +64,6 @@ public isolated client class Caller {
     #
     # + return - Error if rollback fails
     isolated remote function 'rollback() returns Error? = @java:Method {
-        'class: "io.xlibb.solace.caller.CallerActions"
+        'class: "io.ballerina.lib.solace.caller.CallerActions"
     } external;
 }
