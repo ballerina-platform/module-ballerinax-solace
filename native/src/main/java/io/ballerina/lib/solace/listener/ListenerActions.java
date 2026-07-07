@@ -53,8 +53,8 @@ import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static io.ballerina.lib.solace.common.Constants.NATIVE_CLOSED;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_RUNTIME;
@@ -106,7 +106,10 @@ public class ListenerActions {
             listener.addNativeData(NATIVE_STARTED, false);
             listener.addNativeData(NATIVE_URL, url.getValue());
             listener.addNativeData(NATIVE_RUNTIME, env.getRuntime());
-            listener.addNativeData(NATIVE_SERVICES, new LinkedHashMap<BObject, AttachedService>());
+            // Concurrent map: attach()/detach() run concurrently with start()/gracefulStop()/immediateStop()
+            // iterating this map (dynamic attach after start is supported), so a plain HashMap/LinkedHashMap
+            // would risk a ConcurrentModificationException or corrupting the map.
+            listener.addNativeData(NATIVE_SERVICES, new ConcurrentHashMap<BObject, AttachedService>());
             return null;
         } catch (Exception e) {
             return CommonUtils.createError("Failed to initialize listener", e);
