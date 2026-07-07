@@ -30,12 +30,20 @@ import io.ballerina.runtime.api.values.BString;
 import io.xlibb.solace.common.CommonUtils;
 import io.xlibb.solace.consumer.MessageConverter;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+
 /**
  * JCSMP asynchronous message listener that bridges broker delivery to a Ballerina service.
  * <p>
- * The broker pushes each message to {@link #onReceive(BytesXMLMessage)} on a JCSMP consumer-dispatch thread. The
- * message is converted to a Ballerina record and the service's {@code onMessage} method is invoked synchronously, which
- * gives natural back-pressure on guaranteed flows (the next message is not delivered until processing returns).
+ * The broker pushes each message to {@link #onReceive(BytesXMLMessage)} on a JCSMP consumer-dispatch thread. To avoid
+ * blocking that thread - which JCSMP also uses to process control responses such as transacted commits and to drive
+ * redelivery - the message is converted to a Ballerina record on the delivery thread (so its payload is copied before
+ * the buffer can be reused) and the service invocation plus any settlement (ack / nack / commit / rollback) are handed
+ * off to a dedicated single-threaded executor. The single thread preserves per-flow message ordering while keeping the
+ * delivery thread free.
  */
 final class SolaceMessageListener implements XMLMessageListener {
 
@@ -48,6 +56,7 @@ final class SolaceMessageListener implements XMLMessageListener {
     private final boolean hasCaller;
     private final boolean hasOnError;
     private final boolean autoAck;
+    private final ExecutorService dispatcher;
 
     SolaceMessageListener(Runtime runtime, BObject service, BObject caller, boolean hasCaller, boolean hasOnError,
                           boolean autoAck) {
@@ -57,12 +66,30 @@ final class SolaceMessageListener implements XMLMessageListener {
         this.hasCaller = hasCaller;
         this.hasOnError = hasOnError;
         this.autoAck = autoAck;
+        this.dispatcher = Executors.newSingleThreadExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "solace-listener-dispatch");
+            thread.setDaemon(true);
+            return thread;
+        });
     }
 
     @Override
     public void onReceive(BytesXMLMessage message) {
+        // Convert on the JCSMP delivery thread (copies the payload, safe for direct messages), then hand off so the
+        // delivery thread is never blocked by the service call or a blocking settlement.
+        BMap<BString, Object> ballerinaMessage;
         try {
-            BMap<BString, Object> ballerinaMessage = MessageConverter.toBallerinaMessage(message);
+            ballerinaMessage = MessageConverter.toBallerinaMessage(message);
+        } catch (Throwable t) {
+            submit(() -> dispatchError(CommonUtils.createError("Failed to convert message",
+                    t instanceof Exception e ? e : new Exception(t))));
+            return;
+        }
+        submit(() -> deliver(message, ballerinaMessage));
+    }
+
+    private void deliver(BytesXMLMessage message, BMap<BString, Object> ballerinaMessage) {
+        try {
             Object result = invokeOnMessage(ballerinaMessage);
             if (result instanceof BError bError) {
                 // Processing failed: leave the message unsettled so guaranteed flows redeliver it.
@@ -83,7 +110,7 @@ final class SolaceMessageListener implements XMLMessageListener {
 
     @Override
     public void onException(JCSMPException exception) {
-        dispatchError(CommonUtils.createError("Solace consumer flow error", exception));
+        submit(() -> dispatchError(CommonUtils.createError("Solace consumer flow error", exception)));
     }
 
     private Object invokeOnMessage(BMap<BString, Object> ballerinaMessage) {
@@ -102,6 +129,29 @@ final class SolaceMessageListener implements XMLMessageListener {
             runtime.callMethod(service, ON_ERROR, new StrandMetadata(false, null), error);
         } catch (Throwable ignored) {
             // Suppress secondary failures from the error handler to avoid losing the original error.
+        }
+    }
+
+    private void submit(Runnable task) {
+        try {
+            dispatcher.execute(task);
+        } catch (RejectedExecutionException ignored) {
+            // The listener is stopping; drop late deliveries (unsettled guaranteed messages are redelivered).
+        }
+    }
+
+    /**
+     * Stops the dispatch executor. Called when the service is detached or the listener is stopped.
+     */
+    void shutdown() {
+        dispatcher.shutdown();
+        try {
+            if (!dispatcher.awaitTermination(5, TimeUnit.SECONDS)) {
+                dispatcher.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            dispatcher.shutdownNow();
+            Thread.currentThread().interrupt();
         }
     }
 }

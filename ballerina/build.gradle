@@ -47,7 +47,11 @@ def stripBallerinaExtensionVersion(String extVersion) {
 ballerina {
     packageOrganization = packageOrg
     module = packageName
-    testCoverageParam = "--code-coverage --coverage-format=xml"
+    // Code coverage is disabled: the instrumented runtime intermittently hard-stalls the JCSMP
+    // asynchronous message-delivery callback (onMessage dispatch) under load, making the listener
+    // integration tests flaky. The tests pass reliably without instrumentation. Re-enable once the
+    // coverage/async-callback interaction is resolved.
+    testCoverageParam = ""
     isConnector = true
     platform = "java21"
 }

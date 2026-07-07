@@ -38,23 +38,28 @@ final class AttachedService {
     private final XMLMessageConsumer consumer;
     private final Topic directTopic;
     private final JCSMPSession session;
+    private final SolaceMessageListener messageListener;
     private boolean started;
 
-    private AttachedService(String subscriptionType, FlowReceiver flow,
-                            XMLMessageConsumer consumer, Topic directTopic, JCSMPSession session) {
+    private AttachedService(String subscriptionType, FlowReceiver flow, XMLMessageConsumer consumer,
+                            Topic directTopic, JCSMPSession session, SolaceMessageListener messageListener) {
         this.subscriptionType = subscriptionType;
         this.flow = flow;
         this.consumer = consumer;
         this.directTopic = directTopic;
         this.session = session;
+        this.messageListener = messageListener;
     }
 
-    static AttachedService forFlow(String subscriptionType, FlowReceiver flow) {
-        return new AttachedService(subscriptionType, flow, null, null, null);
+    static AttachedService forFlow(String subscriptionType, FlowReceiver flow,
+                                   SolaceMessageListener messageListener) {
+        return new AttachedService(subscriptionType, flow, null, null, null, messageListener);
     }
 
-    static AttachedService forDirectTopic(XMLMessageConsumer consumer, Topic directTopic, JCSMPSession session) {
-        return new AttachedService(SUBSCRIPTION_TYPE_DIRECT_TOPIC, null, consumer, directTopic, session);
+    static AttachedService forDirectTopic(XMLMessageConsumer consumer, Topic directTopic, JCSMPSession session,
+                                          SolaceMessageListener messageListener) {
+        return new AttachedService(SUBSCRIPTION_TYPE_DIRECT_TOPIC, null, consumer, directTopic, session,
+                messageListener);
     }
 
     String subscriptionType() {
@@ -96,6 +101,11 @@ final class AttachedService {
      */
     synchronized void close() throws JCSMPException {
         stop();
+        // Drain any in-flight service invocation / settlement before releasing the receiver and session, since those
+        // tasks may still call ack / commit / rollback on this flow.
+        if (messageListener != null) {
+            messageListener.shutdown();
+        }
         if (flow != null) {
             flow.close();
         }

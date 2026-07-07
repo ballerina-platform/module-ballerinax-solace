@@ -294,7 +294,7 @@ public class ListenerActions {
             FlowReceiver flow = isTransacted
                     ? txSession.createFlow(messageListener, flowProps, null)
                     : session.createFlow(messageListener, flowProps, null);
-            return AttachedService.forFlow(SUBSCRIPTION_TYPE_QUEUE, flow);
+            return AttachedService.forFlow(SUBSCRIPTION_TYPE_QUEUE, flow, messageListener);
         }
 
         TopicConsumerConfig topicConfig = (TopicConsumerConfig) subscriptionConfig;
@@ -314,14 +314,14 @@ public class ListenerActions {
             FlowReceiver flow = isTransacted
                     ? txSession.createFlow(messageListener, flowProps, null)
                     : session.createFlow(messageListener, flowProps, null);
-            return AttachedService.forFlow(SUBSCRIPTION_TYPE_DURABLE_TOPIC, flow);
+            return AttachedService.forFlow(SUBSCRIPTION_TYPE_DURABLE_TOPIC, flow, messageListener);
         }
 
         // Direct topic: asynchronous XMLMessageConsumer bound to the session.
         Topic topic = JCSMPFactory.onlyInstance().createTopic(topicConfig.topicName());
         XMLMessageConsumer consumer = session.getMessageConsumer(messageListener);
         session.addSubscription(topic);
-        return AttachedService.forDirectTopic(consumer, topic, session);
+        return AttachedService.forDirectTopic(consumer, topic, session, messageListener);
     }
 
     private static boolean hasDirectTopicService(BObject listener) {

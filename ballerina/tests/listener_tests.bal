@@ -182,25 +182,23 @@ function testListenerQueueAutoAck() returns error? {
     Listener solaceListener = check new (BROKER_URL, connectionConfig());
     check solaceListener.attach(autoAckService);
     check solaceListener.'start();
+    // Let the flow/subscription become fully active before publishing, so the first message is not
+    // missed under load (a topic subscription that is not yet active does not capture the message).
+    runtime:sleep(2);
 
     string payload = "listener-autoack-payload";
     check publish({queueName: LISTENER_AUTOACK_QUEUE}, payload, PERSISTENT);
     waitForMessages(autoAckRecorder, 1);
-
-    test:assertTrue(autoAckRecorder.contains(payload), "Service should have received the published message");
+    boolean received = autoAckRecorder.contains(payload);
     // Give the auto-acknowledgement a moment to reach the broker before checking the queue.
     runtime:sleep(1);
+    // Stop before asserting so a slow delivery does not leak the listener's session onto the broker.
     check solaceListener.gracefulStop();
 
     // AUTO_ACK must have settled the message: a fresh consumer should find the queue empty.
-    MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
-        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
-        subscriptionConfig: {queueName: LISTENER_AUTOACK_QUEUE, ackMode: CLIENT_ACK}
-    });
-    Message? leftover = check consumer->receiveNoWait();
-    check consumer->close();
-    test:assertTrue(leftover is (), "AUTO_ACK should have acknowledged the message (queue must be empty)");
+    boolean queueEmpty = check queueIsEmpty(LISTENER_AUTOACK_QUEUE);
+    test:assertTrue(received, "Service should have received the published message");
+    test:assertTrue(queueEmpty, "AUTO_ACK should have acknowledged the message (queue must be empty)");
 }
 
 // ========================================
@@ -211,13 +209,16 @@ function testListenerDirectTopic() returns error? {
     Listener solaceListener = check new (BROKER_URL, connectionConfig());
     check solaceListener.attach(directTopicService);
     check solaceListener.'start();
+    // Let the flow/subscription become fully active before publishing, so the first message is not
+    // missed under load (a topic subscription that is not yet active does not capture the message).
+    runtime:sleep(2);
 
     string payload = "listener-direct-topic-payload";
     check publish({topicName: LISTENER_DIRECT_TOPIC}, payload, DIRECT);
     waitForMessages(directTopicRecorder, 1);
-
-    test:assertTrue(directTopicRecorder.contains(payload), "Direct topic service should have received the message");
+    boolean received = directTopicRecorder.contains(payload);
     check solaceListener.gracefulStop();
+    test:assertTrue(received, "Direct topic service should have received the message");
 }
 
 // ========================================
@@ -228,25 +229,23 @@ function testListenerClientAckWithCaller() returns error? {
     Listener solaceListener = check new (BROKER_URL, connectionConfig());
     check solaceListener.attach(clientAckService);
     check solaceListener.'start();
+    // Let the flow/subscription become fully active before publishing, so the first message is not
+    // missed under load (a topic subscription that is not yet active does not capture the message).
+    runtime:sleep(2);
 
     string payload = "listener-clientack-payload";
     check publish({queueName: LISTENER_CLIENTACK_QUEUE}, payload, PERSISTENT);
     waitForMessages(clientAckRecorder, 1);
-
-    test:assertTrue(clientAckRecorder.contains(payload), "Client-ack service should have received the message");
+    boolean received = clientAckRecorder.contains(payload);
     // Give the acknowledgement a moment to reach the broker before checking the queue.
     runtime:sleep(1);
+    // Stop before asserting so a slow delivery does not leak the listener's session onto the broker.
     check solaceListener.gracefulStop();
 
     // caller->ack must have settled the message.
-    MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
-        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
-        subscriptionConfig: {queueName: LISTENER_CLIENTACK_QUEUE, ackMode: CLIENT_ACK}
-    });
-    Message? leftover = check consumer->receiveNoWait();
-    check consumer->close();
-    test:assertTrue(leftover is (), "caller->ack should have acknowledged the message (queue must be empty)");
+    boolean queueEmpty = check queueIsEmpty(LISTENER_CLIENTACK_QUEUE);
+    test:assertTrue(received, "Client-ack service should have received the message");
+    test:assertTrue(queueEmpty, "caller->ack should have acknowledged the message (queue must be empty)");
 }
 
 // ========================================
@@ -302,14 +301,16 @@ function testListenerDurableTopic() returns error? {
     Listener solaceListener = check new (BROKER_URL, connectionConfig());
     check solaceListener.attach(durableTopicService);
     check solaceListener.'start();
+    // Let the flow/subscription become fully active before publishing, so the first message is not
+    // missed under load (a topic subscription that is not yet active does not capture the message).
+    runtime:sleep(2);
 
     string payload = "listener-durable-topic-payload";
     check publish({topicName: LISTENER_DURABLE_TOPIC}, payload, PERSISTENT);
     waitForMessages(durableTopicRecorder, 1);
-
-    test:assertTrue(durableTopicRecorder.contains(payload),
-            "Durable topic endpoint service should have received the message");
+    boolean received = durableTopicRecorder.contains(payload);
     check solaceListener.gracefulStop();
+    test:assertTrue(received, "Durable topic endpoint service should have received the message");
 }
 
 // ========================================
@@ -339,17 +340,19 @@ function testListenerNackRequeueRedelivery() returns error? {
     Listener solaceListener = check new (BROKER_URL, connectionConfig());
     check solaceListener.attach(nackService);
     check solaceListener.'start();
+    // Let the flow/subscription become fully active before publishing, so the first message is not
+    // missed under load (a topic subscription that is not yet active does not capture the message).
+    runtime:sleep(2);
 
     string payload = "listener-nack-requeue-payload";
     check publish({queueName: LISTENER_NACK_QUEUE}, payload, PERSISTENT);
     waitForAttempts(nackRecorder, 2);
-
-    test:assertTrue(nackRecorder.attemptCount() >= 2,
-            "NACK with requeue should cause the message to be redelivered");
+    boolean redelivered = nackRecorder.attemptCount() >= 2;
     check solaceListener.gracefulStop();
 
-    test:assertTrue(check queueIsEmpty(LISTENER_NACK_QUEUE),
-            "After redelivery and ack the queue must be empty");
+    boolean queueEmpty = check queueIsEmpty(LISTENER_NACK_QUEUE);
+    test:assertTrue(redelivered, "NACK with requeue should cause the message to be redelivered");
+    test:assertTrue(queueEmpty, "After redelivery and ack the queue must be empty");
 }
 
 // ========================================
@@ -377,17 +380,19 @@ function testListenerTransactedCommit() returns error? {
     });
     check solaceListener.attach(txCommitService);
     check solaceListener.'start();
+    // Let the flow/subscription become fully active before publishing, so the first message is not
+    // missed under load (a topic subscription that is not yet active does not capture the message).
+    runtime:sleep(2);
 
     string payload = "listener-tx-commit-payload";
     check publish({queueName: LISTENER_TX_COMMIT_QUEUE}, payload, PERSISTENT);
     waitForMessages(txCommitRecorder, 1);
-
-    test:assertTrue(txCommitRecorder.contains(payload),
-            "Transacted service should have received the message");
+    boolean received = txCommitRecorder.contains(payload);
     check solaceListener.gracefulStop();
 
-    test:assertTrue(check queueIsEmpty(LISTENER_TX_COMMIT_QUEUE),
-            "After commit the queue must be empty");
+    boolean queueEmpty = check queueIsEmpty(LISTENER_TX_COMMIT_QUEUE);
+    test:assertTrue(received, "Transacted service should have received the message");
+    test:assertTrue(queueEmpty, "After commit the queue must be empty");
 }
 
 // ========================================
@@ -420,15 +425,17 @@ function testListenerTransactedRollback() returns error? {
     });
     check solaceListener.attach(txRollbackService);
     check solaceListener.'start();
+    // Let the flow/subscription become fully active before publishing, so the first message is not
+    // missed under load (a topic subscription that is not yet active does not capture the message).
+    runtime:sleep(2);
 
     string payload = "listener-tx-rollback-payload";
     check publish({queueName: LISTENER_TX_ROLLBACK_QUEUE}, payload, PERSISTENT);
     waitForAttempts(txRollbackRecorder, 2);
-
-    test:assertTrue(txRollbackRecorder.attemptCount() >= 2,
-            "Rollback should cause the message to be redelivered");
+    boolean redelivered = txRollbackRecorder.attemptCount() >= 2;
     check solaceListener.gracefulStop();
 
-    test:assertTrue(check queueIsEmpty(LISTENER_TX_ROLLBACK_QUEUE),
-            "After the committed redelivery the queue must be empty");
+    boolean queueEmpty = check queueIsEmpty(LISTENER_TX_ROLLBACK_QUEUE);
+    test:assertTrue(redelivered, "Rollback should cause the message to be redelivered");
+    test:assertTrue(queueEmpty, "After the committed redelivery the queue must be empty");
 }
