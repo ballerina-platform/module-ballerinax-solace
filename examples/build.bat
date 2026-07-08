@@ -62,17 +62,16 @@ echo Successfully updated the local central repositories
 echo %BAL_DESTINATION_DIR%
 echo %BAL_SOURCE_DIR%
 
-:: Loop through examples in the examples directory
+:: Loop through example projects (each is a directory containing a Ballerina.toml, one or more
+:: levels below the examples directory)
 cd /d "%BAL_EXAMPLES_DIR%"
 set ERROR_OCCURRED=0
-for /d %%D in ("%BAL_EXAMPLES_DIR%\*") do (
-    if not "%%~nD"=="build" (
-        cd /d "%%D"
-        call bal %BAL_CMD%
-        if errorlevel 1 (
-            set ERROR_OCCURRED=1
-        )
-        cd ..
+for /f "delims=" %%T in ('dir /s /b "%BAL_EXAMPLES_DIR%Ballerina.toml"') do (
+    for %%P in ("%%T\..") do set "EXAMPLE_DIR=%%~fP"
+    cd /d "!EXAMPLE_DIR!"
+    call bal %BAL_CMD%
+    if errorlevel 1 (
+        set ERROR_OCCURRED=1
     )
 )
 if %ERROR_OCCURRED%==1 (

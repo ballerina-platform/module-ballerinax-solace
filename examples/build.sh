@@ -69,14 +69,12 @@ fi
 echo "Source Directory: $BAL_SOURCE_DIR"
 echo "Destination Directory: $BAL_DESTINATION_DIR"
 
-# Loop through examples in the examples directory and execute the command
+# Loop through example projects (each is a directory containing a Ballerina.toml, one or more
+# levels below the examples directory) and execute the command
 echo "Processing examples in the examples directory..."
 cd "$BAL_EXAMPLES_DIR"
-for dir in $(find "$BAL_EXAMPLES_DIR" -type d -maxdepth 1 -mindepth 1); do
-  # Skip the build directory
-  if [[ "$(basename "$dir")" == "build" ]]; then
-    continue
-  fi
+for tomlFile in $(find "$BAL_EXAMPLES_DIR" -mindepth 2 -name "Ballerina.toml" | sort); do
+  dir=$(dirname "$tomlFile")
   echo "Processing example: $dir"
   (cd "$dir" && bal "$BAL_CMD")
 done
