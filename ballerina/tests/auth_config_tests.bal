@@ -80,9 +80,9 @@ isolated function testConsumerBasicAuth() returns error? {
         subscriptionConfig: {queueName: CONSUMER_BASIC_AUTH_QUEUE}
     });
 
-    Message? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
-    test:assertTrue(msg is Message, "Should receive a message over Basic auth");
-    if msg is Message {
+    BytesPayloadMessage? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    test:assertTrue(msg is BytesPayloadMessage, "Should receive a message over Basic auth");
+    if msg is BytesPayloadMessage {
         test:assertEquals(msg.payload, "Basic Auth Message".toBytes(), "Payload should round-trip correctly");
     }
 
@@ -129,9 +129,9 @@ isolated function testConsumerBasicAuthOverTls() returns error? {
         subscriptionConfig: {queueName: CONSUMER_TLS_QUEUE}
     });
 
-    Message? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
-    test:assertTrue(msg is Message, "Should receive a message over a TLS-secured connection");
-    if msg is Message {
+    BytesPayloadMessage? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    test:assertTrue(msg is BytesPayloadMessage, "Should receive a message over a TLS-secured connection");
+    if msg is BytesPayloadMessage {
         test:assertEquals(msg.payload, "TLS Basic Auth Message".toBytes(), "Payload should round-trip correctly");
     }
 
@@ -177,9 +177,9 @@ isolated function testConsumerOAuth2AccessTokenOverTls() returns error? {
         subscriptionConfig: {queueName: CONSUMER_OAUTH_ACCESS_QUEUE}
     });
 
-    Message? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
-    test:assertTrue(msg is Message, "Should receive a message over OAuth2 access-token auth");
-    if msg is Message {
+    BytesPayloadMessage? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    test:assertTrue(msg is BytesPayloadMessage, "Should receive a message over OAuth2 access-token auth");
+    if msg is BytesPayloadMessage {
         test:assertEquals(msg.payload, "OAuth2 Access Token Message".toBytes(), "Payload should round-trip correctly");
     }
 
@@ -200,9 +200,9 @@ isolated function testConsumerOidcTokenAuthOverTls() returns error? {
         subscriptionConfig: {queueName: CONSUMER_OAUTH_OIDC_QUEUE}
     });
 
-    Message? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
-    test:assertTrue(msg is Message, "Should receive a message over OIDC ID-token auth");
-    if msg is Message {
+    BytesPayloadMessage? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    test:assertTrue(msg is BytesPayloadMessage, "Should receive a message over OIDC ID-token auth");
+    if msg is BytesPayloadMessage {
         test:assertEquals(msg.payload, "OIDC ID Token Message".toBytes(), "Payload should round-trip correctly");
     }
 

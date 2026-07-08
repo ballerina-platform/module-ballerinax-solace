@@ -124,7 +124,9 @@ isolated function publish(Destination destination, string payload, DeliveryMode 
         vpnName: MESSAGE_VPN,
         auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD}
     });
-    check producer->send(destination, {payload: payload.toBytes(), deliveryMode});
+    // Sent as a `string` payload (-> TextMessage on the wire) to match the `StringPayloadMessage`-typed
+    // `onMessage` handlers below, which reject a `BytesMessage`.
+    check producer->send(destination, {payload, deliveryMode});
     check producer->close();
 }
 
@@ -137,8 +139,8 @@ Service autoAckService = @ServiceConfig {
     queueName: LISTENER_AUTOACK_QUEUE,
     ackMode: AUTO_ACK
 } service object {
-    remote function onMessage(Message message) returns error? {
-        autoAckRecorder.add(check string:fromBytes(message.payload));
+    remote function onMessage(StringPayloadMessage message) returns error? {
+        autoAckRecorder.add(message.payload);
     }
 };
 
@@ -148,8 +150,8 @@ Service directTopicService = @ServiceConfig {
     topicName: LISTENER_DIRECT_TOPIC,
     endpointType: DEFAULT
 } service object {
-    remote function onMessage(Message message) returns error? {
-        directTopicRecorder.add(check string:fromBytes(message.payload));
+    remote function onMessage(StringPayloadMessage message) returns error? {
+        directTopicRecorder.add(message.payload);
     }
 };
 
@@ -159,8 +161,8 @@ Service clientAckService = @ServiceConfig {
     queueName: LISTENER_CLIENTACK_QUEUE,
     ackMode: CLIENT_ACK
 } service object {
-    remote function onMessage(Message message, Caller caller) returns error? {
-        clientAckRecorder.add(check string:fromBytes(message.payload));
+    remote function onMessage(StringPayloadMessage message, Caller caller) returns error? {
+        clientAckRecorder.add(message.payload);
         check caller->ack(message);
     }
 };
@@ -291,8 +293,8 @@ Service durableTopicService = @ServiceConfig {
     endpointName: LISTENER_DURABLE_ENDPOINT,
     ackMode: AUTO_ACK
 } service object {
-    remote function onMessage(Message message) returns error? {
-        durableTopicRecorder.add(check string:fromBytes(message.payload));
+    remote function onMessage(StringPayloadMessage message) returns error? {
+        durableTopicRecorder.add(message.payload);
     }
 };
 
@@ -322,9 +324,9 @@ Service nackService = @ServiceConfig {
     queueName: LISTENER_NACK_QUEUE,
     ackMode: CLIENT_ACK
 } service object {
-    remote function onMessage(Message message, Caller caller) returns error? {
+    remote function onMessage(StringPayloadMessage message, Caller caller) returns error? {
         int attempt = nackRecorder.nextAttempt();
-        nackRecorder.add(check string:fromBytes(message.payload));
+        nackRecorder.add(message.payload);
         if attempt == 1 {
             // First delivery: negatively acknowledge with requeue so the broker redelivers.
             check caller->nack(message, requeue = true);
@@ -364,8 +366,8 @@ Service txCommitService = @ServiceConfig {
     queueName: LISTENER_TX_COMMIT_QUEUE,
     ackMode: CLIENT_ACK
 } service object {
-    remote function onMessage(Message message, Caller caller) returns error? {
-        txCommitRecorder.add(check string:fromBytes(message.payload));
+    remote function onMessage(StringPayloadMessage message, Caller caller) returns error? {
+        txCommitRecorder.add(message.payload);
         // Committing the transaction settles the consumed message.
         check caller->'commit();
     }
@@ -404,9 +406,9 @@ Service txRollbackService = @ServiceConfig {
     queueName: LISTENER_TX_ROLLBACK_QUEUE,
     ackMode: CLIENT_ACK
 } service object {
-    remote function onMessage(Message message, Caller caller) returns error? {
+    remote function onMessage(StringPayloadMessage message, Caller caller) returns error? {
         int attempt = txRollbackRecorder.nextAttempt();
-        txRollbackRecorder.add(check string:fromBytes(message.payload));
+        txRollbackRecorder.add(message.payload);
         if attempt == 1 {
             // First delivery: roll back so the broker redelivers within the transaction.
             check caller->'rollback();

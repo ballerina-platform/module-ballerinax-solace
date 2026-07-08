@@ -263,17 +263,6 @@ public class ProducerActions {
     }
 
     /**
-     * Check if the producer is closed.
-     *
-     * @param producer the Ballerina producer object
-     * @return true if closed, false otherwise
-     */
-    public static boolean isClosed(BObject producer) {
-        Boolean closed = (Boolean) producer.getNativeData(NATIVE_CLOSED);
-        return closed != null && closed;
-    }
-
-    /**
      * Close the producer and release resources.
      *
      * @param env      the Ballerina environment (injected for tracing)

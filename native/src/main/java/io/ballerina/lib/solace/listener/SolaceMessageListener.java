@@ -21,15 +21,18 @@ package io.ballerina.lib.solace.listener;
 import com.solacesystems.jcsmp.BytesXMLMessage;
 import com.solacesystems.jcsmp.JCSMPException;
 import com.solacesystems.jcsmp.XMLMessageListener;
+import io.ballerina.lib.solace.common.BallerinaSolaceDatabindingException;
 import io.ballerina.lib.solace.common.CommonUtils;
 import io.ballerina.lib.solace.consumer.MessageConverter;
 import io.ballerina.runtime.api.Runtime;
 import io.ballerina.runtime.api.concurrent.StrandMetadata;
+import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
 
+import java.io.PrintStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -49,22 +52,18 @@ final class SolaceMessageListener implements XMLMessageListener {
 
     private static final String ON_MESSAGE = "onMessage";
     private static final String ON_ERROR = "onError";
+    private static final PrintStream ERR_OUT = System.err;
 
     private final Runtime runtime;
-    private final BObject service;
+    private final Service nativeService;
     private final BObject caller;
-    private final boolean hasCaller;
-    private final boolean hasOnError;
     private final boolean autoAck;
     private final ExecutorService dispatcher;
 
-    SolaceMessageListener(Runtime runtime, BObject service, BObject caller, boolean hasCaller, boolean hasOnError,
-                          boolean autoAck) {
+    SolaceMessageListener(Runtime runtime, Service nativeService, BObject caller, boolean autoAck) {
         this.runtime = runtime;
-        this.service = service;
+        this.nativeService = nativeService;
         this.caller = caller;
-        this.hasCaller = hasCaller;
-        this.hasOnError = hasOnError;
         this.autoAck = autoAck;
         this.dispatcher = Executors.newSingleThreadExecutor(runnable -> {
             Thread thread = new Thread(runnable, "solace-listener-dispatch");
@@ -79,7 +78,11 @@ final class SolaceMessageListener implements XMLMessageListener {
         // delivery thread is never blocked by the service call or a blocking settlement.
         BMap<BString, Object> ballerinaMessage;
         try {
-            ballerinaMessage = MessageConverter.toBallerinaMessage(message);
+            ballerinaMessage = MessageConverter.toBallerinaMessage(message,
+                    ValueCreator.createTypedescValue(nativeService.getMessagePayloadType()));
+        } catch (BallerinaSolaceDatabindingException e) {
+            submit(() -> dispatchError(CommonUtils.createError(e.getMessage())));
+            return;
         } catch (Throwable t) {
             submit(() -> dispatchError(CommonUtils.createError("Failed to convert message",
                     t instanceof Exception e ? e : new Exception(t))));
@@ -114,21 +117,30 @@ final class SolaceMessageListener implements XMLMessageListener {
     }
 
     private Object invokeOnMessage(BMap<BString, Object> ballerinaMessage) {
-        StrandMetadata metadata = new StrandMetadata(false, null);
-        if (hasCaller) {
-            return runtime.callMethod(service, ON_MESSAGE, metadata, ballerinaMessage, caller);
+        StrandMetadata metadata = new StrandMetadata(nativeService.isOnMessageMethodIsolated(), null);
+        if (nativeService.hasCaller()) {
+            return runtime.callMethod(nativeService.getConsumerService(), ON_MESSAGE, metadata, ballerinaMessage,
+                    caller);
         }
-        return runtime.callMethod(service, ON_MESSAGE, metadata, ballerinaMessage);
+        return runtime.callMethod(nativeService.getConsumerService(), ON_MESSAGE, metadata, ballerinaMessage);
     }
 
     private void dispatchError(BError error) {
-        if (!hasOnError) {
+        if (nativeService.getOnError().isEmpty()) {
+            // No handler to observe this error: surface it instead of failing silently, matching the
+            // sibling solace.jms module's behavior for the same situation.
+            ERR_OUT.println("Unexpected error occurred while message processing: " + error.getMessage());
+            error.printStackTrace();
             return;
         }
         try {
-            runtime.callMethod(service, ON_ERROR, new StrandMetadata(false, null), error);
-        } catch (Throwable ignored) {
-            // Suppress secondary failures from the error handler to avoid losing the original error.
+            StrandMetadata metadata = new StrandMetadata(nativeService.isOnErrorMethodIsolated(), null);
+            runtime.callMethod(nativeService.getConsumerService(), ON_ERROR, metadata, error);
+        } catch (Throwable t) {
+            // Surface secondary failures from the error handler instead of dropping them silently;
+            // do not let them propagate and take down the dispatch thread.
+            ERR_OUT.println("Unexpected error occurred while invoking the 'onError' method: "
+                    + (t.getMessage() != null ? t.getMessage() : t));
         }
     }
 

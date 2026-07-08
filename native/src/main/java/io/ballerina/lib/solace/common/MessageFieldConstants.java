@@ -48,4 +48,8 @@ public class MessageFieldConstants {
     public static final BString TOPIC_NAME_KEY = StringUtils.fromString("topicName");
     public static final BString QUEUE_NAME_KEY = StringUtils.fromString("queueName");
 
+    // Synthetic message-property key marking a TextMessage's text payload as XML. Must match the
+    // Ballerina-level `solace:SOLACE_ISXML_PROP` constant declared in `ballerina/types.bal`.
+    public static final String SOLACE_ISXML_PROP = "solace_isXML";
+
 }

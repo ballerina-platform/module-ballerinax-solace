@@ -191,5 +191,20 @@ create_queue "binaryQueue"
 create_queue "invalidJsonQueue"
 create_queue "emptyRestQueue"
 
+# Data-binding test queues. Positive (successful-binding) cases share one queue per test file;
+# negative (mismatch) cases each keep their own dedicated queue (see test_config.bal for rationale).
+echo "Creating data-binding test queues..."
+create_queue "test/binding/validation/queue"
+create_queue "test/binding/service/positive/queue"
+create_queue "test/binding/service/mismatch/string/queue"
+create_queue "test/binding/service/mismatch/int/queue"
+create_queue "test/binding/service/mismatch/record/queue"
+create_queue "test/binding/service/noonerror/queue"
+create_queue "test/binding/client/positive/queue"
+create_queue "test/binding/client/mismatch/string/queue"
+create_queue "test/binding/client/mismatch/int/queue"
+create_queue "test/binding/client/mismatch/record/queue"
+create_queue "test/binding/producer/queue"
+
 echo "Queue creation completed!"
 echo "Solace broker is ready for testing."

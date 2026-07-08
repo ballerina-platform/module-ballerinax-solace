@@ -21,8 +21,11 @@ package io.xlibb.solace.producer;
 import com.solacesystems.jcsmp.BytesMessage;
 import com.solacesystems.jcsmp.DeliveryMode;
 import com.solacesystems.jcsmp.Destination;
+import com.solacesystems.jcsmp.JCSMPFactory;
+import com.solacesystems.jcsmp.MapMessage;
 import com.solacesystems.jcsmp.SDTException;
 import com.solacesystems.jcsmp.SDTMap;
+import com.solacesystems.jcsmp.TextMessage;
 import com.solacesystems.jcsmp.XMLMessage;
 import com.solacesystems.jcsmp.XMLMessageProducer;
 import io.ballerina.lib.solace.common.DestinationConverter;
@@ -62,18 +65,36 @@ public class MessageConverter {
             throws Exception {
         Object payload = message.get(PAYLOAD_KEY);
 
-        XMLMessage jcsmpMessage;
-        if (payload instanceof BArray) {
-            jcsmpMessage = toByteMessage(producer, ((BArray) payload).getBytes());
-        } else {
-            throw new Exception(
-                    "Unsupported payload type: " + (payload != null ? payload.getClass().getName() : "null"));
-        }
+        XMLMessage jcsmpMessage = createMessageByContentType(producer, payload);
 
         // Set all message fields from Ballerina Message record
         setMessageFields(jcsmpMessage, message);
 
         return jcsmpMessage;
+    }
+
+    /**
+     * Creates a JCSMP message whose concrete subtype matches the payload's wire shape - a {@code BString}
+     * becomes a {@link TextMessage}, a {@code BArray} a {@link BytesMessage} (unchanged, existing behavior),
+     * and a {@code BMap} a {@link MapMessage}.
+     */
+    private static XMLMessage createMessageByContentType(XMLMessageProducer producer, Object payload)
+            throws Exception {
+        if (payload instanceof BString bString) {
+            TextMessage textMessage = producer.createTextMessage();
+            textMessage.setText(bString.getValue());
+            return textMessage;
+        } else if (payload instanceof BArray bArray) {
+            return toByteMessage(producer, bArray.getBytes());
+        } else if (payload instanceof BMap<?, ?> bMap) {
+            MapMessage mapMessage = producer.createMapMessage();
+            @SuppressWarnings("unchecked")
+            SDTMap sdtMap = PropertyConverter.ballerinaToSDTMap((BMap<BString, Object>) bMap);
+            mapMessage.setMap(sdtMap != null ? sdtMap : JCSMPFactory.onlyInstance().createMap());
+            return mapMessage;
+        }
+        throw new Exception(
+                "Unsupported payload type: " + (payload != null ? payload.getClass().getName() : "null"));
     }
 
     /**

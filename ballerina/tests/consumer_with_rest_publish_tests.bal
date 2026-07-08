@@ -29,8 +29,8 @@ isolated function testReceiveJsonPayloads() returns error? {
     };
 
     http:Response _ = check solaceRest->/QUEUE/jsonQueue.post(payload, mediaType = "application/json; charset=utf-8");
-    Message? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
-    test:assertTrue(msg is Message, "Should receive a message");
+    BytesPayloadMessage? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    test:assertTrue(msg is BytesPayloadMessage, "Should receive a message");
     if msg is () {
         return;
     }
@@ -48,14 +48,15 @@ isolated function testReceiveTextPayloads() returns error? {
     string payload = "Hello, Solace!";
 
     http:Response _ = check solaceRest->/QUEUE/textQueue.post(payload, mediaType = "text/plain; charset=utf-8");
-    Message? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
-    test:assertTrue(msg is Message, "Should receive a message");
+    // The REST gateway delivers a text/plain body as a native TextMessage, so requesting a byte[]
+    // payload here would now be rejected - bind directly to `string` instead.
+    StringPayloadMessage? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    test:assertTrue(msg is StringPayloadMessage, "Should receive a message");
     if msg is () {
         return;
     }
 
-    string receivedPayload = check string:fromBytes(msg.payload);
-    test:assertEquals(receivedPayload, payload, "Received payload is different");
+    test:assertEquals(msg.payload, payload, "Received payload is different");
 }
 
 @test:Config {
@@ -66,14 +67,16 @@ isolated function testReceiveXmlPayloads() returns error? {
     xml payload = xml `<message><content>Hello, Solace!</content></message>`;
 
     http:Response _ = check solaceRest->/QUEUE/xmlQueue.post(payload, mediaType = "application/xml; charset=utf-8");
-    Message? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
-    test:assertTrue(msg is Message, "Should receive a message");
+    // The REST gateway delivers application/xml content as a native TextMessage carrying the raw
+    // XML text (it does not set this module's XML marker property, which only our own producer
+    // sets), so bind to `string` here and parse the XML manually, rather than binding to `xml`.
+    StringPayloadMessage? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    test:assertTrue(msg is StringPayloadMessage, "Should receive a message");
     if msg is () {
         return;
     }
 
-    string payloadStr = check string:fromBytes(msg.payload);
-    xml receivedPayload = check xml:fromString(payloadStr);
+    xml receivedPayload = check xml:fromString(msg.payload);
     test:assertEquals(receivedPayload, payload, "Received payload is different");
 }
 
@@ -102,8 +105,8 @@ isolated function testReceiveInvalidJsonPayload() returns error? {
     string payload = "This is not valid JSON";
 
     http:Response _ = check solaceRest->/QUEUE/invalidJsonQueue.post(payload, mediaType = "application/json; charset=utf-8");
-    Message? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
-    test:assertTrue(msg is Message, "Should receive a message");
+    BytesPayloadMessage? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    test:assertTrue(msg is BytesPayloadMessage, "Should receive a message");
     if msg is () {
         return;
     }

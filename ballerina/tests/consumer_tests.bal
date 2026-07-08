@@ -174,10 +174,10 @@ isolated function testConsumerReceiveTextFromQueue() returns error? {
         subscriptionConfig: {queueName: CONSUMER_TEXT_QUEUE}
     });
 
-    Message? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    BytesPayloadMessage? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
 
-    test:assertTrue(msg is Message, "Should receive a message");
-    if msg is Message {
+    test:assertTrue(msg is BytesPayloadMessage, "Should receive a message");
+    if msg is BytesPayloadMessage {
         test:assertEquals(msg.payload, TEXT_MESSAGE_CONTENT.toBytes(), "Payload should match");
     }
 
@@ -217,17 +217,17 @@ isolated function testConsumerReceiveNoWait() returns error? {
         subscriptionConfig: {queueName: CONSUMER_NOWAIT_QUEUE}
     });
 
-    Message? msg = ();
+    BytesPayloadMessage? msg = ();
     foreach int _attempt in 0 ..< NOWAIT_POLL_MAX_ATTEMPTS {
         msg = check consumer->receiveNoWait();
-        if msg is Message {
+        if msg is BytesPayloadMessage {
             break;
         }
         runtime:sleep(NOWAIT_POLL_INTERVAL);
     }
 
-    test:assertTrue(msg is Message, "Should receive a message with receiveNoWait");
-    if msg is Message {
+    test:assertTrue(msg is BytesPayloadMessage, "Should receive a message with receiveNoWait");
+    if msg is BytesPayloadMessage {
         test:assertEquals(msg.payload, "NoWait Message".toBytes(), "Payload should match");
     }
 
@@ -264,10 +264,10 @@ isolated function testConsumerReceiveBinaryFromQueue() returns error? {
         subscriptionConfig: {queueName: CONSUMER_BINARY_QUEUE}
     });
 
-    Message? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    BytesPayloadMessage? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
 
-    test:assertTrue(msg is Message, "Should receive a message");
-    if msg is Message {
+    test:assertTrue(msg is BytesPayloadMessage, "Should receive a message");
+    if msg is BytesPayloadMessage {
         test:assertEquals(msg.payload, BINARY_MESSAGE_CONTENT, "Binary payload should match");
     }
 
@@ -403,10 +403,10 @@ isolated function testConsumerReceiveFromDirectTopic() returns error? {
     check producer->close();
 
     // Receive from topic
-    Message? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    BytesPayloadMessage? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
 
-    test:assertTrue(msg is Message, "Should receive message from direct topic");
-    if msg is Message {
+    test:assertTrue(msg is BytesPayloadMessage, "Should receive message from direct topic");
+    if msg is BytesPayloadMessage {
         test:assertEquals(msg.payload, "Direct topic message".toBytes(), "Payload should match");
     }
 
@@ -463,10 +463,10 @@ isolated function testConsumerReceiveWithSelector() returns error? {
         }
     });
 
-    Message? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    BytesPayloadMessage? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
 
-    test:assertTrue(msg is Message, "Should receive urgent message");
-    if msg is Message {
+    test:assertTrue(msg is BytesPayloadMessage, "Should receive urgent message");
+    if msg is BytesPayloadMessage {
         test:assertEquals(msg.payload, "Urgent message".toBytes(), "Should receive only urgent message");
     }
 
@@ -515,21 +515,21 @@ isolated function testConsumerReceiveMultipleMessages() returns error? {
         subscriptionConfig: {queueName: CONSUMER_MULTIPLE_QUEUE}
     });
 
-    Message? msg1 = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
-    test:assertTrue(msg1 is Message, "Should receive first message");
-    if msg1 is Message {
+    BytesPayloadMessage? msg1 = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    test:assertTrue(msg1 is BytesPayloadMessage, "Should receive first message");
+    if msg1 is BytesPayloadMessage {
         test:assertEquals(msg1.payload, "Message 1".toBytes(), "First message payload should match");
     }
 
-    Message? msg2 = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
-    test:assertTrue(msg2 is Message, "Should receive second message");
-    if msg2 is Message {
+    BytesPayloadMessage? msg2 = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    test:assertTrue(msg2 is BytesPayloadMessage, "Should receive second message");
+    if msg2 is BytesPayloadMessage {
         test:assertEquals(msg2.payload, "Message 2".toBytes(), "Second message payload should match");
     }
 
-    Message? msg3 = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
-    test:assertTrue(msg3 is Message, "Should receive third message");
-    if msg3 is Message {
+    BytesPayloadMessage? msg3 = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    test:assertTrue(msg3 is BytesPayloadMessage, "Should receive third message");
+    if msg3 is BytesPayloadMessage {
         test:assertEquals(msg3.payload, "Message 3".toBytes(), "Third message payload should match");
     }
 

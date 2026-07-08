@@ -175,11 +175,11 @@ isolated function testConsumerNackWithRequeue() returns error? {
         check consumer->nack(msg, requeue = true);
     }
 
-    Message? redeliveredMsg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    BytesPayloadMessage? redeliveredMsg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
 
-    test:assertTrue(redeliveredMsg is Message, "Message should be redelivered after NACK with requeue");
+    test:assertTrue(redeliveredMsg is BytesPayloadMessage, "Message should be redelivered after NACK with requeue");
 
-    if redeliveredMsg is Message {
+    if redeliveredMsg is BytesPayloadMessage {
         test:assertEquals(redeliveredMsg.payload, "Message to NACK with requeue".toBytes(), "Redelivered message should match");
         // Check redelivered flag
         test:assertTrue(redeliveredMsg.redelivered == true, "Redelivered flag should be set");
@@ -286,10 +286,10 @@ isolated function testConsumerUnacknowledgedRedelivery() returns error? {
         }
     });
 
-    Message? msg2 = check consumer2->receive(DEFAULT_RECEIVE_TIMEOUT);
-    test:assertTrue(msg2 is Message, "Second consumer should receive redelivered message");
+    BytesPayloadMessage? msg2 = check consumer2->receive(DEFAULT_RECEIVE_TIMEOUT);
+    test:assertTrue(msg2 is BytesPayloadMessage, "Second consumer should receive redelivered message");
 
-    if msg2 is Message {
+    if msg2 is BytesPayloadMessage {
         test:assertEquals(msg2.payload, "Message for redelivery test".toBytes(), "Redelivered message should match");
         test:assertTrue(msg2.redelivered == true, "Redelivered flag should be set");
         // Acknowledge to clean up

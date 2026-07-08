@@ -25,41 +25,54 @@ import com.solacesystems.jcsmp.SDTMap;
 import com.solacesystems.jcsmp.TextMessage;
 import com.solacesystems.jcsmp.XMLMessage;
 import io.ballerina.lib.solace.ModuleUtils;
+import io.ballerina.lib.solace.common.BallerinaSolaceDatabindingException;
 import io.ballerina.lib.solace.common.DestinationConverter;
 import io.ballerina.lib.solace.common.PropertyConverter;
 import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
+import io.ballerina.runtime.api.types.ArrayType;
+import io.ballerina.runtime.api.types.IntersectionType;
 import io.ballerina.runtime.api.types.MapType;
 import io.ballerina.runtime.api.types.PredefinedTypes;
 import io.ballerina.runtime.api.types.RecordType;
+import io.ballerina.runtime.api.types.Type;
+import io.ballerina.runtime.api.types.TypeTags;
 import io.ballerina.runtime.api.types.UnionType;
+import io.ballerina.runtime.api.utils.JsonUtils;
 import io.ballerina.runtime.api.utils.StringUtils;
+import io.ballerina.runtime.api.utils.TypeUtils;
+import io.ballerina.runtime.api.utils.ValueUtils;
+import io.ballerina.runtime.api.utils.XmlUtils;
+import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
+import io.ballerina.runtime.api.values.BTypedesc;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-import static io.xlibb.solace.common.Constants.NATIVE_MESSAGE;
-import static io.xlibb.solace.common.MessageFieldConstants.APPLICATION_MESSAGE_ID_KEY;
-import static io.xlibb.solace.common.MessageFieldConstants.APPLICATION_MESSAGE_TYPE_KEY;
-import static io.xlibb.solace.common.MessageFieldConstants.CORRELATION_ID_KEY;
-import static io.xlibb.solace.common.MessageFieldConstants.DELIVERY_COUNT_KEY;
-import static io.xlibb.solace.common.MessageFieldConstants.DELIVERY_MODE_KEY;
-import static io.xlibb.solace.common.MessageFieldConstants.PAYLOAD_KEY;
-import static io.xlibb.solace.common.MessageFieldConstants.PRIORITY_KEY;
-import static io.xlibb.solace.common.MessageFieldConstants.PROPERTIES_KEY;
-import static io.xlibb.solace.common.MessageFieldConstants.RECEIVE_TIMESTAMP_KEY;
-import static io.xlibb.solace.common.MessageFieldConstants.REDELIVERED_KEY;
-import static io.xlibb.solace.common.MessageFieldConstants.REPLY_TO_KEY;
-import static io.xlibb.solace.common.MessageFieldConstants.SENDER_ID_KEY;
-import static io.xlibb.solace.common.MessageFieldConstants.SENDER_TIMESTAMP_KEY;
-import static io.xlibb.solace.common.MessageFieldConstants.SEQUENCE_NUMBER_KEY;
-import static io.xlibb.solace.common.MessageFieldConstants.TIME_TO_LIVE_KEY;
-import static io.xlibb.solace.common.MessageFieldConstants.USER_DATA_KEY;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_MESSAGE;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.APPLICATION_MESSAGE_ID_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.APPLICATION_MESSAGE_TYPE_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.CORRELATION_ID_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.DELIVERY_COUNT_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.DELIVERY_MODE_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.PAYLOAD_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.PRIORITY_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.PROPERTIES_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.RECEIVE_TIMESTAMP_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.REDELIVERED_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.REPLY_TO_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.SENDER_ID_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.SENDER_TIMESTAMP_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.SEQUENCE_NUMBER_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.SOLACE_ISXML_PROP;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.TIME_TO_LIVE_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.USER_DATA_KEY;
 
 /**
- * Converter for translating JCSMP XMLMessage to Ballerina Message record.
+ * Converter for translating JCSMP XMLMessage to Ballerina Message record, with payload data binding into a
+ * caller-declared target type.
  */
 public class MessageConverter {
 
@@ -73,20 +86,20 @@ public class MessageConverter {
             "Property", MSG_PROPERTY_TYPE, ModuleUtils.getModule());
 
     /**
-     * Converts a JCSMP XMLMessage to a Ballerina Message record.
+     * Converts a JCSMP XMLMessage to a Ballerina Message record, data-binding the payload into the type
+     * described by {@code expectedType} (the base {@code Message} type, or a narrowed
+     * {@code record {|*Message; T payload;|}}).
      *
-     * @param xmlMessage the JCSMP message to convert
+     * @param xmlMessage   the JCSMP message to convert
+     * @param expectedType the caller-declared expected message type
      * @return the Ballerina Message record
      * @throws Exception if conversion fails
      */
-    public static BMap<BString, Object> toBallerinaMessage(XMLMessage xmlMessage) throws Exception {
+    public static BMap<BString, Object> toBallerinaMessage(XMLMessage xmlMessage, BTypedesc expectedType)
+            throws Exception {
         // Create the Message record
-        RecordType messageType = getMessageRecordType();
+        RecordType messageType = resolveRecordType(expectedType);
         BMap<BString, Object> message = ValueCreator.createRecordValue(messageType);
-
-        // Extract and set payload
-        byte[] payload = extractPayload(xmlMessage);
-        message.put(PAYLOAD_KEY, ValueCreator.createArrayValue(payload));
 
         // Set delivery mode
         message.put(DELIVERY_MODE_KEY, StringUtils.fromString(xmlMessage.getDeliveryMode().toString()));
@@ -183,6 +196,12 @@ public class MessageConverter {
             }
         }
 
+        // Data-bind and set the payload
+        Type payloadType = TypeUtils.getReferredType(messageType.getFields().get(PAYLOAD_KEY.getValue())
+                .getFieldType());
+        Object payload = getPayloadWithIntendedType(xmlMessage, payloadType);
+        message.put(PAYLOAD_KEY, payload);
+
         // Store native message for acknowledgement operations
         message.addNativeData(NATIVE_MESSAGE, xmlMessage);
 
@@ -203,36 +222,119 @@ public class MessageConverter {
         return null;
     }
 
-    private static byte[] extractPayload(XMLMessage xmlMessage) throws Exception {
-        if (xmlMessage instanceof TextMessage textMessage) {
-            String text = textMessage.getText();
-            if (text != null) {
-                return text.getBytes(StandardCharsets.UTF_8);
+    private static Object getPayloadWithIntendedType(XMLMessage xmlMessage, Type payloadType) throws Exception {
+        int typeTag = payloadType.getTag();
+        try {
+            if (xmlMessage instanceof TextMessage textMessage) {
+                return getPayloadFromTextMessage(textMessage, payloadType, typeTag);
             }
-        } else if (xmlMessage instanceof BytesMessage bytesMessage) {
-            return bytesMessage.getData();
-        } else if (xmlMessage instanceof MapMessage mapMessage) {
-            SDTMap map = mapMessage.getMap();
-            if (map != null && !map.isEmpty()) {
-                String jsonString = PropertyConverter.sdtMapToJson(map);
-                return jsonString.getBytes(StandardCharsets.UTF_8);
+            if (xmlMessage instanceof MapMessage mapMessage) {
+                return getPayloadFromMapMessage(mapMessage, payloadType, typeTag);
             }
-        } else {
+            if (xmlMessage instanceof BytesMessage bytesMessage) {
+                return getPayloadFromBytesMessage(bytesMessage.getData(), payloadType, typeTag);
+            }
+            // Other JCSMP message subtypes (e.g. a raw content message) carry no better native structure
+            // than a byte attachment - treat identically to BytesMessage.
             ByteBuffer buf = xmlMessage.getAttachmentByteBuffer();
             byte[] content = new byte[buf.remaining()];
             buf.get(content);
-            return content;
+            return getPayloadFromBytesMessage(content, payloadType, typeTag);
+        } catch (BError bError) {
+            throw new BallerinaSolaceDatabindingException("Data binding failed: " + bError.getDetails());
         }
-        return new byte[0];
+    }
+
+    private static Object getPayloadFromTextMessage(TextMessage message, Type payloadType, int typeTag)
+            throws Exception {
+        String text = message.getText();
+        String textValue = text != null ? text : "";
+        if (typeTag == TypeTags.ANYDATA_TAG) {
+            if (isXmlMarked(message)) {
+                return XmlUtils.parse(textValue);
+            }
+            return StringUtils.fromString(text);
+        }
+        if (typeTag == TypeTags.STRING_TAG) {
+            return StringUtils.fromString(text);
+        }
+        if (typeTag == TypeTags.XML_TAG) {
+            if (!isXmlMarked(message)) {
+                throw new BallerinaSolaceDatabindingException(
+                        "Data binding failed: Cannot bind TextMessage to 'xml' type. Message is missing XML " +
+                                "marker property");
+            }
+            return XmlUtils.parse(textValue);
+        }
+        throw new BallerinaSolaceDatabindingException(
+                String.format("Data binding failed: Cannot bind TextMessage to type '%s'. " +
+                        "Expected 'string' or 'xml'", payloadType));
+    }
+
+    private static boolean isXmlMarked(XMLMessage message) throws Exception {
+        SDTMap properties = message.getProperties();
+        if (properties == null) {
+            return false;
+        }
+        Object marker = properties.get(SOLACE_ISXML_PROP);
+        return marker instanceof Boolean bool && bool;
+    }
+
+    private static Object getPayloadFromMapMessage(MapMessage message, Type payloadType, int typeTag)
+            throws Exception {
+        SDTMap sdtMap = message.getMap();
+        if (typeTag == TypeTags.MAP_TAG) {
+            MapType targetMapType = (MapType) payloadType;
+            return sdtMap != null ? PropertyConverter.sdtMapToBallerina(sdtMap, targetMapType)
+                    : ValueCreator.createMapValue(targetMapType);
+        }
+        if (typeTag == TypeTags.ANYDATA_TAG) {
+            return sdtMap != null ? PropertyConverter.sdtMapToBallerina(sdtMap, null) : ValueCreator.createMapValue();
+        }
+        if (typeTag == TypeTags.RECORD_TYPE_TAG) {
+            BMap<BString, Object> map = sdtMap != null ? PropertyConverter.sdtMapToBallerina(sdtMap, null)
+                    : ValueCreator.createMapValue();
+            return ValueUtils.convert(map, payloadType);
+        }
+        throw new BallerinaSolaceDatabindingException(
+                String.format("Data binding failed: Cannot bind MapMessage to type '%s'. " +
+                        "Expected 'map<solace:Value>'", payloadType));
+    }
+
+    private static Object getPayloadFromBytesMessage(byte[] bytes, Type payloadType, int typeTag) {
+        if (typeTag == TypeTags.STRING_TAG || typeTag == TypeTags.XML_TAG) {
+            throw new BallerinaSolaceDatabindingException(
+                    String.format("Data binding failed: Cannot bind BytesMessage to type '%s'. " +
+                            "Use TextMessage for string/xml payloads", payloadType));
+        }
+        if (typeTag == TypeTags.MAP_TAG) {
+            throw new BallerinaSolaceDatabindingException(
+                    String.format("Data binding failed: Cannot bind BytesMessage to type '%s'. " +
+                            "Use MapMessage for map payloads", payloadType));
+        }
+        if (typeTag == TypeTags.ANYDATA_TAG) {
+            return ValueCreator.createArrayValue(bytes);
+        }
+        if (typeTag == TypeTags.ARRAY_TAG) {
+            Type elementType = TypeUtils.getReferredType(((ArrayType) payloadType).getElementType());
+            if (elementType.getTag() == TypeTags.BYTE_TAG) {
+                return ValueCreator.createArrayValue(bytes);
+            }
+        }
+        String jsonString = new String(bytes, StandardCharsets.UTF_8);
+        return ValueUtils.convert(JsonUtils.parse(jsonString), payloadType);
     }
 
     /**
-     * Gets the Message record type from the Ballerina module.
+     * Resolves the {@code Message} (or narrowed subtype) {@link RecordType} described by a {@link BTypedesc},
+     * unwrapping named type references and {@code readonly} intersection types.
      */
-    private static RecordType getMessageRecordType() {
-        return (RecordType) ValueCreator.createRecordValue(
-                ModuleUtils.getModule(),
-                "Message"
-        ).getType();
+    private static RecordType resolveRecordType(BTypedesc bTypedesc) {
+        Type referredType = TypeUtils.getReferredType(bTypedesc.getDescribingType());
+        if (referredType.getTag() == TypeTags.INTERSECTION_TAG) {
+            Type constituent = ((IntersectionType) referredType).getConstituentTypes().get(0);
+            return (RecordType) TypeUtils.getReferredType(constituent);
+        }
+        return (RecordType) referredType;
     }
 }

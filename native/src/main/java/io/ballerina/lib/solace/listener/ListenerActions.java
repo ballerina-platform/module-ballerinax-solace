@@ -40,15 +40,9 @@ import io.ballerina.lib.solace.config.TopicConsumerConfig;
 import io.ballerina.lib.solace.consumer.AcknowledgementMode;
 import io.ballerina.lib.solace.consumer.ConsumerUtils;
 import io.ballerina.runtime.api.Environment;
-import io.ballerina.runtime.api.Module;
 import io.ballerina.runtime.api.Runtime;
 import io.ballerina.runtime.api.creators.ValueCreator;
-import io.ballerina.runtime.api.types.AnnotatableType;
-import io.ballerina.runtime.api.types.MethodType;
-import io.ballerina.runtime.api.types.NetworkObjectType;
-import io.ballerina.runtime.api.types.Type;
-import io.ballerina.runtime.api.utils.StringUtils;
-import io.ballerina.runtime.api.utils.TypeUtils;
+import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
@@ -74,10 +68,6 @@ import static io.ballerina.lib.solace.consumer.ConsumerUtils.SUBSCRIPTION_TYPE_Q
  * {@link XMLMessageConsumer} (direct topic) that pushes messages into the service via {@link SolaceMessageListener}.
  */
 public class ListenerActions {
-
-    private static final String ON_MESSAGE = "onMessage";
-    private static final String ON_ERROR = "onError";
-    private static final String SERVICE_CONFIG_ANNOTATION = "ServiceConfig";
 
     /**
      * Initialize the listener: create and connect the JCSMP session (and a transacted session if requested).
@@ -132,19 +122,11 @@ public class ListenerActions {
                 return CommonUtils.createError("Listener is closed");
             }
 
-            BMap<BString, Object> serviceConfig = getServiceConfig(service);
-            if (serviceConfig == null) {
-                return CommonUtils.createError(
-                        "The @solace:ServiceConfig annotation with a queue or topic subscription is required");
-            }
+            Runtime runtime = (Runtime) listener.getNativeData(NATIVE_RUNTIME);
+            Service.validateService(runtime, service);
+            Service nativeService = new Service(service);
 
-            int onMessageParams = onMessageParameterCount(service);
-            if (onMessageParams < 0) {
-                return CommonUtils.createError("The service must declare a remote 'onMessage' method");
-            }
-            boolean hasOnError = hasRemoteMethod(service, ON_ERROR);
-            boolean hasCaller = onMessageParams >= 2;
-
+            BMap<BString, Object> serviceConfig = Service.getServiceConfigAnnotation(service);
             ConsumerSubscriptionConfig subscriptionConfig = ConsumerSubscriptionConfig.fromBMap(serviceConfig);
             boolean isTransacted = (Boolean) listener.getNativeData(NATIVE_TRANSACTED);
 
@@ -176,7 +158,6 @@ public class ListenerActions {
                     && !topicConfig.isDurable();
             boolean autoAck = subscriptionConfig.ackMode() == AcknowledgementMode.AUTO_ACK && !directTopic;
 
-            Runtime runtime = (Runtime) listener.getNativeData(NATIVE_RUNTIME);
             JCSMPSession session = (JCSMPSession) listener.getNativeData(NATIVE_SESSION);
             TransactedSession txSession = (TransactedSession) listener.getNativeData(NATIVE_TX_SESSION);
 
@@ -186,7 +167,7 @@ public class ListenerActions {
             caller.addNativeData(NATIVE_CLOSED, false);
 
             SolaceMessageListener messageListener =
-                    new SolaceMessageListener(runtime, service, caller, hasCaller, hasOnError, autoAck);
+                    new SolaceMessageListener(runtime, nativeService, caller, autoAck);
 
             AttachedService attached = createReceiver(session, txSession, isTransacted, subscriptionConfig,
                     messageListener);
@@ -199,6 +180,8 @@ public class ListenerActions {
                 attached.start();
             }
             return null;
+        } catch (BError e) {
+            return e;
         } catch (Exception e) {
             return CommonUtils.createError("Failed to attach service", e);
         }
@@ -344,54 +327,6 @@ public class ListenerActions {
             }
         }
         return false;
-    }
-
-    /**
-     * Reads the {@code @solace:ServiceConfig} annotation value from the service type, or null if absent.
-     */
-    @SuppressWarnings("unchecked")
-    private static BMap<BString, Object> getServiceConfig(BObject service) {
-        Type serviceType = TypeUtils.getImpliedType(TypeUtils.getType(service));
-        if (!(serviceType instanceof AnnotatableType annotatableType)) {
-            return null;
-        }
-        Module module = ModuleUtils.getModule();
-        BString annotationKey = StringUtils.fromString(module.getOrg() + "/" + module.getName() + ":"
-                + module.getMajorVersion() + ":" + SERVICE_CONFIG_ANNOTATION);
-        Object annotation = annotatableType.getAnnotation(annotationKey);
-        if (annotation instanceof BMap) {
-            return (BMap<BString, Object>) annotation;
-        }
-        return null;
-    }
-
-    /**
-     * Returns the parameter count of the remote {@code onMessage} method, or -1 if the service has no such method.
-     */
-    private static int onMessageParameterCount(BObject service) {
-        for (MethodType method : remoteMethods(service)) {
-            if (ON_MESSAGE.equals(method.getName())) {
-                return method.getParameters().length;
-            }
-        }
-        return -1;
-    }
-
-    private static boolean hasRemoteMethod(BObject service, String methodName) {
-        for (MethodType method : remoteMethods(service)) {
-            if (methodName.equals(method.getName())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static MethodType[] remoteMethods(BObject service) {
-        Type serviceType = TypeUtils.getImpliedType(TypeUtils.getType(service));
-        if (serviceType instanceof NetworkObjectType networkObjectType) {
-            return networkObjectType.getRemoteMethods();
-        }
-        return new MethodType[0];
     }
 
     @SuppressWarnings("unchecked")

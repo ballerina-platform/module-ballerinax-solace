@@ -138,11 +138,11 @@ isolated function testConsumerTransactedRollback() returns error? {
         subscriptionConfig: {queueName: CONSUMER_TX_ROLLBACK_QUEUE}
     });
 
-    Message? redeliveredMsg = check consumer2->receive(DEFAULT_RECEIVE_TIMEOUT);
+    BytesPayloadMessage? redeliveredMsg = check consumer2->receive(DEFAULT_RECEIVE_TIMEOUT);
 
-    test:assertTrue(redeliveredMsg is Message, "Message should be redelivered after rollback");
+    test:assertTrue(redeliveredMsg is BytesPayloadMessage, "Message should be redelivered after rollback");
 
-    if redeliveredMsg is Message {
+    if redeliveredMsg is BytesPayloadMessage {
         test:assertEquals(redeliveredMsg.payload, "Transacted rollback message".toBytes(), "Redelivered message should match");
         test:assertTrue(redeliveredMsg.redelivered == true, "Redelivered flag should be set");
     }
@@ -276,11 +276,11 @@ isolated function testConsumerTransactedMixedOperations() returns error? {
         subscriptionConfig: {queueName: CONSUMER_TX_MIXED_QUEUE}
     });
 
-    Message? redeliveredMsg = check consumer2->receive(DEFAULT_RECEIVE_TIMEOUT);
+    BytesPayloadMessage? redeliveredMsg = check consumer2->receive(DEFAULT_RECEIVE_TIMEOUT);
 
-    test:assertTrue(redeliveredMsg is Message, "Second message should be redelivered after rollback");
+    test:assertTrue(redeliveredMsg is BytesPayloadMessage, "Second message should be redelivered after rollback");
 
-    if redeliveredMsg is Message {
+    if redeliveredMsg is BytesPayloadMessage {
         test:assertEquals(redeliveredMsg.payload, "Mixed TX Message 2".toBytes(), "Should be the second message");
     }
 

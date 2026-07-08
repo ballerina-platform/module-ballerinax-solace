@@ -19,10 +19,13 @@
 # An attached service must declare a remote `onMessage` method and may optionally declare an
 # `onError` method. The accepted signatures are:
 # ```ballerina
+# remote function onMessage(record {|*solace:Message; T payload;|} message) returns solace:Error?;
+# remote function onMessage(record {|*solace:Message; T payload;|} message, solace:Caller caller) returns solace:Error?;
 # remote function onMessage(solace:Message message) returns solace:Error?;
-# remote function onMessage(solace:Message message, solace:Caller caller) returns solace:Error?;
 # remote function onError(solace:Error err) returns solace:Error?;
 # ```
+# Declaring a narrowed `payload` type (`T`) causes the message payload to be data-bound into that
+# type; declaring the base `solace:Message` type yields the raw payload as `anydata`.
 # The subscription (queue or topic) and flow options are supplied via the
 # `@solace:ServiceConfig` annotation on the service.
 public type Service distinct service object {
@@ -351,8 +354,10 @@ public type ServiceConfiguration QueueServiceConfig|TopicServiceConfig;
 // For the fields that are set by the broker mention that in the comment
 # Message type for publishing/consuming
 public type Message record {|
-    # The binary payload of the message
-    byte[] payload;
+    # The payload of the message. When consuming, declare a narrowed subtype
+    # (e.g. `record {|*Message; string payload;|}`) to have the payload data-bound
+    # into the declared type
+    anydata payload;
     # Delivery mode for the message (DIRECT, PERSISTENT, or NON_PERSISTENT)
     // Double check if we can set this in the message level. If PERSISTENT and NON_PERSISTENT are same we can remove one
     // Ans: Yes, it can ONLY be set at message level. We can remove NON_PERSISTENT as its same as PERSISTENT
@@ -390,9 +395,34 @@ public type Message record {|
     # Number of times this message has been delivered
     int deliveryCount?;
     # Properties map for custom key-value pairs
-    // String may not be enough here. Use a map<string|boolean> or map<anydata>
-    // Ans: It expects a SDTMap so for now we can keep it as map<anydata>
     map<anydata> properties?;
     # Application-specific user data attachment (max 36 bytes)
+    byte[] userData?;
+|};
+
+# Represents the allowed value types for entries in a Solace MapMessage payload.
+public type Value boolean|int|float|string|byte[]|map<Value>;
+
+# A property key used internally to mark that a message's text payload is XML.
+public const SOLACE_ISXML_PROP = "solace_isXML";
+
+// Internal representation of a Solace message crossing into native code for `send`. The payload is
+// narrowed to the concrete wire shapes native code understands; everything else mirrors `Message`.
+type InternalMessage record {|
+    string|map<Value>|byte[] payload;
+    DeliveryMode deliveryMode = DIRECT;
+    byte priority?;
+    int timeToLive?;
+    string applicationMessageId?;
+    string applicationMessageType?;
+    string correlationId?;
+    Destination replyTo?;
+    string senderId?;
+    int senderTimestamp?;
+    int receiveTimestamp?;
+    int sequenceNumber?;
+    boolean redelivered?;
+    int deliveryCount?;
+    map<anydata> properties?;
     byte[] userData?;
 |};

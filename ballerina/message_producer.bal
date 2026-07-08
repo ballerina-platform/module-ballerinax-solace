@@ -58,8 +58,32 @@ public isolated client class MessageProducer {
     # + destination - The destination to send to (topic or queue)
     # + message - The message to send (payload and optional properties)
     # + return - Error if send fails
-    isolated remote function send(Destination destination, Message message) returns Error? = @java:Method {
-        'class: "io.xlibb.solace.producer.ProducerActions",
+    isolated remote function send(Destination destination, Message message) returns Error? {
+        string|map<Value>|byte[] payload = convertPayload(message.payload);
+        map<anydata> properties = prepareProperties(message);
+        InternalMessage internalMessage = {
+            payload,
+            deliveryMode: message.deliveryMode,
+            priority: message.priority,
+            timeToLive: message.timeToLive,
+            applicationMessageId: message.applicationMessageId,
+            applicationMessageType: message.applicationMessageType,
+            correlationId: message.correlationId,
+            replyTo: message.replyTo,
+            senderId: message.senderId,
+            senderTimestamp: message.senderTimestamp,
+            receiveTimestamp: message.receiveTimestamp,
+            sequenceNumber: message.sequenceNumber,
+            redelivered: message.redelivered,
+            deliveryCount: message.deliveryCount,
+            properties,
+            userData: message.userData
+        };
+        return self.externSend(destination, internalMessage);
+    }
+
+    isolated function externSend(Destination destination, InternalMessage message) returns Error? = @java:Method {
+        'class: "io.ballerina.lib.solace.producer.ProducerActions",
         name: "send"
     } external;
 
@@ -83,14 +107,6 @@ public isolated client class MessageProducer {
         name: "rollback"
     } external;
 
-    # Check if the producer is closed.
-    #
-    # + return - True if the producer is closed, false otherwise
-    isolated remote function isClosed() returns boolean = @java:Method {
-        'class: "io.xlibb.solace.producer.ProducerActions",
-        name: "isClosed"
-    } external;
-
     # Close the producer and release all resources.
     #
     # After calling this method, the producer cannot be used.
@@ -100,5 +116,33 @@ public isolated client class MessageProducer {
         'class: "io.xlibb.solace.producer.ProducerActions",
         name: "close"
     } external;
+}
+
+// Narrows an arbitrary `anydata` payload down to the concrete wire shapes native code understands.
+isolated function convertPayload(anydata payload) returns string|map<Value>|byte[] {
+    if payload is string {
+        return payload;
+    } else if payload is map<Value> {
+        return payload;
+    } else if payload is byte[] {
+        return payload;
+    } else if payload is xml {
+        return payload.toString();
+    } else if payload is int|boolean|float|decimal {
+        return payload.toString().toBytes();
+    } else {
+        return payload.toJsonString().toBytes();
+    }
+}
+
+isolated function prepareProperties(Message message) returns map<anydata> {
+    map<anydata> properties = {};
+    if message.properties is map<anydata> {
+        properties = (<map<anydata>>message.properties).clone();
+    }
+    if message.payload is xml {
+        properties[SOLACE_ISXML_PROP] = true;
+    }
+    return properties;
 }
 

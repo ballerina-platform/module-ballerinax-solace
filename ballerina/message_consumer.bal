@@ -69,8 +69,10 @@ public isolated function init(string url, *ConsumerConfiguration config) returns
     # arrives within the timeout period.
     #
     # + timeout - Maximum time in seconds to wait for a message. A nil or zero timeout never expires
+    # + T - Optional type description of the expected message type; declare a narrowed
+    # `record {|*Message; T payload;|}` to have the payload data-bound into `T`
     # + return - The received message, or nil if timeout occurs; Error if receive fails
-    isolated remote function receive(decimal? timeout = ()) returns Message|Error? = @java:Method {
+    isolated remote function receive(decimal? timeout = (), typedesc<Message> T = <>) returns T|Error? = @java:Method {
         'class: "io.ballerina.lib.solace.consumer.ConsumerActions",
         name: "receive"
     } external;
@@ -80,9 +82,11 @@ public isolated function init(string url, *ConsumerConfiguration config) returns
     # Returns immediately with a message if available, or nil if no message is available.
     # This is a non-blocking operation.
     #
+    # + T - Optional type description of the expected message type; declare a narrowed
+    # `record {|*Message; T payload;|}` to have the payload data-bound into `T`
     # + return - The received message, or nil if no message available; Error if receive fails
-    isolated remote function receiveNoWait() returns Message|Error? = @java:Method {
-        'class: "io.xlibb.solace.consumer.ConsumerActions",
+    isolated remote function receiveNoWait(typedesc<Message> T = <>) returns T|Error? = @java:Method {
+        'class: "io.ballerina.lib.solace.consumer.ConsumerActions",
         name: "receiveNoWait"
     } external;
 

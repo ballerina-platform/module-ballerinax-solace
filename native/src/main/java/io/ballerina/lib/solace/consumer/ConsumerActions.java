@@ -26,6 +26,7 @@ import com.solacesystems.jcsmp.JCSMPSession;
 import com.solacesystems.jcsmp.XMLMessage;
 import com.solacesystems.jcsmp.XMLMessageConsumer;
 import com.solacesystems.jcsmp.transaction.TransactedSession;
+import io.ballerina.lib.solace.common.BallerinaSolaceDatabindingException;
 import io.ballerina.lib.solace.common.CommonUtils;
 import io.ballerina.lib.solace.config.ConfigurationUtils;
 import io.ballerina.lib.solace.config.ConsumerConfiguration;
@@ -41,8 +42,10 @@ import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
+import io.ballerina.runtime.api.values.BTypedesc;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 
 import static io.xlibb.solace.common.Constants.NATIVE_CLOSED;
 import static io.xlibb.solace.common.Constants.NATIVE_CONSUMER;
@@ -181,12 +184,13 @@ public class ConsumerActions {
     /**
      * Receive a message with timeout.
      *
-     * @param env      the Ballerina environment (injected for tracing)
-     * @param consumer the Ballerina consumer object
-     * @param timeout  the timeout in seconds, or {@code null} to never expire
+     * @param env       the Ballerina environment (injected for tracing)
+     * @param consumer  the Ballerina consumer object
+     * @param timeout   the timeout in seconds, or {@code null} to never expire
+     * @param bTypedesc the caller-declared expected message type
      * @return the received message, null if timeout, or BError on failure
      */
-    public static Object receive(Environment env, BObject consumer, Object timeout) {
+    public static Object receive(Environment env, BObject consumer, Object timeout, BTypedesc bTypedesc) {
         SolaceTracingUtil.traceResourceInvocation(env, consumer);
         Boolean closed = (Boolean) consumer.getNativeData(NATIVE_CLOSED);
         if (closed != null && closed) {
@@ -217,7 +221,9 @@ public class ConsumerActions {
                     return null; // Timeout - no message available
                 }
                 try {
-                    return MessageConverter.toBallerinaMessage(message);
+                    return MessageConverter.toBallerinaMessage(message, bTypedesc);
+                } catch (BallerinaSolaceDatabindingException e) {
+                    return CommonUtils.createError(e.getMessage());
                 } catch (Exception e) {
                     return CommonUtils.createError("Failed to receive message", e);
                 }
@@ -241,11 +247,12 @@ public class ConsumerActions {
     /**
      * Receive a message without waiting.
      *
-     * @param env      the Ballerina environment (injected for tracing)
-     * @param consumer the Ballerina consumer object
+     * @param env       the Ballerina environment (injected for tracing)
+     * @param consumer  the Ballerina consumer object
+     * @param bTypedesc the caller-declared expected message type
      * @return the received message, null if none available, or BError on failure
      */
-    public static Object receiveNoWait(Environment env, BObject consumer) {
+    public static Object receiveNoWait(Environment env, BObject consumer, BTypedesc bTypedesc) {
         SolaceTracingUtil.traceResourceInvocation(env, consumer);
         Boolean closed = (Boolean) consumer.getNativeData(NATIVE_CLOSED);
         if (closed != null && closed) {
@@ -273,7 +280,9 @@ public class ConsumerActions {
                     return null;
                 }
                 try {
-                    return MessageConverter.toBallerinaMessage(message);
+                    return MessageConverter.toBallerinaMessage(message, bTypedesc);
+                } catch (BallerinaSolaceDatabindingException e) {
+                    return CommonUtils.createError(e.getMessage());
                 } catch (Exception e) {
                     return CommonUtils.createError("Failed to receive message", e);
                 }
@@ -509,6 +518,10 @@ public class ConsumerActions {
         if (payload instanceof BArray arr) {
             return arr.size();
         }
+        if (payload instanceof BString str) {
+            return str.getValue().getBytes(StandardCharsets.UTF_8).length;
+        }
+        // Best-effort only: exact byte-accounting for other payload shapes (record/map/etc.) is not attempted.
         return 0;
     }
 }

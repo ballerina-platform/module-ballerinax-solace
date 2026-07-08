@@ -173,6 +173,11 @@ public class PropertyConverter {
             case Double v -> sdtMap.putDouble(key, v);
             case Float v -> sdtMap.putFloat(key, v);
             case BArray bArray -> sdtMap.putBytes(key, bArray.getBytes());
+            case BMap<?, ?> nestedMap -> {
+                @SuppressWarnings("unchecked")
+                SDTMap nestedSdtMap = ballerinaToSDTMap((BMap<BString, Object>) nestedMap);
+                sdtMap.putMap(key, nestedSdtMap != null ? nestedSdtMap : JCSMPFactory.onlyInstance().createMap());
+            }
             default -> sdtMap.putString(key, value.toString());
         }
     }

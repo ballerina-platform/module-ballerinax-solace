@@ -30,13 +30,7 @@ isolated function testProducerInitWithQueue() returns error? {
         }
     });
 
-    boolean isClosed = producer->isClosed();
-    test:assertFalse(isClosed, "Producer should not be closed after init");
-
     check producer->close();
-
-    boolean isClosedAfter = producer->isClosed();
-    test:assertTrue(isClosedAfter, "Producer should be closed after close");
 }
 
 @test:Config {groups: ["producer", "init"]}
@@ -49,9 +43,6 @@ isolated function testProducerInitWithCompression() returns error? {
             password: BROKER_PASSWORD
         }
     });
-
-    boolean isClosed = producer->isClosed();
-    test:assertFalse(isClosed, "Producer with compression should not be closed after init");
 
     check producer->close();
 }
@@ -67,9 +58,6 @@ isolated function testProducerInitWithClientName() returns error? {
             password: BROKER_PASSWORD
         }
     });
-
-    boolean isClosed = producer->isClosed();
-    test:assertFalse(isClosed, "Producer with custom client name should not be closed after init");
 
     check producer->close();
 }
@@ -274,9 +262,6 @@ isolated function testProducerTransactedInit() returns error? {
             password: BROKER_PASSWORD
         }
     });
-
-    boolean isClosed = producer->isClosed();
-    test:assertFalse(isClosed, "Transacted producer should not be closed after init");
 
     check producer->close();
 }
