@@ -2,13 +2,27 @@
 
 [Solace PubSub+](https://docs.solace.com/) is an advanced event-broker platform that enables event-driven communication across distributed applications using multiple messaging patterns such as publish/subscribe, request/reply, and queue-based messaging. It supports standard messaging protocols, including JMS, MQTT, AMQP, and REST, enabling seamless integration across diverse systems and environments.
 
-The `xlibb/solace` package provides APIs to interact with Solace PubSub+ brokers through the JCSMP API. It allows developers to programmatically produce and consume messages, manage topics and queues, and implement robust, event-driven solutions that leverage Solace’s high-performance messaging capabilities within Ballerina applications.
+The `ballerinax/solace` package provides APIs to interact with Solace PubSub+ brokers through the JCSMP API. It allows developers to programmatically produce and consume messages, manage topics and queues, and implement robust, event-driven solutions that leverage Solace’s high-performance messaging capabilities within Ballerina applications.
+
+## Setup guide
+
+[//]: # (TODO: Add detailed steps to obtain credentials and configure the module.)
+
+## Quickstart
+
+[//]: # (TODO: Add a quickstart guide to demonstrate a basic functionality of the module, including sample code snippets.)
 
 ## Examples
 
-The [examples](examples) directory contains complete, runnable samples:
+The `ballerinax/solace` package provides practical examples illustrating its usage in various real-world scenarios. Explore these [examples](https://github.com/ballerina-platform/module-ballerinax-solace/tree/main/examples) to understand how to produce, consume, and reliably process messages with a Solace event broker.
 
-- [Order listener](examples/order-listener) — asynchronous (push-based) message consumption from a queue using the `solace:Listener`, with explicit acknowledgement through the `solace:Caller`.
+1. [Order Fulfillment](examples/order-fulfillment/Order%20Fulfillment.md) - Send orders to a queue and process them with `CLIENT_ACK` mode, so a worker that crashes before acknowledging a message picks it back up on restart.
+
+2. [Live Price Alerts](examples/live-price-alerts/Live%20Price%20Alerts.md) - Publish stock price updates to hierarchical topics and raise alerts only for significant moves, using a topic wildcard and direct (at-most-once) delivery.
+
+3. [Transactional Inventory Sync](examples/transactional-inventory-sync/Transactional%20Inventory%20Sync.md) - Apply inventory deltas from a queue within a transacted session, rolling back and safely discarding a bad update instead of corrupting inventory state.
+
+4. [Payment Processing](examples/payment-processing/Payment%20Processing.md) - Reject an invalid payment outright while retrying one that hits a simulated transient failure, using negative acknowledgement (`nack`) with and without requeueing.
 
 ## Build from the source
 
