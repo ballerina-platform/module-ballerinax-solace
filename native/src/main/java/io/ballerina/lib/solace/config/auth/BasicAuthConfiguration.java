@@ -28,14 +28,14 @@ import io.ballerina.runtime.api.values.BString;
  * @param username username for authentication
  * @param password password for authentication, or null
  */
-public record BasicAuthConfig(String username, String password) implements AuthConfig {
+public record BasicAuthConfiguration(String username, String password) implements AuthConfiguration {
     private static final BString USERNAME_KEY = StringUtils.fromString("username");
     private static final BString PASSWORD_KEY = StringUtils.fromString("password");
 
     /**
-     * Creates a BasicAuthConfig from a Ballerina map record.
+     * Creates a BasicAuthConfiguration from a Ballerina map record.
      */
-    public BasicAuthConfig(BMap<BString, Object> config) {
+    public BasicAuthConfiguration(BMap<BString, Object> config) {
         this(
             config.getStringValue(USERNAME_KEY).getValue(),
             config.containsKey(PASSWORD_KEY) ? config.getStringValue(PASSWORD_KEY).getValue() : null

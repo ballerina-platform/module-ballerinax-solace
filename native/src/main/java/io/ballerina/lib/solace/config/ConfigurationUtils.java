@@ -20,14 +20,14 @@ package io.xlibb.solace.config;
 
 import com.solacesystems.jcsmp.JCSMPChannelProperties;
 import com.solacesystems.jcsmp.JCSMPProperties;
-import io.xlibb.solace.config.auth.AuthConfig;
-import io.xlibb.solace.config.auth.BasicAuthConfig;
-import io.xlibb.solace.config.auth.KerberosConfig;
-import io.xlibb.solace.config.auth.OAuth2Config;
-import io.xlibb.solace.config.retry.RetryConfig;
-import io.xlibb.solace.config.ssl.KeyStoreConfig;
-import io.xlibb.solace.config.ssl.SecureSocketConfig;
-import io.xlibb.solace.config.ssl.TrustStoreConfig;
+import io.ballerina.lib.solace.config.auth.AuthConfiguration;
+import io.ballerina.lib.solace.config.auth.BasicAuthConfiguration;
+import io.ballerina.lib.solace.config.auth.KerberosConfiguration;
+import io.ballerina.lib.solace.config.auth.OAuth2Configuration;
+import io.ballerina.lib.solace.config.retry.RetryConfig;
+import io.ballerina.lib.solace.config.ssl.KeyStoreConfig;
+import io.ballerina.lib.solace.config.ssl.SecureSocketConfig;
+import io.ballerina.lib.solace.config.ssl.TrustStoreConfig;
 
 import java.util.Arrays;
 
@@ -116,29 +116,29 @@ public final class ConfigurationUtils {
     }
 
     /**
-     * Sets authentication based on the AuthConfig type using sealed interface pattern.
+     * Sets authentication based on the AuthConfiguration type using sealed interface pattern.
      */
-    private static void setAuthentication(JCSMPProperties props, AuthConfig auth) throws Exception {
+    private static void setAuthentication(JCSMPProperties props, AuthConfiguration auth) throws Exception {
         if (auth == null) {
             // Default to basic authentication with empty credentials
             props.setProperty(JCSMPProperties.AUTHENTICATION_SCHEME, JCSMPProperties.AUTHENTICATION_SCHEME_BASIC);
             return;
         }
 
-        if (auth instanceof BasicAuthConfig(String username, String password)) {
+        if (auth instanceof BasicAuthConfiguration(String username, String password)) {
             props.setProperty(JCSMPProperties.AUTHENTICATION_SCHEME, JCSMPProperties.AUTHENTICATION_SCHEME_BASIC);
             props.setProperty(JCSMPProperties.USERNAME, username);
             if (password != null) {
                 props.setProperty(JCSMPProperties.PASSWORD, password);
             }
-        } else if (auth instanceof KerberosConfig kerberosAuth) {
+        } else if (auth instanceof KerberosConfiguration kerberosAuth) {
             props.setProperty(JCSMPProperties.AUTHENTICATION_SCHEME, JCSMPProperties.AUTHENTICATION_SCHEME_GSS_KRB);
             props.setProperty(JCSMPProperties.KRB_SERVICE_NAME, kerberosAuth.serviceName());
             props.setProperty(JCSMPProperties.JAAS_LOGIN_CONTEXT, kerberosAuth.jaasLoginContext());
             props.setProperty(JCSMPProperties.KRB_MUTUAL_AUTHENTICATION, kerberosAuth.mutualAuthentication());
             props.setProperty(JCSMPProperties.JAAS_CONFIG_FILE_RELOAD_ENABLED,
                     kerberosAuth.jaasConfigFileReloadEnabled());
-        } else if (auth instanceof OAuth2Config(String issuer, String accessToken, String oidcToken)) {
+        } else if (auth instanceof OAuth2Configuration(String issuer, String accessToken, String oidcToken)) {
             props.setProperty(JCSMPProperties.AUTHENTICATION_SCHEME, JCSMPProperties.AUTHENTICATION_SCHEME_OAUTH2);
             if (issuer != null) {
                 props.setProperty(JCSMPProperties.OAUTH2_ISSUER_IDENTIFIER, issuer);

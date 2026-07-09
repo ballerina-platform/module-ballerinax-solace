@@ -54,14 +54,14 @@ public enum AcknowledgementMode {
 }
 
 # Authentication configuration types
-public type BasicAuthConfig record {|
+public type BasicAuthConfiguration record {|
     # The username for authentication
     string username;
     # The password for authentication (optional for some auth schemes)
     string password?;
 |};
 
-public type KerberosConfig record {|
+public type KerberosConfiguration record {|
     # The Kerberos service name used during authentication
     string serviceName = "solace";
     # The JAAS login context name to use for authentication
@@ -90,7 +90,10 @@ public type OidcIdTokenAuth record {|
 
 # OAuth2 authentication configuration (mutually exclusive - use either access token or ID token)
 # When using OAuth2 authentication scheme, exactly one of OAuth2AccessTokenAuth or OidcIdTokenAuth must be provided
-public type OAuth2Config OAuth2AccessTokenAuth|OidcIdTokenAuth;
+public type OAuth2Configuration OAuth2AccessTokenAuth|OidcIdTokenAuth;
+
+# Authentication configuration (basic, Kerberos, or OAuth2)
+public type AuthConfiguration BasicAuthConfiguration|KerberosConfiguration|OAuth2Configuration;
 
 # SSL/TLS certificate validation configuration
 public type CertificateValidation record {|
@@ -210,7 +213,7 @@ public type CommonConnectionConfiguration record {|
     # The message VPN to connect to
     string messageVpn = "default";
     # The authentication configuration (basic, Kerberos, or OAuth2)
-    BasicAuthConfig|KerberosConfig|OAuth2Config auth?;
+    AuthConfiguration auth?;
     # The SSL/TLS configuration for secure connections
     SecureSocket secureSocket?;
     # A unique client name to use to register to the appliance (auto-generated if not specified)

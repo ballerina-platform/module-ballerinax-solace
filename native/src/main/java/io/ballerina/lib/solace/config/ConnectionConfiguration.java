@@ -18,10 +18,10 @@
 
 package io.xlibb.solace.config;
 
-import io.ballerina.lib.solace.config.auth.AuthConfig;
-import io.ballerina.lib.solace.config.auth.BasicAuthConfig;
-import io.ballerina.lib.solace.config.auth.KerberosConfig;
-import io.ballerina.lib.solace.config.auth.OAuth2Config;
+import io.ballerina.lib.solace.config.auth.AuthConfiguration;
+import io.ballerina.lib.solace.config.auth.BasicAuthConfiguration;
+import io.ballerina.lib.solace.config.auth.KerberosConfiguration;
+import io.ballerina.lib.solace.config.auth.OAuth2Configuration;
 import io.ballerina.lib.solace.config.retry.RetryConfig;
 import io.ballerina.lib.solace.config.ssl.SecureSocketConfig;
 import io.ballerina.runtime.api.utils.StringUtils;
@@ -63,7 +63,7 @@ public record ConnectionConfiguration(
         boolean generateSendTimestamps,
         boolean generateSequenceNumbers,
         boolean calculateMessageExpiration,
-        AuthConfig auth,
+        AuthConfiguration auth,
         RetryConfig retryConfig,
         SecureSocketConfig secureSocket) {
 
@@ -126,7 +126,7 @@ public record ConnectionConfiguration(
      * Extracts and converts authentication configuration from map.
      */
     @SuppressWarnings("unchecked")
-    private static AuthConfig getAuthConfig(BMap<BString, Object> config) {
+    private static AuthConfiguration getAuthConfig(BMap<BString, Object> config) {
         if (!config.containsKey(AUTH_KEY)) {
             return null;
         }
@@ -139,20 +139,20 @@ public record ConnectionConfiguration(
     }
 
     /**
-     * Factory method to create appropriate AuthConfig based on fields present.
+     * Factory method to create appropriate AuthConfiguration based on fields present.
      */
-    private static AuthConfig createAuthConfig(BMap<BString, Object> authMap) {
+    private static AuthConfiguration createAuthConfig(BMap<BString, Object> authMap) {
         BString usernameKey = StringUtils.fromString("username");
         BString accessTokenKey = StringUtils.fromString("accessToken");
         BString oidcTokenKey = StringUtils.fromString("oidcToken");
         BString serviceNameKey = StringUtils.fromString("serviceName");
 
         if (authMap.containsKey(usernameKey)) {
-            return new BasicAuthConfig(authMap);
+            return new BasicAuthConfiguration(authMap);
         } else if (authMap.containsKey(accessTokenKey) || authMap.containsKey(oidcTokenKey)) {
-            return new OAuth2Config(authMap);
+            return new OAuth2Configuration(authMap);
         } else if (authMap.containsKey(serviceNameKey)) {
-            return new KerberosConfig(authMap);
+            return new KerberosConfiguration(authMap);
         }
         return null;
     }
