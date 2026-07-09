@@ -29,14 +29,13 @@ isolated function testReceiveJsonPayloads() returns error? {
     };
 
     http:Response _ = check solaceRest->/QUEUE/jsonQueue.post(payload, mediaType = "application/json; charset=utf-8");
-    BytesPayloadMessage? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
-    test:assertTrue(msg is BytesPayloadMessage, "Should receive a message");
+    StringPayloadMessage? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    test:assertTrue(msg is StringPayloadMessage, "Should receive a message");
     if msg is () {
         return;
     }
 
-    string payloadStr = check string:fromBytes(msg.payload);
-    json receivedPayload = check payloadStr.fromJsonString();
+    json receivedPayload = check msg.payload.fromJsonString();
     test:assertEquals(receivedPayload, payload, "Received payload is different");
 }
 
@@ -105,14 +104,13 @@ isolated function testReceiveInvalidJsonPayload() returns error? {
     string payload = "This is not valid JSON";
 
     http:Response _ = check solaceRest->/QUEUE/invalidJsonQueue.post(payload, mediaType = "application/json; charset=utf-8");
-    BytesPayloadMessage? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
-    test:assertTrue(msg is BytesPayloadMessage, "Should receive a message");
+    StringPayloadMessage? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    test:assertTrue(msg is StringPayloadMessage, "Should receive a message");
     if msg is () {
         return;
     }
 
-    string payloadStr = check string:fromBytes(msg.payload);
-    json|error receivedPayload = payloadStr.fromJsonString();
+    json|error receivedPayload = msg.payload.fromJsonString();
     test:assertTrue(receivedPayload is error, "Should fail to parse invalid JSON payload");
 }
 
