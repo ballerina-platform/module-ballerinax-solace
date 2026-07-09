@@ -197,7 +197,7 @@ public type SecureSocket record {|
 |};
 
 # Retry configuration for connection attempts
-public type RetryConfig record {|
+public type RetryConfiguration record {|
     # Number of times to retry connecting during initial connection (0 = no retries, -1 = infinite)
     int connectRetries = 0;
     # Number of connection retries per host when multiple hosts are specified
@@ -243,7 +243,7 @@ public type CommonConnectionConfiguration record {|
     # When enabled, JCSMP calculates message expiration based on timeToLive field
     boolean calculateMessageExpiration = false;
     # Retry configuration for connection attempts
-    RetryConfig retryConfig?;
+    RetryConfiguration retryConfig?;
 |};
 
 # Producer-specific configuration
@@ -260,7 +260,7 @@ public type CommonConsumerConfig record {|
     # Applies to both queue consumers and durable topic endpoint subscriptions (flows only).
     # Not supported for direct topic subscriptions. Filters messages based on their properties and headers.
     # Example: "OrderType = 'URGENT' AND Priority > 5" - only messages matching this condition will be delivered.
-    string selector?;
+    string messageSelector?;
     # JCSMP message acknowledgement mode
     AcknowledgementMode ackMode = AUTO_ACK;
     # JCSMP flow control transport window size (1-255, default 255) - FlowReceiver only
@@ -344,7 +344,7 @@ public type CommonServiceConfig record {|
     # Applies to both queue consumers and durable topic endpoint subscriptions (flows only).
     # Not supported for direct topic subscriptions. Filters messages based on their properties and headers.
     # Example: "OrderType = 'URGENT' AND Priority > 5" - only messages matching this condition will be delivered.
-    string selector?;
+    string messageSelector?;
     # JCSMP flow control transport window size (1-255, default 255) - FlowReceiver only
     int transportWindowSize?;
     # Acknowledgement threshold as percentage of window size (1-75, default 0) - FlowReceiver only

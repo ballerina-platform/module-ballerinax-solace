@@ -80,7 +80,7 @@ isolated function testConsumerInitWithSelector() returns error? {
         },
         subscriptionConfig: {
             queueName: CONSUMER_SELECTOR_QUEUE,
-            selector: "priority > 5"
+            messageSelector: "priority > 5"
         }
     });
 
@@ -459,7 +459,7 @@ isolated function testConsumerReceiveWithSelector() returns error? {
         },
         subscriptionConfig: {
             queueName: CONSUMER_SELECTOR_QUEUE,
-            selector: "messageType = 'URGENT'"
+            messageSelector: "messageType = 'URGENT'"
         }
     });
 

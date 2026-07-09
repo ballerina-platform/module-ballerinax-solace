@@ -66,7 +66,7 @@ public record TopicConsumerConfig(
 
     private static final BString TOPIC_NAME_KEY = StringUtils.fromString("topicName");
     private static final BString ACK_MODE_KEY = StringUtils.fromString("ackMode");
-    private static final BString SELECTOR_KEY = StringUtils.fromString("selector");
+    private static final BString MESSAGE_SELECTOR_KEY = StringUtils.fromString("messageSelector");
     private static final BString ENDPOINT_TYPE_KEY = StringUtils.fromString("endpointType");
     private static final BString ENDPOINT_NAME_KEY = StringUtils.fromString("endpointName");
     private static final BString TRANSPORT_WINDOW_SIZE_KEY = StringUtils.fromString("transportWindowSize");
@@ -113,7 +113,7 @@ public record TopicConsumerConfig(
     }
 
     private static String extractSelector(BMap<BString, Object> config) {
-        Object value = config.get(SELECTOR_KEY);
+        Object value = config.get(MESSAGE_SELECTOR_KEY);
         return value != null ? value.toString() : null;
     }
 

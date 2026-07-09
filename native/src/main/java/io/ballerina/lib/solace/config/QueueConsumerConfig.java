@@ -63,7 +63,7 @@ public record QueueConsumerConfig(
     private static final BString QUEUE_NAME_KEY = StringUtils.fromString("queueName");
     private static final BString TEMPORARY_KEY = StringUtils.fromString("temporary");
     private static final BString ACK_MODE_KEY = StringUtils.fromString("ackMode");
-    private static final BString SELECTOR_KEY = StringUtils.fromString("selector");
+    private static final BString MESSAGE_SELECTOR_KEY = StringUtils.fromString("messageSelector");
     private static final BString TRANSPORT_WINDOW_SIZE_KEY = StringUtils.fromString("transportWindowSize");
     private static final BString ACK_THRESHOLD_KEY = StringUtils.fromString("ackThreshold");
     private static final BString ACK_TIMER_KEY = StringUtils.fromString("ackTimer");
@@ -119,7 +119,7 @@ public record QueueConsumerConfig(
     }
 
     private static String extractSelector(BMap<BString, Object> config) {
-        Object value = config.get(SELECTOR_KEY);
+        Object value = config.get(MESSAGE_SELECTOR_KEY);
         return value != null ? value.toString() : null;
     }
 

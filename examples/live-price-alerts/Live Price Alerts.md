@@ -4,7 +4,7 @@ This example demonstrates Solace's other core messaging model: publish/subscribe
 
 A `price_publisher` publishes stock price updates to topics named after the exchange and symbol, for example `stocks/nasdaq/aapl`, using `solace:DIRECT` delivery. An `alert_subscriber` service subscribes to `stocks/nasdaq/*`, so it only receives NASDAQ updates (an IBM update published to `stocks/nyse/ibm` never reaches it). Direct topic subscriptions don't support broker-side message selectors, so the subscriber filters for significant moves (`changePercent > 5.0`) itself in `onMessage`.
 
-This shows how to narrow *which topics* a service cares about using wildcards, and highlights that filtering *which messages* matter requires application code on a direct subscription (unlike a queue or durable topic endpoint, where a `selector` can push that filtering onto the broker - see Variations below).
+This shows how to narrow *which topics* a service cares about using wildcards, and highlights that filtering *which messages* matter requires application code on a direct subscription (unlike a queue or durable topic endpoint, where a `messageSelector` can push that filtering onto the broker - see Variations below).
 
 ## Prerequisites
 
@@ -34,4 +34,4 @@ The publisher logs all three price updates. The subscriber only logs an alert fo
 
 ## Variations
 
-- **Broker-side filtering**: message selectors (`selector` in `@solace:ServiceConfig`) are supported for queue and durable topic endpoint subscriptions. To push the `changePercent > 5.0` filter onto the broker instead of filtering in `onMessage`, switch the subscriber to a durable topic endpoint (`endpointType: solace:DURABLE` with an `endpointName`, pre-provisioned on the broker) and add `selector: "changePercent > 5.0"` - the same property published in the message's `properties` map.
+- **Broker-side filtering**: message selectors (`messageSelector` in `@solace:ServiceConfig`) are supported for queue and durable topic endpoint subscriptions. To push the `changePercent > 5.0` filter onto the broker instead of filtering in `onMessage`, switch the subscriber to a durable topic endpoint (`endpointType: solace:DURABLE` with an `endpointName`, pre-provisioned on the broker) and add `messageSelector: "changePercent > 5.0"` - the same property published in the message's `properties` map.
