@@ -18,6 +18,7 @@
 
 package io.xlibb.solace.common;
 
+import com.solacesystems.common.util.ByteArray;
 import com.solacesystems.jcsmp.JCSMPFactory;
 import com.solacesystems.jcsmp.SDTException;
 import com.solacesystems.jcsmp.SDTMap;
@@ -147,6 +148,7 @@ public class PropertyConverter {
             case Byte b -> b.longValue();
             case Short i -> i.longValue();
             case byte[] bytes -> ValueCreator.createArrayValue(bytes);
+            case ByteArray byteArray -> ValueCreator.createArrayValue(byteArray.asBytes());
             case SDTMap nestedMap -> sdtMapToBallerina(nestedMap, null);
             default -> StringUtils.fromString(value.toString());
         };
