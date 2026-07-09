@@ -34,11 +34,11 @@ import java.math.BigDecimal;
 /**
  * Connection configuration for Solace JCSMP connections. Maps to CommonConnectionConfiguration in Ballerina types.bal.
  *
- * @param vpnName                    message VPN to connect to (default: "default")
+ * @param messageVpn                 message VPN to connect to (default: "default")
  * @param clientName                 client identifier, or null for auto-generated
  * @param clientDescription          description for application client
- * @param localAddress               local interface IP address to bind, or null
- * @param connectionTimeout          maximum time in milliseconds for connection attempt
+ * @param localhost                  local interface IP address to bind, or null
+ * @param connectTimeout             maximum time in milliseconds for connection attempt
  * @param readTimeout                maximum time in milliseconds for reading replies
  * @param compressionLevel           ZLIB compression level (0-9, 0 = disabled)
  * @param transacted                 true to enable transacted messaging
@@ -51,11 +51,11 @@ import java.math.BigDecimal;
  * @param secureSocket               SSL/TLS configuration, or null
  */
 public record ConnectionConfiguration(
-        String vpnName,
+        String messageVpn,
         String clientName,
         String clientDescription,
-        String localAddress,
-        long connectionTimeout,
+        String localhost,
+        long connectTimeout,
         long readTimeout,
         int compressionLevel,
         boolean transacted,
@@ -67,11 +67,11 @@ public record ConnectionConfiguration(
         RetryConfig retryConfig,
         SecureSocketConfig secureSocket) {
 
-    private static final BString VPN_NAME_KEY = StringUtils.fromString("vpnName");
+    private static final BString MESSAGE_VPN_KEY = StringUtils.fromString("messageVpn");
     private static final BString CLIENT_NAME_KEY = StringUtils.fromString("clientName");
     private static final BString CLIENT_DESCRIPTION_KEY = StringUtils.fromString("clientDescription");
-    private static final BString LOCAL_ADDRESS_KEY = StringUtils.fromString("localAddress");
-    private static final BString CONNECTION_TIMEOUT_KEY = StringUtils.fromString("connectionTimeout");
+    private static final BString LOCALHOST_KEY = StringUtils.fromString("localhost");
+    private static final BString CONNECT_TIMEOUT_KEY = StringUtils.fromString("connectTimeout");
     private static final BString READ_TIMEOUT_KEY = StringUtils.fromString("readTimeout");
     private static final BString COMPRESSION_LEVEL_KEY = StringUtils.fromString("compressionLevel");
     private static final BString TRANSACTED_KEY = StringUtils.fromString("transacted");
@@ -91,11 +91,11 @@ public record ConnectionConfiguration(
      */
     public ConnectionConfiguration(BMap<BString, Object> config) {
         this(
-                config.getStringValue(VPN_NAME_KEY).getValue(),
+                config.getStringValue(MESSAGE_VPN_KEY).getValue(),
                 getOptionalString(config, CLIENT_NAME_KEY),
                 config.getStringValue(CLIENT_DESCRIPTION_KEY).getValue(),
-                getOptionalString(config, LOCAL_ADDRESS_KEY),
-                decimalToMillis(((BDecimal) config.get(CONNECTION_TIMEOUT_KEY)).decimalValue()),
+                getOptionalString(config, LOCALHOST_KEY),
+                decimalToMillis(((BDecimal) config.get(CONNECT_TIMEOUT_KEY)).decimalValue()),
                 decimalToMillis(((BDecimal) config.get(READ_TIMEOUT_KEY)).decimalValue()),
                 Math.toIntExact(config.getIntValue(COMPRESSION_LEVEL_KEY)),
                 config.getBooleanValue(TRANSACTED_KEY),

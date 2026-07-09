@@ -46,7 +46,7 @@ isolated function publishToQueue(string queueName, anydata payload) returns erro
 
 isolated function newBindingConsumer(string queueName) returns MessageConsumer|error =>
     new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
         subscriptionConfig: {queueName}
     });

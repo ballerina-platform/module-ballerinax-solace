@@ -24,7 +24,7 @@ import ballerina/test;
 @test:Config {groups: ["consumer", "auth", "negative"]}
 isolated function testConsumerOidcTokenAuthIsRecognized() returns error? {
     MessageConsumer|error consumer = new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             issuer: "https://example.com",
             oidcToken: "dummy-oidc-token"
@@ -48,7 +48,7 @@ isolated function testConsumerOidcTokenAuthIsRecognized() returns error? {
 @test:Config {groups: ["consumer", "auth", "negative"]}
 isolated function testConsumerOAuth2AccessTokenAuthIsRecognized() returns error? {
     MessageConsumer|error consumer = new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             issuer: "https://example.com",
             accessToken: "dummy-access-token"
@@ -72,7 +72,7 @@ isolated function testConsumerBasicAuth() returns error? {
     check sendMessageToQueue(CONSUMER_BASIC_AUTH_QUEUE, "Basic Auth Message");
 
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -95,7 +95,7 @@ isolated function testConsumerBasicAuth() returns error? {
 
 isolated function sendMessageToQueueTls(string queueName, string content) returns error? {
     MessageProducer producer = check new (BROKER_URL_TLS, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -118,7 +118,7 @@ isolated function testConsumerBasicAuthOverTls() returns error? {
     check sendMessageToQueueTls(CONSUMER_TLS_QUEUE, "TLS Basic Auth Message");
 
     MessageConsumer consumer = check new (BROKER_URL_TLS, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -169,7 +169,7 @@ isolated function testConsumerOAuth2AccessTokenOverTls() returns error? {
     check sendMessageToQueueTls(CONSUMER_OAUTH_ACCESS_QUEUE, "OAuth2 Access Token Message");
 
     MessageConsumer consumer = check new (BROKER_URL_TLS, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {issuer: OAUTH_ISSUER, accessToken: token},
         secureSocket: {
             trustStore: {location: CLIENT_TRUSTSTORE_PATH, password: CLIENT_TRUSTSTORE_PASSWORD, format: PKCS12}
@@ -192,7 +192,7 @@ isolated function testConsumerOidcTokenAuthOverTls() returns error? {
     check sendMessageToQueueTls(CONSUMER_OAUTH_OIDC_QUEUE, "OIDC ID Token Message");
 
     MessageConsumer consumer = check new (BROKER_URL_TLS, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {issuer: OAUTH_ISSUER, oidcToken: token},
         secureSocket: {
             trustStore: {location: CLIENT_TRUSTSTORE_PATH, password: CLIENT_TRUSTSTORE_PASSWORD, format: PKCS12}
@@ -216,7 +216,7 @@ isolated function testConsumerOidcTokenAuthOverTls() returns error? {
 @test:Config {groups: ["consumer", "auth", "negative"]}
 isolated function testConsumerKerberosAuthIsRecognized() returns error? {
     MessageConsumer|error consumer = new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             serviceName: "solace",
             jaasLoginContext: "SolaceGSS",

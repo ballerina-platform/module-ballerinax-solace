@@ -2,7 +2,7 @@ import ballerina/log;
 import ballerinax/solace;
 
 configurable string brokerUrl = "tcp://localhost:55554";
-configurable string vpnName = "default";
+configurable string messageVpn = "default";
 configurable string username = "admin";
 configurable string password = "admin";
 
@@ -16,7 +16,7 @@ public function main() returns error? {
     // No fixed destination is configured here - the producer picks a destination per publish
     // call below, so one producer can fan out to every topic instead of one-per-topic.
     solace:MessageProducer producer = check new (brokerUrl, {
-        vpnName,
+        messageVpn,
         auth: {username, password}
     });
 

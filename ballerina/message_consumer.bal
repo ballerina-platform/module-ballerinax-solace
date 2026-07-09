@@ -55,6 +55,7 @@ public isolated client class MessageConsumer {
     # + config - The consumer configuration (composed of connection config + subscription config)
     # + return - Error if initialization fails
 public isolated function init(string url, *ConsumerConfiguration config) returns Error? {
+        check validateConfigurations(config.compressionLevel, config.secureSocket);
         return self.initConsumer(url, config);
     }
 

@@ -150,6 +150,32 @@ public const SSLv2Hello = "SSLv2Hello";
 # Represents the supported SSL/TLS protocol versions.
 public type Protocol SSLv30|TLSv10|TLSv11|TLSv12|SSLv2Hello|string;
 
+# Cipher suite: TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384
+public const ECDHE_RSA_AES256_CBC_SHA384 = "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384";
+# Cipher suite: TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA
+public const ECDHE_RSA_AES256_CBC_SHA = "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA";
+# Cipher suite: TLS_RSA_WITH_AES_256_CBC_SHA256
+public const RSA_AES256_CBC_SHA256 = "TLS_RSA_WITH_AES_256_CBC_SHA256";
+# Cipher suite: TLS_RSA_WITH_AES_256_CBC_SHA
+public const RSA_AES256_CBC_SHA = "TLS_RSA_WITH_AES_256_CBC_SHA";
+# Cipher suite: TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA
+public const ECDHE_RSA_3DES_EDE_CBC_SHA = "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA";
+# Cipher suite: SSL_RSA_WITH_3DES_EDE_CBC_SHA
+public const RSA_3DES_EDE_CBC_SHA = "SSL_RSA_WITH_3DES_EDE_CBC_SHA";
+# Cipher suite: TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA
+public const ECDHE_RSA_AES128_CBC_SHA = "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA";
+# Cipher suite: TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
+public const ECDHE_RSA_AES128_CBC_SHA256 = "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256";
+# Cipher suite: TLS_RSA_WITH_AES_128_CBC_SHA256
+public const RSA_AES128_CBC_SHA256 = "TLS_RSA_WITH_AES_128_CBC_SHA256";
+# Cipher suite: TLS_RSA_WITH_AES_128_CBC_SHA
+public const RSA_AES128_CBC_SHA = "TLS_RSA_WITH_AES_128_CBC_SHA";
+
+# The SSL Cipher Suite to be used for secure communication with the Solace broker.
+public type SslCipherSuite ECDHE_RSA_AES256_CBC_SHA384|ECDHE_RSA_AES256_CBC_SHA|RSA_AES256_CBC_SHA256|RSA_AES256_CBC_SHA|
+    ECDHE_RSA_3DES_EDE_CBC_SHA|RSA_3DES_EDE_CBC_SHA|ECDHE_RSA_AES128_CBC_SHA|ECDHE_RSA_AES128_CBC_SHA256|RSA_AES128_CBC_SHA256|
+    RSA_AES128_CBC_SHA;
+
 # SSL/TLS configuration for secure connections
 public type SecureSocket record {|
     # The trust store configuration for server certificate validation
@@ -160,6 +186,9 @@ public type SecureSocket record {|
     string[] trustedCommonNames?;
     # The SSL protocols NOT to use
     Protocol[] excludedProtocols = [SSLv2Hello];
+    # The list of cipher suites to enable for the connection.
+    # If not specified, the default cipher suites for the JVM are used
+    SslCipherSuite[] cipherSuites?;
     # Certificate validation settings
     CertificateValidation validation = {};
 |};
@@ -179,7 +208,7 @@ public type RetryConfig record {|
 # Common connection configuration shared between producer and consumer
 public type CommonConnectionConfiguration record {|
     # The message VPN to connect to
-    string vpnName = "default";
+    string messageVpn = "default";
     # The authentication configuration (basic, Kerberos, or OAuth2)
     BasicAuthConfig|KerberosConfig|OAuth2Config auth?;
     # The SSL/TLS configuration for secure connections
@@ -189,9 +218,9 @@ public type CommonConnectionConfiguration record {|
     # A description for the application client
     string clientDescription = "Ballerina Solace Connector";
     # The local interface IP address to bind for outbound connections
-    string localAddress?;
+    string localhost?;
     # The maximum time in seconds for a connection attempt
-    decimal connectionTimeout = 30.0;
+    decimal connectTimeout = 30.0;
     # The maximum time in seconds for reading connection replies
     decimal readTimeout = 10.0;
     # ZLIB compression level (0 = disabled, 1-9 = compression)

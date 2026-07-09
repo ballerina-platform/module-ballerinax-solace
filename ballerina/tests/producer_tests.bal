@@ -23,7 +23,7 @@ import ballerina/test;
 @test:Config {groups: ["producer", "init"]}
 isolated function testProducerInitWithQueue() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -36,7 +36,7 @@ isolated function testProducerInitWithQueue() returns error? {
 @test:Config {groups: ["producer", "init"]}
 isolated function testProducerInitWithCompression() returns error? {
     MessageProducer producer = check new (BROKER_URL_COMPRESSED, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         compressionLevel: 6,
         auth: {
             username: BROKER_USERNAME,
@@ -47,10 +47,57 @@ isolated function testProducerInitWithCompression() returns error? {
     check producer->close();
 }
 
+@test:Config {groups: ["producer", "init", "validation", "negative"]}
+isolated function testProducerInitWithCompressionLevelTooHigh() returns error? {
+    MessageProducer|error producer = new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        compressionLevel: 10,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD}
+    });
+
+    test:assertTrue(producer is error, "compressionLevel above 9 should fail validation");
+    if producer is error {
+        test:assertEquals(producer.message(), "ZLIB compression level cannot exceed 9 (maximum compression)");
+    }
+}
+
+@test:Config {groups: ["producer", "init", "validation", "negative"]}
+isolated function testProducerInitWithNegativeCompressionLevel() returns error? {
+    MessageProducer|error producer = new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        compressionLevel: -1,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD}
+    });
+
+    test:assertTrue(producer is error, "negative compressionLevel should fail validation");
+    if producer is error {
+        test:assertEquals(producer.message(), "ZLIB compression level must be at least 0 (no compression)");
+    }
+}
+
+@test:Config {groups: ["producer", "init", "validation", "negative"]}
+isolated function testProducerInitWithTooManyTrustedCommonNames() returns error? {
+    string[] tooMany = [];
+    foreach int i in 0 ..< 17 {
+        tooMany.push(string `cn-${i}`);
+    }
+
+    MessageProducer|error producer = new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
+        secureSocket: {trustedCommonNames: tooMany}
+    });
+
+    test:assertTrue(producer is error, "trustedCommonNames with more than 16 entries should fail validation");
+    if producer is error {
+        test:assertEquals(producer.message(), "Trusted common names list cannot exceed 16 entries");
+    }
+}
+
 @test:Config {groups: ["producer", "init"]}
 isolated function testProducerInitWithClientName() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         clientName: "test-producer-client",
         clientDescription: "Test producer for Ballerina Solace SMF",
         auth: {
@@ -65,7 +112,7 @@ isolated function testProducerInitWithClientName() returns error? {
 @test:Config {groups: ["producer", "init", "negative"]}
 isolated function testProducerInitInvalidUrl() returns error? {
     MessageProducer|error producer = new ("invalid-url", {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -78,8 +125,8 @@ isolated function testProducerInitInvalidUrl() returns error? {
 @test:Config {groups: ["producer", "init"]}
 isolated function testProducerInitWithTimeouts() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
-        connectionTimeout: 20.0,
+        messageVpn: MESSAGE_VPN,
+        connectTimeout: 20.0,
         readTimeout: 5.0,
         auth: {
             username: BROKER_USERNAME,
@@ -97,7 +144,7 @@ isolated function testProducerInitWithTimeouts() returns error? {
 @test:Config {groups: ["producer", "send"], dependsOn: [testProducerInitWithQueue]}
 isolated function testProducerSendTextToQueue() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -115,7 +162,7 @@ isolated function testProducerSendTextToQueue() returns error? {
 @test:Config {groups: ["producer", "send"], dependsOn: [testProducerInitWithQueue]}
 isolated function testProducerSendTextToTopic() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -133,7 +180,7 @@ isolated function testProducerSendTextToTopic() returns error? {
 @test:Config {groups: ["producer", "send"], dependsOn: [testProducerInitWithQueue]}
 isolated function testProducerSendWithProperties() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -159,7 +206,7 @@ isolated function testProducerSendWithProperties() returns error? {
 @test:Config {groups: ["producer", "send"], dependsOn: [testProducerInitWithQueue]}
 isolated function testProducerSendWithMetadata() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -184,7 +231,7 @@ isolated function testProducerSendWithMetadata() returns error? {
 @test:Config {groups: ["producer", "send"], dependsOn: [testProducerInitWithQueue]}
 isolated function testProducerSendWithTTL() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -206,7 +253,7 @@ isolated function testProducerSendWithTTL() returns error? {
 @test:Config {groups: ["producer", "send"], dependsOn: [testProducerInitWithQueue]}
 isolated function testProducerSendPersistentMessage() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -228,7 +275,7 @@ isolated function testProducerSendPersistentMessage() returns error? {
 @test:Config {groups: ["producer", "send"], dependsOn: [testProducerInitWithQueue]}
 isolated function testProducerSendWithUserData() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -255,7 +302,7 @@ isolated function testProducerSendWithUserData() returns error? {
 @test:Config {groups: ["producer", "transacted"]}
 isolated function testProducerTransactedInit() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         transacted: true,
         auth: {
             username: BROKER_USERNAME,
@@ -269,7 +316,7 @@ isolated function testProducerTransactedInit() returns error? {
 @test:Config {groups: ["producer", "transacted"], dependsOn: [testProducerTransactedInit]}
 isolated function testProducerTransactedCommit() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         transacted: true,
         auth: {
             username: BROKER_USERNAME,
@@ -304,7 +351,7 @@ isolated function testProducerTransactedCommit() returns error? {
 @test:Config {groups: ["producer", "transacted"], dependsOn: [testProducerTransactedInit]}
 isolated function testProducerTransactedRollback() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         transacted: true,
         auth: {
             username: BROKER_USERNAME,
@@ -331,7 +378,7 @@ isolated function testProducerTransactedRollback() returns error? {
 @test:Config {groups: ["producer", "transacted", "negative"]}
 isolated function testProducerCommitWithoutTransaction() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         transacted: false, // Non-transacted mode
         auth: {
             username: BROKER_USERNAME,
@@ -350,7 +397,7 @@ isolated function testProducerCommitWithoutTransaction() returns error? {
 @test:Config {groups: ["producer", "transacted"], dependsOn: [testProducerTransactedInit]}
 isolated function testProducerTransactedMultipleCommits() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         transacted: true,
         auth: {
             username: BROKER_USERNAME,
@@ -405,7 +452,7 @@ isolated function testProducerTransactedMultipleCommits() returns error? {
 @test:Config {groups: ["producer", "config"]}
 isolated function testProducerWithGenerateTimestamps() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         generateSendTimestamps: true,
         auth: {
             username: BROKER_USERNAME,
@@ -424,7 +471,7 @@ isolated function testProducerWithGenerateTimestamps() returns error? {
 @test:Config {groups: ["producer", "config"]}
 isolated function testProducerWithGenerateSequenceNumbers() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         generateSequenceNumbers: true,
         auth: {
             username: BROKER_USERNAME,
@@ -448,7 +495,7 @@ isolated function testProducerWithGenerateSequenceNumbers() returns error? {
 @test:Config {groups: ["producer", "config"]}
 isolated function testProducerWithCalculateMessageExpiration() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         calculateMessageExpiration: true,
         auth: {
             username: BROKER_USERNAME,

@@ -24,7 +24,7 @@ import ballerina/test;
 @test:Config {groups: ["consumer", "init"]}
 isolated function testConsumerInitWithQueue() returns error? {
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -38,7 +38,7 @@ isolated function testConsumerInitWithQueue() returns error? {
 @test:Config {groups: ["consumer", "init"]}
 isolated function testConsumerInitWithDirectTopic() returns error? {
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -55,7 +55,7 @@ isolated function testConsumerInitWithDirectTopic() returns error? {
 @test:Config {groups: ["consumer", "init"]}
 isolated function testConsumerInitWithDurableTopic() returns error? {
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -73,7 +73,7 @@ isolated function testConsumerInitWithDurableTopic() returns error? {
 @test:Config {groups: ["consumer", "init"]}
 isolated function testConsumerInitWithSelector() returns error? {
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -90,7 +90,7 @@ isolated function testConsumerInitWithSelector() returns error? {
 @test:Config {groups: ["consumer", "init", "negative"]}
 isolated function testConsumerInitInvalidQueue() returns error? {
     MessageConsumer|error consumer = new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -105,7 +105,7 @@ isolated function testConsumerInitInvalidQueue() returns error? {
 @test:Config {groups: ["consumer", "init"]}
 isolated function testConsumerInitWithFlowProperties() returns error? {
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -125,7 +125,7 @@ isolated function testConsumerInitWithFlowProperties() returns error? {
 @test:Config {groups: ["consumer", "init"]}
 isolated function testConsumerInitTransacted() returns error? {
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         transacted: true,
         auth: {
             username: BROKER_USERNAME,
@@ -144,7 +144,7 @@ isolated function testConsumerInitTransacted() returns error? {
 // Helper function to send a message for consumer tests
 isolated function sendMessageToQueue(string queueName, string content) returns error? {
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -166,7 +166,7 @@ isolated function testConsumerReceiveTextFromQueue() returns error? {
 
     // Receive message
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -187,7 +187,7 @@ isolated function testConsumerReceiveTextFromQueue() returns error? {
 @test:Config {groups: ["consumer", "receive"]}
 isolated function testConsumerReceiveTimeout() returns error? {
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -209,7 +209,7 @@ isolated function testConsumerReceiveNoWait() returns error? {
     check sendMessageToQueue(CONSUMER_NOWAIT_QUEUE, "NoWait Message");
 
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -238,7 +238,7 @@ isolated function testConsumerReceiveNoWait() returns error? {
 isolated function testConsumerReceiveBinaryFromQueue() returns error? {
     // Send binary message
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -256,7 +256,7 @@ isolated function testConsumerReceiveBinaryFromQueue() returns error? {
 
     // Receive binary message
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -278,7 +278,7 @@ isolated function testConsumerReceiveBinaryFromQueue() returns error? {
 isolated function testConsumerReceiveWithProperties() returns error? {
     // Send message with properties
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -301,7 +301,7 @@ isolated function testConsumerReceiveWithProperties() returns error? {
 
     // Receive and verify properties
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -328,7 +328,7 @@ isolated function testConsumerReceiveWithProperties() returns error? {
 isolated function testConsumerReceiveWithMetadata() returns error? {
     // Send message with metadata
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -350,7 +350,7 @@ isolated function testConsumerReceiveWithMetadata() returns error? {
 
     // Receive and verify metadata
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -375,7 +375,7 @@ isolated function testConsumerReceiveWithMetadata() returns error? {
 isolated function testConsumerReceiveFromDirectTopic() returns error? {
     // Create consumer first for direct topic (must be subscribed before sending)
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -388,7 +388,7 @@ isolated function testConsumerReceiveFromDirectTopic() returns error? {
 
     // Send message to topic
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -417,7 +417,7 @@ isolated function testConsumerReceiveFromDirectTopic() returns error? {
 isolated function testConsumerReceiveWithSelector() returns error? {
     // Send message that matches selector
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -452,7 +452,7 @@ isolated function testConsumerReceiveWithSelector() returns error? {
 
     // Receive with selector (filter by custom property)
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -481,7 +481,7 @@ isolated function testConsumerReceiveWithSelector() returns error? {
 isolated function testConsumerReceiveMultipleMessages() returns error? {
     // Send multiple messages
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -507,7 +507,7 @@ isolated function testConsumerReceiveMultipleMessages() returns error? {
 
     // Receive multiple messages
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -543,7 +543,7 @@ isolated function testConsumerReceiveMultipleMessages() returns error? {
 @test:Config {groups: ["consumer", "ackmode"]}
 isolated function testConsumerDefaultAckModeDoesNotRedeliver() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -560,7 +560,7 @@ isolated function testConsumerDefaultAckModeDoesNotRedeliver() returns error? {
     // First consumer - ackMode intentionally omitted, must default to AUTO_ACK. Receive the
     // message without calling ack(), then close.
     MessageConsumer consumer1 = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -579,7 +579,7 @@ isolated function testConsumerDefaultAckModeDoesNotRedeliver() returns error? {
     // Second consumer on the same queue - if the default AUTO_ACK mode actually behaved as
     // CLIENT_ACK, the never-acknowledged message would be redelivered here.
     MessageConsumer consumer2 = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD

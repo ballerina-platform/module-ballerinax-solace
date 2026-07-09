@@ -23,7 +23,7 @@ import ballerina/test;
 @test:Config {groups: ["consumer", "transacted"]}
 isolated function testConsumerTransactedInit() returns error? {
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         transacted: true,
         auth: {
             username: BROKER_USERNAME,
@@ -39,7 +39,7 @@ isolated function testConsumerTransactedInit() returns error? {
 isolated function testConsumerTransactedCommit() returns error? {
     // Send message
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -55,7 +55,7 @@ isolated function testConsumerTransactedCommit() returns error? {
 
     // Receive and commit
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         transacted: true,
         auth: {
             username: BROKER_USERNAME,
@@ -75,7 +75,7 @@ isolated function testConsumerTransactedCommit() returns error? {
 
     // Verify message is not redelivered
     MessageConsumer consumer2 = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -94,7 +94,7 @@ isolated function testConsumerTransactedCommit() returns error? {
 isolated function testConsumerTransactedRollback() returns error? {
     // Send message
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -110,7 +110,7 @@ isolated function testConsumerTransactedRollback() returns error? {
 
     // Receive and rollback
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         transacted: true,
         auth: {
             username: BROKER_USERNAME,
@@ -130,7 +130,7 @@ isolated function testConsumerTransactedRollback() returns error? {
 
     // Verify message is redelivered
     MessageConsumer consumer2 = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -154,7 +154,7 @@ isolated function testConsumerTransactedRollback() returns error? {
 isolated function testConsumerTransactedMultipleMessages() returns error? {
     // Send multiple messages
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -180,7 +180,7 @@ isolated function testConsumerTransactedMultipleMessages() returns error? {
 
     // Receive all and commit
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         transacted: true,
         auth: {
             username: BROKER_USERNAME,
@@ -205,7 +205,7 @@ isolated function testConsumerTransactedMultipleMessages() returns error? {
 
     // Verify no messages are redelivered
     MessageConsumer consumer2 = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -224,7 +224,7 @@ isolated function testConsumerTransactedMultipleMessages() returns error? {
 isolated function testConsumerTransactedMixedOperations() returns error? {
     // Send messages
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -245,7 +245,7 @@ isolated function testConsumerTransactedMixedOperations() returns error? {
 
     // Receive, commit, then receive, rollback
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         transacted: true,
         auth: {
             username: BROKER_USERNAME,
@@ -268,7 +268,7 @@ isolated function testConsumerTransactedMixedOperations() returns error? {
 
     // Verify only second message is redelivered
     MessageConsumer consumer2 = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -290,7 +290,7 @@ isolated function testConsumerTransactedMixedOperations() returns error? {
 @test:Config {groups: ["consumer", "transacted", "negative"]}
 isolated function testConsumerCommitWithoutTransaction() returns error? {
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         transacted: false, // Non-transacted mode
         auth: {
             username: BROKER_USERNAME,
@@ -311,7 +311,7 @@ isolated function testConsumerCommitWithoutTransaction() returns error? {
 isolated function testConsumerTransactedDirectTopicError() returns error? {
     // Attempt to create transacted consumer with direct topic (should fail)
     MessageConsumer|error consumer = new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         transacted: true,
         auth: {
             username: BROKER_USERNAME,
@@ -330,7 +330,7 @@ isolated function testConsumerTransactedDirectTopicError() returns error? {
 isolated function testProducerConsumerCoordinatedTransaction() returns error? {
     // Transacted producer sends messages
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         transacted: true,
         auth: {
             username: BROKER_USERNAME,
@@ -361,7 +361,7 @@ isolated function testProducerConsumerCoordinatedTransaction() returns error? {
 
     // Transacted consumer receives messages
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         transacted: true,
         auth: {
             username: BROKER_USERNAME,
@@ -383,7 +383,7 @@ isolated function testProducerConsumerCoordinatedTransaction() returns error? {
 
     // Verify no messages remain
     MessageConsumer consumer2 = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -404,7 +404,7 @@ isolated function testEndToEndTransaction() returns error? {
 
     // Transacted producer
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         transacted: true,
         auth: {
             username: BROKER_USERNAME,
@@ -429,7 +429,7 @@ isolated function testEndToEndTransaction() returns error? {
 
     // Transacted consumer
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         transacted: true,
         auth: {
             username: BROKER_USERNAME,

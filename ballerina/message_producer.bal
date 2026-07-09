@@ -45,6 +45,7 @@ public isolated client class MessageProducer {
     # + config - The producer connection configuration
     # + return - Error if initialization fails
     public isolated function init(string url, *ProducerConfiguration config) returns Error? {
+        check validateConfigurations(config.compressionLevel, config.secureSocket);
         return self.initProducer(url, config);
     }
 

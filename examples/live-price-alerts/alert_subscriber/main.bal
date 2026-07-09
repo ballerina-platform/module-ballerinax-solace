@@ -2,7 +2,7 @@ import ballerina/log;
 import ballerinax/solace;
 
 configurable string brokerUrl = "tcp://localhost:55554";
-configurable string vpnName = "default";
+configurable string messageVpn = "default";
 configurable string username = "admin";
 configurable string password = "admin";
 
@@ -13,7 +13,7 @@ type PriceUpdate record {|
 |};
 
 listener solace:Listener alertListener = check new (brokerUrl, {
-    vpnName,
+    messageVpn,
     auth: {username, password}
 });
 

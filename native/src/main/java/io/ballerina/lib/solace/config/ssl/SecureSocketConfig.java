@@ -33,12 +33,16 @@ import static io.xlibb.solace.common.CommonUtils.convertToStringArray;
  * @param trustStore         trust store configuration, or null
  * @param keyStore           key store configuration for client certificate authentication, or null
  * @param trustedCommonNames list of acceptable common names for broker certificate validation
+ * @param excludedProtocols  list of SSL/TLS protocol versions to exclude from use
+ * @param cipherSuites       list of cipher suites to enable for the connection, or null
  */
 public record SecureSocketConfig(
         ValidationConfig validation,
         TrustStoreConfig trustStore,
         KeyStoreConfig keyStore,
-        List<String> trustedCommonNames) {
+        List<String> trustedCommonNames,
+        List<String> excludedProtocols,
+        List<String> cipherSuites) {
 
     /**
      * Canonical constructor with defensive copying to prevent external modification.
@@ -47,12 +51,18 @@ public record SecureSocketConfig(
         // Defensive copy to prevent external modification
         trustedCommonNames = trustedCommonNames == null ? null :
                 List.copyOf(trustedCommonNames);
+        excludedProtocols = excludedProtocols == null ? null :
+                List.copyOf(excludedProtocols);
+        cipherSuites = cipherSuites == null ? null :
+                List.copyOf(cipherSuites);
     }
 
     private static final BString VALIDATION_KEY = StringUtils.fromString("validation");
     private static final BString TRUST_STORE_KEY = StringUtils.fromString("trustStore");
     private static final BString KEY_STORE_KEY = StringUtils.fromString("keyStore");
     private static final BString TRUSTED_COMMON_NAMES_KEY = StringUtils.fromString("trustedCommonNames");
+    private static final BString EXCLUDED_PROTOCOLS_KEY = StringUtils.fromString("excludedProtocols");
+    private static final BString CIPHER_SUITES_KEY = StringUtils.fromString("cipherSuites");
 
     /**
      * Creates a SecureSocketConfig from a Ballerina map record.
@@ -66,7 +76,11 @@ public record SecureSocketConfig(
                 config.containsKey(KEY_STORE_KEY) ?
                         new KeyStoreConfig((BMap<BString, Object>) config.getMapValue(KEY_STORE_KEY)) : null,
                 config.containsKey(TRUSTED_COMMON_NAMES_KEY) ?
-                        List.of(convertToStringArray(config.getArrayValue(TRUSTED_COMMON_NAMES_KEY).getValues())) : null
+                        List.of(convertToStringArray(config.getArrayValue(TRUSTED_COMMON_NAMES_KEY).getValues())) : null,
+                config.containsKey(EXCLUDED_PROTOCOLS_KEY) ?
+                        List.of(convertToStringArray(config.getArrayValue(EXCLUDED_PROTOCOLS_KEY).getValues())) : null,
+                config.containsKey(CIPHER_SUITES_KEY) ?
+                        List.of(convertToStringArray(config.getArrayValue(CIPHER_SUITES_KEY).getValues())) : null
 
         );
     }

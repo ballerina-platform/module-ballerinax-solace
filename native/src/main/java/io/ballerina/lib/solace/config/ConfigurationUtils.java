@@ -29,6 +29,8 @@ import io.xlibb.solace.config.ssl.KeyStoreConfig;
 import io.xlibb.solace.config.ssl.SecureSocketConfig;
 import io.xlibb.solace.config.ssl.TrustStoreConfig;
 
+import java.util.Arrays;
+
 /**
  * Utility class for building JCSMP properties from Ballerina configuration objects.
  */
@@ -50,7 +52,7 @@ public final class ConfigurationUtils {
 
         // Set host and VPN
         props.setProperty(JCSMPProperties.HOST, host);
-        props.setProperty(JCSMPProperties.VPN_NAME, config.vpnName());
+        props.setProperty(JCSMPProperties.VPN_NAME, config.messageVpn());
 
         // Set client identification
         if (config.clientName() != null) {
@@ -59,8 +61,8 @@ public final class ConfigurationUtils {
         props.setProperty(JCSMPProperties.APPLICATION_DESCRIPTION, config.clientDescription());
 
         // Set local address if specified
-        if (config.localAddress() != null) {
-            props.setProperty(JCSMPProperties.LOCALHOST, config.localAddress());
+        if (config.localhost() != null) {
+            props.setProperty(JCSMPProperties.LOCALHOST, config.localhost());
         }
 
         // Set timestamp and sequence number generation
@@ -92,7 +94,7 @@ public final class ConfigurationUtils {
 
         // Set connection timeouts
         channelProps.setProperty(JCSMPChannelProperties.CONNECT_TIMEOUT_IN_MILLIS,
-                (int) config.connectionTimeout());
+                (int) config.connectTimeout());
         channelProps.setProperty(JCSMPChannelProperties.READ_TIMEOUT_IN_MILLIS,
                 (int) config.readTimeout());
 
@@ -193,5 +195,35 @@ public final class ConfigurationUtils {
             }
             props.setProperty(JCSMPProperties.SSL_TRUSTED_COMMON_NAME_LIST, cnList.toString());
         }
+
+        // Set excluded SSL/TLS protocols
+        if (secureSocket.excludedProtocols() != null && !secureSocket.excludedProtocols().isEmpty()) {
+            String[] mapped = mapProtocols(secureSocket.excludedProtocols().toArray(new String[0]));
+            props.setProperty(JCSMPProperties.SSL_EXCLUDED_PROTOCOLS, String.join(",", mapped));
+        }
+
+        // Set cipher suites
+        if (secureSocket.cipherSuites() != null && !secureSocket.cipherSuites().isEmpty()) {
+            props.setProperty(JCSMPProperties.SSL_CIPHER_SUITES, String.join(",", secureSocket.cipherSuites()));
+        }
+    }
+
+    /**
+     * Maps protocol names from Ballerina constants to Solace's expected proper-cased values.
+     *
+     * @param protocols array of protocol names
+     * @return mapped array of protocol names
+     */
+    private static String[] mapProtocols(String[] protocols) {
+        return Arrays.stream(protocols).map(protocol -> {
+            return switch (protocol) {
+                case "sslv3" -> "SSLv3";
+                case "tlsv1" -> "TLSv1";
+                case "tlsv11" -> "TLSv1.1";
+                case "tlsv12" -> "TLSv1.2";
+                case "SSLv2Hello" -> "SSLv2Hello";
+                default -> protocol;
+            };
+        }).toArray(String[]::new);
     }
 }

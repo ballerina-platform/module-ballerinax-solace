@@ -2,7 +2,7 @@ import ballerina/log;
 import ballerinax/solace;
 
 configurable string brokerUrl = "tcp://localhost:55554";
-configurable string vpnName = "default";
+configurable string messageVpn = "default";
 configurable string username = "admin";
 configurable string password = "admin";
 
@@ -31,7 +31,7 @@ public function main() returns error? {
 
 function runWorkerSession() returns error? {
     solace:MessageConsumer consumer = check new (brokerUrl, {
-        vpnName,
+        messageVpn,
         auth: {username, password},
         subscriptionConfig: {
             queueName: ORDERS_QUEUE,

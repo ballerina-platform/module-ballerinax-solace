@@ -23,7 +23,7 @@ import ballerina/test;
 @test:Config {groups: ["consumer", "clientack"]}
 isolated function testConsumerClientAckInit() returns error? {
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -41,7 +41,7 @@ isolated function testConsumerClientAckInit() returns error? {
 isolated function testConsumerAcknowledge() returns error? {
     // Send message
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -57,7 +57,7 @@ isolated function testConsumerAcknowledge() returns error? {
 
     // Receive and acknowledge
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -78,7 +78,7 @@ isolated function testConsumerAcknowledge() returns error? {
 isolated function testConsumerAcknowledgeMultiple() returns error? {
     // Send multiple messages
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -104,7 +104,7 @@ isolated function testConsumerAcknowledgeMultiple() returns error? {
 
     // Receive and acknowledge all
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -139,7 +139,7 @@ isolated function testConsumerAcknowledgeMultiple() returns error? {
 @test:Config {groups: ["consumer", "clientack"], dependsOn: [testConsumerClientAckInit]}
 isolated function testConsumerNackWithRequeue() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -155,7 +155,7 @@ isolated function testConsumerNackWithRequeue() returns error? {
 
     // Receive and NACK with requeue
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -193,7 +193,7 @@ isolated function testConsumerNackWithRequeue() returns error? {
 @test:Config {groups: ["consumer", "clientack"], dependsOn: [testConsumerClientAckInit]}
 isolated function testConsumerNackWithReject() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -209,7 +209,7 @@ isolated function testConsumerNackWithReject() returns error? {
 
     // Receive and NACK without requeue
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -240,7 +240,7 @@ isolated function testConsumerNackWithReject() returns error? {
 @test:Config {groups: ["consumer", "clientack"], dependsOn: [testConsumerClientAckInit]}
 isolated function testConsumerUnacknowledgedRedelivery() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -256,7 +256,7 @@ isolated function testConsumerUnacknowledgedRedelivery() returns error? {
 
     // First consumer - receive but don't acknowledge, then close
     MessageConsumer consumer1 = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -275,7 +275,7 @@ isolated function testConsumerUnacknowledgedRedelivery() returns error? {
 
     // Second consumer - should receive the same message (redelivered)
     MessageConsumer consumer2 = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD

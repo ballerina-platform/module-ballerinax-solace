@@ -128,7 +128,7 @@ isolated function testReceiveTimeoutWhenNothingPublished() returns error? {
 
 isolated function createQueueConsumer(string queueName) returns MessageConsumer|error {
     return new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD

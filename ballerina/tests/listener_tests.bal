@@ -102,7 +102,7 @@ isolated function waitForAttempts(Recorder recorder, int minAttempts) {
 // Returns true if the given queue has no pending messages (i.e. all were acknowledged/committed).
 isolated function queueIsEmpty(string queueName) returns boolean|error {
     MessageConsumer consumer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
         subscriptionConfig: {queueName, ackMode: CLIENT_ACK}
     });
@@ -112,7 +112,7 @@ isolated function queueIsEmpty(string queueName) returns boolean|error {
 }
 
 isolated function connectionConfig() returns CommonConnectionConfiguration => {
-    vpnName: MESSAGE_VPN,
+    messageVpn: MESSAGE_VPN,
     auth: {
         username: BROKER_USERNAME,
         password: BROKER_PASSWORD
@@ -121,7 +121,7 @@ isolated function connectionConfig() returns CommonConnectionConfiguration => {
 
 isolated function publish(Destination destination, string payload, DeliveryMode deliveryMode) returns error? {
     MessageProducer producer = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD}
     });
     // Sent as a `string` payload (-> TextMessage on the wire) to match the `StringPayloadMessage`-typed
@@ -376,7 +376,7 @@ Service txCommitService = @ServiceConfig {
 @test:Config {groups: ["listener", "transacted"]}
 function testListenerTransactedCommit() returns error? {
     Listener solaceListener = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         transacted: true,
         auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD}
     });
@@ -421,7 +421,7 @@ Service txRollbackService = @ServiceConfig {
 @test:Config {groups: ["listener", "transacted"]}
 function testListenerTransactedRollback() returns error? {
     Listener solaceListener = check new (BROKER_URL, {
-        vpnName: MESSAGE_VPN,
+        messageVpn: MESSAGE_VPN,
         transacted: true,
         auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD}
     });

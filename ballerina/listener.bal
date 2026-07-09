@@ -61,6 +61,7 @@ public isolated class Listener {
     # + config - The connection configuration (auth, SSL/TLS, retry, etc.)
     # + return - Error if initialization fails
     public isolated function init(string url, *CommonConnectionConfiguration config) returns Error? {
+        check validateConfigurations(config.compressionLevel, config.secureSocket);
         return self.initListener(url, config);
     }
 
