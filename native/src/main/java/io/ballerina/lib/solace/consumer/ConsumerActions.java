@@ -36,6 +36,7 @@ import io.ballerina.lib.solace.config.TopicConsumerConfig;
 import io.ballerina.lib.solace.observability.SolaceMetricsUtil;
 import io.ballerina.lib.solace.observability.SolaceTracingUtil;
 import io.ballerina.runtime.api.Environment;
+import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BDecimal;
 import io.ballerina.runtime.api.values.BError;
@@ -47,30 +48,29 @@ import io.ballerina.runtime.api.values.BTypedesc;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 
-import static io.xlibb.solace.common.Constants.NATIVE_CLOSED;
-import static io.xlibb.solace.common.Constants.NATIVE_CONSUMER;
-import static io.xlibb.solace.common.Constants.NATIVE_DESTINATION;
-import static io.xlibb.solace.common.Constants.NATIVE_FLOW;
-import static io.xlibb.solace.common.Constants.NATIVE_SESSION;
-import static io.xlibb.solace.common.Constants.NATIVE_SUBSCRIPTION_TYPE;
-import static io.xlibb.solace.common.Constants.NATIVE_TRANSACTED;
-import static io.xlibb.solace.common.Constants.NATIVE_TX_SESSION;
-import static io.xlibb.solace.common.Constants.NATIVE_URL;
-import static io.xlibb.solace.common.MessageFieldConstants.PAYLOAD_KEY;
-import static io.xlibb.solace.consumer.ConsumerUtils.SUBSCRIPTION_TYPE_DIRECT_TOPIC;
-import static io.xlibb.solace.consumer.ConsumerUtils.SUBSCRIPTION_TYPE_DURABLE_TOPIC;
-import static io.xlibb.solace.consumer.ConsumerUtils.SUBSCRIPTION_TYPE_QUEUE;
-import static io.xlibb.solace.consumer.ConsumerUtils.createDirectTopicConsumer;
-import static io.xlibb.solace.consumer.ConsumerUtils.createDurableTopicConsumer;
-import static io.xlibb.solace.consumer.ConsumerUtils.createQueueConsumer;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.CONTEXT_CONSUMER;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_ACKNOWLEDGE;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_CLOSE;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_COMMIT;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_NACK;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_RECEIVE;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_ROLLBACK;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.UNKNOWN;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_CLOSED;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_CONSUMER;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_DESTINATION;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_FLOW;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_SESSION;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_SUBSCRIPTION_TYPE;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_TRANSACTED;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_TX_SESSION;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_URL;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.PAYLOAD_KEY;
+import static io.ballerina.lib.solace.consumer.ConsumerUtils.SUBSCRIPTION_TYPE_DIRECT_TOPIC;
+import static io.ballerina.lib.solace.consumer.ConsumerUtils.SUBSCRIPTION_TYPE_DURABLE_TOPIC;
+import static io.ballerina.lib.solace.consumer.ConsumerUtils.SUBSCRIPTION_TYPE_QUEUE;
+import static io.ballerina.lib.solace.consumer.ConsumerUtils.createDirectTopicConsumer;
+import static io.ballerina.lib.solace.consumer.ConsumerUtils.createDurableTopicConsumer;
+import static io.ballerina.lib.solace.consumer.ConsumerUtils.createQueueConsumer;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.CONTEXT_CONSUMER;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_ACKNOWLEDGE;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_CLOSE;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_COMMIT;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_NACK;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_RECEIVE;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_ROLLBACK;
 
 /**
  * Consumer actions - main entry point for Ballerina MessageConsumer interop.
@@ -123,10 +123,6 @@ public class ConsumerActions {
             consumer.addNativeData(NATIVE_CLOSED, false);
             consumer.addNativeData(NATIVE_URL, url.getValue());
 
-            // Store destination name for observability
-            String destinationName = extractDestinationName(subscriptionConfig);
-            consumer.addNativeData(NATIVE_DESTINATION, destinationName);
-
             // Create appropriate consumer based on subscription type
             if (subscriptionConfig instanceof QueueConsumerConfig queueConfig) {
                 FlowReceiverFactory factory = isTransacted
@@ -170,16 +166,6 @@ public class ConsumerActions {
         }
     }
 
-    private static String extractDestinationName(ConsumerSubscriptionConfig subscriptionConfig) {
-        if (subscriptionConfig instanceof QueueConsumerConfig queueConfig) {
-            String name = queueConfig.queueName();
-            return name != null ? name : UNKNOWN;
-        } else if (subscriptionConfig instanceof TopicConsumerConfig topicConfig) {
-            String name = topicConfig.topicName();
-            return name != null ? name : UNKNOWN;
-        }
-        return UNKNOWN;
-    }
 
     /**
      * Receive a message with timeout.
@@ -507,6 +493,18 @@ public class ConsumerActions {
 
         SolaceMetricsUtil.reportConsumerClose(consumer);
         return null;
+    }
+
+    /**
+     * Returns the resolved name of the destination (queue or topic) this consumer is bound to. For a TEMPORARY
+     * queue created without a name hint, this is the broker-generated name.
+     *
+     * @param consumer the Ballerina consumer object
+     * @return the destination name
+     */
+    public static BString destinationName(BObject consumer) {
+        String destinationName = (String) consumer.getNativeData(NATIVE_DESTINATION);
+        return StringUtils.fromString(destinationName);
     }
 
     @SuppressWarnings("unchecked")

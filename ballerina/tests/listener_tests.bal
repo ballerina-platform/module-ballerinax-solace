@@ -148,7 +148,7 @@ final Recorder directTopicRecorder = new;
 
 Service directTopicService = @ServiceConfig {
     topicName: LISTENER_DIRECT_TOPIC,
-    endpointType: DEFAULT
+    durability: TEMPORARY
 } service object {
     remote function onMessage(StringPayloadMessage message) returns error? {
         directTopicRecorder.add(message.payload);
@@ -289,7 +289,7 @@ final Recorder durableTopicRecorder = new;
 
 Service durableTopicService = @ServiceConfig {
     topicName: LISTENER_DURABLE_TOPIC,
-    endpointType: DURABLE,
+    durability: DURABLE,
     endpointName: LISTENER_DURABLE_ENDPOINT,
     ackMode: AUTO_ACK
 } service object {

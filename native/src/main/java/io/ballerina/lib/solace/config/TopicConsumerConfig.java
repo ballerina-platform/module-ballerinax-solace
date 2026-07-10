@@ -35,13 +35,12 @@ import java.math.BigDecimal;
  * @param ackMode                       the JCSMP acknowledgement mode (SUPPORTED_MESSAGE_ACK_AUTO or
  *                                      SUPPORTED_MESSAGE_ACK_CLIENT)
  * @param selector                      optional SQL-92 message selector expression for filtering
- * @param endpointType                  the endpoint type (DEFAULT for ephemeral or DURABLE for persisted)
- * @param endpointName                  the endpoint name (required if endpointType is DURABLE)
+ * @param durability                    TEMPORARY (ephemeral/direct) or DURABLE (persisted on broker)
+ * @param endpointName                  the endpoint name (required if durability is DURABLE)
  * @param transportWindowSize           JCSMP transport window size for flow control (1-255, default 255) - DURABLE
  *                                      only
  * @param ackThreshold                  ACK threshold as percentage of window size (1-75, default 0) - DURABLE only
  * @param ackTimerInMsecs               ACK timer in milliseconds (20-1500, default 0) - DURABLE only
- * @param startState                    auto-start the flow upon creation (default false) - DURABLE only
  * @param noLocal                       prevent receiving messages published on same session (default false)
  * @param activeFlowIndication          enable active/inactive flow indication (default false) - DURABLE only
  * @param reconnectTries                number of reconnection attempts after flow goes down (-1 = infinite) - DURABLE
@@ -53,12 +52,11 @@ public record TopicConsumerConfig(
         String topicName,
         AcknowledgementMode ackMode,
         String selector,
-        String endpointType,
+        String durability,
         String endpointName,
         Integer transportWindowSize,
         Integer ackThreshold,
         int ackTimerInMsecs,
-        Boolean startState,
         Boolean noLocal,
         Boolean activeFlowIndication,
         Integer reconnectTries,
@@ -68,18 +66,17 @@ public record TopicConsumerConfig(
     private static final BString TOPIC_NAME_KEY = StringUtils.fromString("topicName");
     private static final BString ACK_MODE_KEY = StringUtils.fromString("ackMode");
     private static final BString MESSAGE_SELECTOR_KEY = StringUtils.fromString("messageSelector");
-    private static final BString ENDPOINT_TYPE_KEY = StringUtils.fromString("endpointType");
+    private static final BString DURABILITY_KEY = StringUtils.fromString("durability");
     private static final BString ENDPOINT_NAME_KEY = StringUtils.fromString("endpointName");
     private static final BString TRANSPORT_WINDOW_SIZE_KEY = StringUtils.fromString("transportWindowSize");
     private static final BString ACK_THRESHOLD_KEY = StringUtils.fromString("ackThreshold");
     private static final BString ACK_TIMER_KEY = StringUtils.fromString("ackTimer");
-    private static final BString START_STATE_KEY = StringUtils.fromString("startState");
     private static final BString NO_LOCAL_KEY = StringUtils.fromString("noLocal");
     private static final BString ACTIVE_FLOW_INDICATION_KEY = StringUtils.fromString("activeFlowIndication");
     private static final BString RECONNECT_TRIES_KEY = StringUtils.fromString("reconnectTries");
     private static final BString RECONNECT_RETRY_INTERVAL_KEY = StringUtils.fromString("reconnectRetryInterval");
 
-    private static final String DEFAULT_ENDPOINT_TYPE = "DEFAULT";
+    private static final String DEFAULT_DURABILITY = "TEMPORARY";
 
     /**
      * Creates a TopicConsumerConfig from a Ballerina map record.
@@ -91,12 +88,11 @@ public record TopicConsumerConfig(
                 extractTopicName(config),
                 AcknowledgementMode.valueOf(config.getStringValue(ACK_MODE_KEY).getValue()),
                 extractSelector(config),
-                extractEndpointType(config),
+                extractDurability(config),
                 extractEndpointName(config),
                 extractOptionalInteger(config, TRANSPORT_WINDOW_SIZE_KEY),
                 extractOptionalInteger(config, ACK_THRESHOLD_KEY),
                 decimalToMillis(((BDecimal) config.get(ACK_TIMER_KEY)).decimalValue()),
-                config.containsKey(START_STATE_KEY) ? config.getBooleanValue(START_STATE_KEY) : null,
                 config.containsKey(NO_LOCAL_KEY) ? config.getBooleanValue(NO_LOCAL_KEY) : null,
                 config.containsKey(ACTIVE_FLOW_INDICATION_KEY) ? config.getBooleanValue(ACTIVE_FLOW_INDICATION_KEY) :
                         null,
@@ -118,9 +114,9 @@ public record TopicConsumerConfig(
         return value != null ? value.toString() : null;
     }
 
-    private static String extractEndpointType(BMap<BString, Object> config) {
-        Object value = config.get(ENDPOINT_TYPE_KEY);
-        return value != null ? value.toString() : DEFAULT_ENDPOINT_TYPE;
+    private static String extractDurability(BMap<BString, Object> config) {
+        Object value = config.get(DURABILITY_KEY);
+        return value != null ? value.toString() : DEFAULT_DURABILITY;
     }
 
     private static String extractEndpointName(BMap<BString, Object> config) {
@@ -142,10 +138,10 @@ public record TopicConsumerConfig(
     /**
      * Check if this is a durable topic subscription.
      *
-     * @return true if endpoint type is DURABLE
+     * @return true if durability is DURABLE
      */
     public boolean isDurable() {
-        return "DURABLE".equalsIgnoreCase(endpointType);
+        return "DURABLE".equalsIgnoreCase(durability);
     }
 
     /**

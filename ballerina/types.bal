@@ -270,8 +270,6 @@ public type CommonConsumerConfiguration record {|
     int ackThreshold?;
     # Acknowledgement timer in seconds (0.02 - 1.5, default 0) - FlowReceiver only
     decimal ackTimer = 0.0;
-    # Auto-start the flow upon creation (default false) - FlowReceiver only
-    boolean startState?;
     # Prevent receiving messages published on same session (default false) - FlowReceiver only
     boolean noLocal = false;
     # Enable active/inactive flow indication (default false) - FlowReceiver only
@@ -285,12 +283,13 @@ public type CommonConsumerConfiguration record {|
 # Queue consumer configuration for synchronous (pull-based) consumption
 public type QueueConfiguration record {|
     *CommonConsumerConfiguration;
-    # The queue name to consume messages from
-    string queueName;
-    # Whether this is a temporary queue (auto-deleted when session disconnects)
-    # Temporary queues are useful for short-lived, session-specific messaging patterns like request-reply.
-    # If true, a temporary queue will be created; if false (default), uses a durable queue that must be pre-provisioned.
-    boolean temporary = false;
+    # The queue name to consume messages from - REQUIRED unless durability is TEMPORARY (optional broker-generated
+    # name hint when TEMPORARY)
+    string queueName?;
+    # Whether this is a durable (pre-provisioned, named) queue or a temporary (auto-deleted when session
+    # disconnects) one. Temporary queues are useful for short-lived, session-specific messaging patterns like
+    # request-reply.
+    Durability durability = DURABLE;
 |};
 
 # Topic consumer configuration for synchronous (pull-based) consumption
@@ -298,9 +297,9 @@ public type TopicConfiguration record {|
     *CommonConsumerConfiguration;
     # The topic name to subscribe to
     string topicName;
-    # Endpoint type: DEFAULT (ephemeral/direct) or DURABLE (persisted on broker)
-    EndpointType endpointType = DEFAULT;
-    # Endpoint name - REQUIRED when endpointType is DURABLE (optional for DEFAULT)
+    # Durability: TEMPORARY (ephemeral/direct) or DURABLE (persisted on broker)
+    Durability durability = TEMPORARY;
+    # Endpoint name - REQUIRED when durability is DURABLE (optional for TEMPORARY)
     # Used to identify the durable topic endpoint on the broker. Must be unique for durable endpoints.
     string endpointName?;
 |};
@@ -328,37 +327,15 @@ public enum DeliveryMode {
     PERSISTENT
 }
 
-# Endpoint types for producer destinations
-public enum EndpointType {
-    DEFAULT,
+# Durability of a queue or topic subscription: TEMPORARY (ephemeral, auto-deleted) or DURABLE (persisted on broker)
+public enum Durability {
+    TEMPORARY,
     DURABLE
 }
 
 # Common service subscription fields (listener subscription configuration)
-# Note: Flow control properties below only apply to FlowReceiver usage (queues and durable topic endpoints)
-# They are ignored for direct topic subscriptions which use XMLMessageConsumer
 public type CommonServiceConfiguration record {|
-    # JCSMP acknowledgement mode
-    AcknowledgementMode ackMode = AUTO_ACK;
-    # Optional SQL-92 message selector for filtering messages on the broker before delivery
-    # Applies to both queue consumers and durable topic endpoint subscriptions (flows only).
-    # Not supported for direct topic subscriptions. Filters messages based on their properties and headers.
-    # Example: "OrderType = 'URGENT' AND Priority > 5" - only messages matching this condition will be delivered.
-    string messageSelector?;
-    # JCSMP flow control transport window size (1-255, default 255) - FlowReceiver only
-    int transportWindowSize?;
-    # Acknowledgement threshold as percentage of window size (1-75, default 0) - FlowReceiver only
-    int ackThreshold?;
-    # Acknowledgement timer in seconds (0.02 - 1.5 seconds, default 0.0 seconds) - FlowReceiver only
-    decimal ackTimer = 0.0;
-    # Prevent receiving messages published on same session (default false) - FlowReceiver only
-    boolean noLocal = false;
-    # Enable active/inactive flow indication (default false) - FlowReceiver only
-    boolean activeFlowIndication?;
-    # Number of reconnection attempts after flow goes down (-1 = infinite, default -1) - FlowReceiver only
-    int reconnectTries?;
-    # Wait time between reconnection attempts in seconds (min 0.05 seconds, default 3.0 seconds) - FlowReceiver only
-    decimal reconnectRetryInterval = 3.0;
+    *CommonConsumerConfiguration;
 |};
 
 # Queue service configuration for asynchronous (push-based) consumption via Listener
@@ -373,9 +350,9 @@ public type TopicServiceConfiguration record {|
     *CommonServiceConfiguration;
     # The topic name to subscribe to
     string topicName;
-    # Endpoint type: DEFAULT (ephemeral/direct) or DURABLE (persisted on broker)
-    EndpointType endpointType = DEFAULT;
-    # Endpoint name - REQUIRED when endpointType is DURABLE (optional for DEFAULT)
+    # Durability: TEMPORARY (ephemeral/direct) or DURABLE (persisted on broker)
+    Durability durability = TEMPORARY;
+    # Endpoint name - REQUIRED when durability is DURABLE (optional for TEMPORARY)
     # Used to identify the durable topic endpoint on the broker. Must be unique for durable endpoints.
     string endpointName?;
 |};

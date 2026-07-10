@@ -34,10 +34,11 @@ import io.ballerina.lib.solace.config.QueueConsumerConfig;
 import io.ballerina.lib.solace.config.TopicConsumerConfig;
 import io.ballerina.runtime.api.values.BObject;
 
-import static io.xlibb.solace.common.Constants.NATIVE_CONSUMER;
-import static io.xlibb.solace.common.Constants.NATIVE_FLOW;
-import static io.xlibb.solace.common.Constants.NATIVE_SESSION;
-import static io.xlibb.solace.common.Constants.NATIVE_SUBSCRIPTION_TYPE;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_CONSUMER;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_DESTINATION;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_FLOW;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_SESSION;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_SUBSCRIPTION_TYPE;
 
 /**
  * Utility class for consumer-related operations.
@@ -70,9 +71,6 @@ public class ConsumerUtils {
             flowProps.setAckThreshold(config.ackThreshold());
         }
         flowProps.setAckTimerInMsecs(config.ackTimerInMsecs());
-        if (config.startState() != null) {
-            flowProps.setStartState(config.startState());
-        }
         if (config.noLocal() != null) {
             flowProps.setNoLocal(config.noLocal());
         }
@@ -94,7 +92,7 @@ public class ConsumerUtils {
      * @throws JCSMPException if queue creation fails
      */
     private static Queue createQueue(JCSMPSession session, QueueConsumerConfig config) throws JCSMPException {
-        if (config.temporary()) {
+        if (config.isTemporary()) {
             return (config.queueName() != null && !config.queueName().isEmpty())
                     ? session.createTemporaryQueue(config.queueName())
                     : session.createTemporaryQueue();
@@ -131,6 +129,7 @@ public class ConsumerUtils {
 
         consumer.addNativeData(NATIVE_FLOW, flowReceiver);
         consumer.addNativeData(NATIVE_SUBSCRIPTION_TYPE, SUBSCRIPTION_TYPE_QUEUE);
+        consumer.addNativeData(NATIVE_DESTINATION, queue.getName());
     }
 
     /**
@@ -173,6 +172,7 @@ public class ConsumerUtils {
 
         consumer.addNativeData(NATIVE_FLOW, flowReceiver);
         consumer.addNativeData(NATIVE_SUBSCRIPTION_TYPE, SUBSCRIPTION_TYPE_DURABLE_TOPIC);
+        consumer.addNativeData(NATIVE_DESTINATION, config.topicName());
     }
 
     /**
@@ -193,5 +193,6 @@ public class ConsumerUtils {
 
         consumer.addNativeData(NATIVE_CONSUMER, xmlConsumer);
         consumer.addNativeData(NATIVE_SUBSCRIPTION_TYPE, SUBSCRIPTION_TYPE_DIRECT_TOPIC);
+        consumer.addNativeData(NATIVE_DESTINATION, config.topicName());
     }
 }

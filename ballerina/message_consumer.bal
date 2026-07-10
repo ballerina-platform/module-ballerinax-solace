@@ -42,7 +42,7 @@ import ballerina/jballerina.java;
 #     auth = {username: "default"},
 #     subscriptionConfig = {
 #         topicName: "orders/*/created",
-#         endpointType: "DEFAULT"
+#         durability: "TEMPORARY"
 #     }
 # );
 # smf:Message? msg = check consumer->receive(10.0);
@@ -148,6 +148,17 @@ public isolated client class MessageConsumer {
     isolated remote function close() returns Error? = @java:Method {
         'class: "io.xlibb.solace.consumer.ConsumerActions",
         name: "close"
+    } external;
+
+    # Get the resolved name of the destination (queue or topic) this consumer is bound to.
+    #
+    # For a `durability: TEMPORARY` queue created without a `queueName` hint, this returns the broker-generated
+    # name - useful for publishing it as a `replyTo` address before any message has been received.
+    #
+    # + return - The destination name
+    isolated remote function destinationName() returns string = @java:Method {
+        'class: "io.ballerina.lib.solace.consumer.ConsumerActions",
+        name: "destinationName"
     } external;
 }
 

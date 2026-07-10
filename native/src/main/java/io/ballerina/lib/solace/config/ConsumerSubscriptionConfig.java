@@ -34,24 +34,22 @@ public sealed interface ConsumerSubscriptionConfig permits QueueConsumerConfig, 
 
     /**
      * Factory method to create the appropriate ConsumerSubscriptionConfig type based on the configuration map.
+     * <p>
+     * Queue is the default when neither {@code queueName} nor {@code topicName} is present: a topic subscription
+     * always requires a {@code topicName}, so the only legitimate reason to omit both is an anonymous temporary
+     * queue (a {@code durability: TEMPORARY} queue with no name hint).
      *
      * @param config the configuration map containing either queueName or topicName
      * @return a QueueConsumerConfig or TopicConsumerConfig instance
-     * @throws IllegalArgumentException if neither queueName nor topicName is present
      */
     static ConsumerSubscriptionConfig fromBMap(BMap<BString, Object> config) {
         BString queueNameKey = StringUtils.fromString("queueName");
         BString topicNameKey = StringUtils.fromString("topicName");
 
-        if (config.containsKey(queueNameKey)) {
-            return new QueueConsumerConfig(config);
-        } else if (config.containsKey(topicNameKey)) {
+        if (config.containsKey(topicNameKey) && !config.containsKey(queueNameKey)) {
             return new TopicConsumerConfig(config);
-        } else {
-            throw new IllegalArgumentException(
-                    "Consumer subscription config must have either 'queueName' or 'topicName' field"
-            );
         }
+        return new QueueConsumerConfig(config);
     }
 
     AcknowledgementMode ackMode();
@@ -63,8 +61,6 @@ public sealed interface ConsumerSubscriptionConfig permits QueueConsumerConfig, 
     Integer ackThreshold();
 
     int ackTimerInMsecs();
-
-    Boolean startState();
 
     Boolean noLocal();
 

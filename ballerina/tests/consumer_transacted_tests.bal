@@ -319,7 +319,7 @@ isolated function testConsumerTransactedDirectTopicError() returns error? {
         },
         subscriptionConfig: {
             topicName: CONSUMER_DIRECT_TOPIC,
-            endpointType: DEFAULT
+            durability: TEMPORARY
         }
     });
 

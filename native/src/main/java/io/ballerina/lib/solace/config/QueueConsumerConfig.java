@@ -32,15 +32,16 @@ import java.math.BigDecimal;
  * shared by both the synchronous (pull-based) MessageConsumer and the asynchronous (push-based) Listener. Maps to
  * QueueConfiguration/QueueServiceConfiguration in Ballerina types.bal.
  *
- * @param queueName                     the name of the queue to consume from
- * @param temporary                     whether this is a temporary queue (auto-deleted when session disconnects)
+ * @param queueName                     the name of the queue to consume from - required unless durability is
+ *                                      TEMPORARY (optional broker-generated name hint when TEMPORARY)
+ * @param durability                    DURABLE (pre-provisioned, named queue) or TEMPORARY (auto-deleted when
+ *                                      session disconnects)
  * @param ackMode                       the JCSMP acknowledgement mode (SUPPORTED_MESSAGE_ACK_AUTO or
  *                                      SUPPORTED_MESSAGE_ACK_CLIENT)
  * @param selector                      optional SQL-92 message selector expression for filtering
  * @param transportWindowSize           JCSMP transport window size for flow control (1-255, default 255)
  * @param ackThreshold                  ACK threshold as percentage of window size (1-75, default 0)
  * @param ackTimerInMsecs               ACK timer in milliseconds (20-1500, default 0)
- * @param startState                    auto-start the flow upon creation (default false)
  * @param noLocal                       prevent receiving messages published on same session (default false)
  * @param activeFlowIndication          enable active/inactive flow indication (default false)
  * @param reconnectTries                number of reconnection attempts after flow goes down (-1 = infinite)
@@ -48,13 +49,12 @@ import java.math.BigDecimal;
  */
 public record QueueConsumerConfig(
         String queueName,
-        boolean temporary,
+        String durability,
         AcknowledgementMode ackMode,
         String selector,
         Integer transportWindowSize,
         Integer ackThreshold,
         int ackTimerInMsecs,
-        Boolean startState,
         Boolean noLocal,
         Boolean activeFlowIndication,
         Integer reconnectTries,
@@ -62,13 +62,12 @@ public record QueueConsumerConfig(
 ) implements ConsumerSubscriptionConfig {
 
     private static final BString QUEUE_NAME_KEY = StringUtils.fromString("queueName");
-    private static final BString TEMPORARY_KEY = StringUtils.fromString("temporary");
+    private static final BString DURABILITY_KEY = StringUtils.fromString("durability");
     private static final BString ACK_MODE_KEY = StringUtils.fromString("ackMode");
     private static final BString MESSAGE_SELECTOR_KEY = StringUtils.fromString("messageSelector");
     private static final BString TRANSPORT_WINDOW_SIZE_KEY = StringUtils.fromString("transportWindowSize");
     private static final BString ACK_THRESHOLD_KEY = StringUtils.fromString("ackThreshold");
     private static final BString ACK_TIMER_KEY = StringUtils.fromString("ackTimer");
-    private static final BString START_STATE_KEY = StringUtils.fromString("startState");
     private static final BString NO_LOCAL_KEY = StringUtils.fromString("noLocal");
     private static final BString ACTIVE_FLOW_INDICATION_KEY = StringUtils.fromString("activeFlowIndication");
     private static final BString RECONNECT_TRIES_KEY = StringUtils.fromString("reconnectTries");
@@ -76,6 +75,7 @@ public record QueueConsumerConfig(
 
     private static final String DEFAULT_ACK_MODE = JCSMPProperties.SUPPORTED_MESSAGE_ACK_AUTO;
     private static final int DEFAULT_WINDOW_SIZE = 255;
+    private static final String DEFAULT_DURABILITY = "DURABLE";
 
     /**
      * Creates a QueueConsumerConfig from a Ballerina map record.
@@ -85,13 +85,12 @@ public record QueueConsumerConfig(
     public QueueConsumerConfig(BMap<BString, Object> config) {
         this(
                 extractQueueName(config),
-                extractTemporary(config),
+                extractDurability(config),
                 AcknowledgementMode.valueOf(config.getStringValue(ACK_MODE_KEY).getValue()),
                 extractSelector(config),
                 extractOptionalInteger(config, TRANSPORT_WINDOW_SIZE_KEY),
                 extractOptionalInteger(config, ACK_THRESHOLD_KEY),
                 decimalToMillis(((BDecimal) config.get(ACK_TIMER_KEY)).decimalValue()),
-                config.containsKey(START_STATE_KEY) ? config.getBooleanValue(START_STATE_KEY) : null,
                 config.containsKey(NO_LOCAL_KEY) ? config.getBooleanValue(NO_LOCAL_KEY) : null,
                 config.containsKey(ACTIVE_FLOW_INDICATION_KEY) ? config.getBooleanValue(ACTIVE_FLOW_INDICATION_KEY) :
                         null,
@@ -102,21 +101,12 @@ public record QueueConsumerConfig(
 
     private static String extractQueueName(BMap<BString, Object> config) {
         Object value = config.get(QUEUE_NAME_KEY);
-        if (value == null) {
-            throw new IllegalArgumentException("queueName is required for QueueConsumerConfig");
-        }
-        return value.toString();
+        return value != null ? value.toString() : null;
     }
 
-    private static boolean extractTemporary(BMap<BString, Object> config) {
-        Object value = config.get(TEMPORARY_KEY);
-        if (value == null) {
-            return false;
-        }
-        if (value instanceof Boolean bool) {
-            return bool;
-        }
-        return Boolean.parseBoolean(value.toString());
+    private static String extractDurability(BMap<BString, Object> config) {
+        Object value = config.get(DURABILITY_KEY);
+        return value != null ? value.toString() : DEFAULT_DURABILITY;
     }
 
     private static String extractSelector(BMap<BString, Object> config) {
@@ -137,5 +127,27 @@ public record QueueConsumerConfig(
 
     private static int decimalToMillis(BigDecimal seconds) {
         return seconds.multiply(BigDecimal.valueOf(1000)).intValue();
+    }
+
+    /**
+     * Check if this is a temporary queue.
+     *
+     * @return true if durability is TEMPORARY
+     */
+    public boolean isTemporary() {
+        return "TEMPORARY".equalsIgnoreCase(durability);
+    }
+
+    /**
+     * Validates the shared flow-control bounds, then that queueName is provided when durability is DURABLE.
+     *
+     * @throws IllegalArgumentException if a flow-control bound is violated, or queueName is missing while durable
+     */
+    @Override
+    public void validate() {
+        ConsumerSubscriptionConfig.super.validate();
+        if (!isTemporary() && (queueName == null || queueName.isEmpty())) {
+            throw new IllegalArgumentException("queueName is required when durability is not TEMPORARY");
+        }
     }
 }

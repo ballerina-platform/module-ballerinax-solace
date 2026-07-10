@@ -45,7 +45,7 @@ isolated function testConsumerInitWithDirectTopic() returns error? {
         },
         subscriptionConfig: {
             topicName: CONSUMER_DIRECT_TOPIC,
-            endpointType: DEFAULT
+            durability: TEMPORARY
         }
     });
 
@@ -62,7 +62,7 @@ isolated function testConsumerInitWithDurableTopic() returns error? {
         },
         subscriptionConfig: {
             topicName: CONSUMER_DURABLE_TOPIC,
-            endpointType: DURABLE,
+            durability: DURABLE,
             endpointName: CONSUMER_DURABLE_ENDPOINT
         }
     });
@@ -114,8 +114,7 @@ isolated function testConsumerInitWithFlowProperties() returns error? {
             queueName: CONSUMER_FLOW_QUEUE,
             transportWindowSize: 200,
             ackThreshold: 50,
-            ackTimer: 0.5,
-            startState: true
+            ackTimer: 0.5
         }
     });
 
@@ -171,6 +170,49 @@ isolated function testConsumerInitWithAckTimerTooHigh() returns error? {
     if consumer is error {
         test:assertEquals(consumer.message(), "Failed to initialize consumer: ackTimer must be between 0.02 and 1.5 seconds");
     }
+}
+
+@test:Config {groups: ["consumer", "init", "validation", "negative"]}
+isolated function testConsumerInitWithDurableQueueMissingName() returns error? {
+    MessageConsumer|error consumer = new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
+        subscriptionConfig: {durability: DURABLE}
+    });
+
+    test:assertTrue(consumer is error, "A DURABLE queue with no queueName should fail validation");
+    if consumer is error {
+        test:assertEquals(consumer.message(),
+                "Failed to initialize consumer: queueName is required when durability is not TEMPORARY");
+    }
+}
+
+@test:Config {groups: ["consumer", "init"]}
+isolated function testConsumerInitWithTemporaryQueueNoName() returns error? {
+    MessageConsumer consumer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
+        subscriptionConfig: {durability: TEMPORARY}
+    });
+
+    string destinationName = consumer->destinationName();
+    test:assertTrue(destinationName.length() > 0, "A TEMPORARY queue should resolve to a broker-generated name");
+
+    check consumer->close();
+}
+
+@test:Config {groups: ["consumer", "init"]}
+isolated function testConsumerDestinationNameForTopic() returns error? {
+    MessageConsumer consumer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
+        subscriptionConfig: {topicName: CONSUMER_DIRECT_TOPIC}
+    });
+
+    string destinationName = consumer->destinationName();
+    test:assertEquals(destinationName, CONSUMER_DIRECT_TOPIC, "destinationName() should return the topic name");
+
+    check consumer->close();
 }
 
 @test:Config {groups: ["consumer", "init"]}
@@ -439,7 +481,7 @@ isolated function testConsumerReceiveFromDirectTopic() returns error? {
         },
         subscriptionConfig: {
             topicName: CONSUMER_DIRECT_TOPIC,
-            endpointType: DEFAULT
+            durability: TEMPORARY
         }
     });
 

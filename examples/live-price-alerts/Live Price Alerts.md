@@ -34,4 +34,4 @@ The publisher logs all three price updates. The subscriber only logs an alert fo
 
 ## Variations
 
-- **Broker-side filtering**: message selectors (`messageSelector` in `@solace:ServiceConfig`) are supported for queue and durable topic endpoint subscriptions. To push the `changePercent > 5.0` filter onto the broker instead of filtering in `onMessage`, switch the subscriber to a durable topic endpoint (`endpointType: solace:DURABLE` with an `endpointName`, pre-provisioned on the broker) and add `messageSelector: "changePercent > 5.0"` - the same property published in the message's `properties` map.
+- **Broker-side filtering**: message selectors (`messageSelector` in `@solace:ServiceConfig`) are supported for queue and durable topic endpoint subscriptions. To push the `changePercent > 5.0` filter onto the broker instead of filtering in `onMessage`, switch the subscriber to a durable topic endpoint (`durability: solace:DURABLE` with an `endpointName`, pre-provisioned on the broker) and add `messageSelector: "changePercent > 5.0"` - the same property published in the message's `properties` map.
