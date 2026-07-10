@@ -29,10 +29,10 @@ public function main() returns error? {
     ];
 
     foreach Payment payment in payments {
-        check producer->send({queueName: PAYMENTS_QUEUE}, {
+        check producer->send({
             payload: payment,
             deliveryMode: solace:PERSISTENT
-        });
+        }, {queueName: PAYMENTS_QUEUE});
         log:printInfo("Payment submitted", paymentId = payment.paymentId, amount = payment.amount);
     }
 

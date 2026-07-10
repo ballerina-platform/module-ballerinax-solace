@@ -122,6 +122,57 @@ isolated function testConsumerInitWithFlowProperties() returns error? {
     check consumer->close();
 }
 
+@test:Config {groups: ["consumer", "init", "validation", "negative"]}
+isolated function testConsumerInitWithTransportWindowSizeTooHigh() returns error? {
+    MessageConsumer|error consumer = new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
+        subscriptionConfig: {
+            queueName: CONSUMER_FLOW_QUEUE,
+            transportWindowSize: 256
+        }
+    });
+
+    test:assertTrue(consumer is error, "transportWindowSize above 255 should fail validation");
+    if consumer is error {
+        test:assertEquals(consumer.message(), "Failed to initialize consumer: transportWindowSize must be between 1 and 255");
+    }
+}
+
+@test:Config {groups: ["consumer", "init", "validation", "negative"]}
+isolated function testConsumerInitWithAckThresholdTooHigh() returns error? {
+    MessageConsumer|error consumer = new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
+        subscriptionConfig: {
+            queueName: CONSUMER_FLOW_QUEUE,
+            ackThreshold: 76
+        }
+    });
+
+    test:assertTrue(consumer is error, "ackThreshold above 75 should fail validation");
+    if consumer is error {
+        test:assertEquals(consumer.message(), "Failed to initialize consumer: ackThreshold must be between 1 and 75");
+    }
+}
+
+@test:Config {groups: ["consumer", "init", "validation", "negative"]}
+isolated function testConsumerInitWithAckTimerTooHigh() returns error? {
+    MessageConsumer|error consumer = new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
+        subscriptionConfig: {
+            queueName: CONSUMER_FLOW_QUEUE,
+            ackTimer: 2.0
+        }
+    });
+
+    test:assertTrue(consumer is error, "ackTimer above 1.5 seconds should fail validation");
+    if consumer is error {
+        test:assertEquals(consumer.message(), "Failed to initialize consumer: ackTimer must be between 0.02 and 1.5 seconds");
+    }
+}
+
 @test:Config {groups: ["consumer", "init"]}
 isolated function testConsumerInitTransacted() returns error? {
     MessageConsumer consumer = check new (BROKER_URL, {
@@ -152,8 +203,8 @@ isolated function sendMessageToQueue(string queueName, string content) returns e
     });
 
     check producer->send(
-        {queueName: queueName},
-        {payload: content.toBytes()}
+        {payload: content.toBytes()},
+        {queueName: queueName}
     );
 
     check producer->close();
@@ -248,8 +299,8 @@ isolated function testConsumerReceiveBinaryFromQueue() returns error? {
     byte[] BINARY_MESSAGE_CONTENT = "Hello".toBytes();
 
     check producer->send(
-        {queueName: CONSUMER_BINARY_QUEUE},
-        {payload: BINARY_MESSAGE_CONTENT}
+        {payload: BINARY_MESSAGE_CONTENT},
+        {queueName: CONSUMER_BINARY_QUEUE}
     );
 
     check producer->close();
@@ -287,7 +338,6 @@ isolated function testConsumerReceiveWithProperties() returns error? {
 
     byte[] binaryProp = [1, 2, 3, 4];
     check producer->send(
-        {queueName: CONSUMER_PROPERTIES_QUEUE},
         {
         payload: TEXT_MESSAGE_CONTENT.toBytes(),
         properties: {
@@ -297,7 +347,8 @@ isolated function testConsumerReceiveWithProperties() returns error? {
             "binaryProp": binaryProp,
             "nestedProp": {"region": "EU", "retryCount": 2}
         }
-    }
+    },
+        {queueName: CONSUMER_PROPERTIES_QUEUE}
     );
 
     check producer->close();
@@ -323,7 +374,7 @@ isolated function testConsumerReceiveWithProperties() returns error? {
             test:assertEquals(msg.properties["customerId"], "12345", "customerId should match");
             test:assertEquals(msg.properties["binaryProp"], binaryProp, "binaryProp should match");
             test:assertEquals(msg.properties["nestedProp"], {"region": "EU", "retryCount": 2},
-                    "nestedProp should match");
+                                                            "nestedProp should match");
         }
     }
 
@@ -342,14 +393,14 @@ isolated function testConsumerReceiveWithMetadata() returns error? {
     });
 
     check producer->send(
-        {queueName: CONSUMER_METADATA_QUEUE},
         {
         payload: TEXT_MESSAGE_CONTENT.toBytes(),
         correlationId: "test-corr-id",
         applicationMessageId: "test-app-msg-id",
         applicationMessageType: "TEST_TYPE",
         senderId: "test-sender"
-    }
+    },
+        {queueName: CONSUMER_METADATA_QUEUE}
     );
 
     check producer->close();
@@ -402,8 +453,8 @@ isolated function testConsumerReceiveFromDirectTopic() returns error? {
     });
 
     check producer->send(
-        {topicName: CONSUMER_DIRECT_TOPIC},
-        {payload: "Direct topic message".toBytes()}
+        {payload: "Direct topic message".toBytes()},
+        {topicName: CONSUMER_DIRECT_TOPIC}
     );
 
     check producer->close();
@@ -432,26 +483,26 @@ isolated function testConsumerReceiveWithSelector() returns error? {
 
     // Message that doesn't match selector (should be filtered out)
     check producer->send(
-        {queueName: CONSUMER_SELECTOR_QUEUE},
         {
         payload: "Normal message".toBytes(),
         properties: {
             "messageType": "NORMAL",
             "level": 2
         }
-    }
+    },
+        {queueName: CONSUMER_SELECTOR_QUEUE}
     );
 
     // Message that matches selector (messageType = 'URGENT')
     check producer->send(
-        {queueName: CONSUMER_SELECTOR_QUEUE},
         {
         payload: "Urgent message".toBytes(),
         properties: {
             "messageType": "URGENT",
             "level": 10
         }
-    }
+    },
+        {queueName: CONSUMER_SELECTOR_QUEUE}
     );
 
     check producer->close();
@@ -495,18 +546,18 @@ isolated function testConsumerReceiveMultipleMessages() returns error? {
     });
 
     check producer->send(
-        {queueName: CONSUMER_MULTIPLE_QUEUE},
-        {payload: "Message 1".toBytes()}
+        {payload: "Message 1".toBytes()},
+        {queueName: CONSUMER_MULTIPLE_QUEUE}
     );
 
     check producer->send(
-        {queueName: CONSUMER_MULTIPLE_QUEUE},
-        {payload: "Message 2".toBytes()}
+        {payload: "Message 2".toBytes()},
+        {queueName: CONSUMER_MULTIPLE_QUEUE}
     );
 
     check producer->send(
-        {queueName: CONSUMER_MULTIPLE_QUEUE},
-        {payload: "Message 3".toBytes()}
+        {payload: "Message 3".toBytes()},
+        {queueName: CONSUMER_MULTIPLE_QUEUE}
     );
 
     check producer->close();
@@ -557,8 +608,8 @@ isolated function testConsumerDefaultAckModeDoesNotRedeliver() returns error? {
     });
 
     check producer->send(
-        {queueName: ACK_DEFAULT_MODE_QUEUE},
-        {payload: "Message for default ack mode test".toBytes()}
+        {payload: "Message for default ack mode test".toBytes()},
+        {queueName: ACK_DEFAULT_MODE_QUEUE}
     );
 
     check producer->close();

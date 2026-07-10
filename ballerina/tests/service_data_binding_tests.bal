@@ -132,7 +132,7 @@ function testServiceBindStringPayload() returns error? {
     runtime:sleep(2);
 
     MessageProducer producer = check new (BROKER_URL, connectionConfig());
-    check producer->send({queueName: BINDING_SVC_POSITIVE_QUEUE}, {payload: "hello-string-binding"});
+    check producer->send({payload: "hello-string-binding"}, {queueName: BINDING_SVC_POSITIVE_QUEUE});
     check producer->close();
 
     waitForBindingPayload(stringBindingRecorder);
@@ -162,7 +162,7 @@ function testServiceBindIntPayload() returns error? {
     runtime:sleep(2);
 
     MessageProducer producer = check new (BROKER_URL, connectionConfig());
-    check producer->send({queueName: BINDING_SVC_POSITIVE_QUEUE}, {payload: 42});
+    check producer->send({payload: 42}, {queueName: BINDING_SVC_POSITIVE_QUEUE});
     check producer->close();
 
     waitForBindingPayload(intBindingRecorder);
@@ -192,7 +192,7 @@ function testServiceBindFloatPayload() returns error? {
     runtime:sleep(2);
 
     MessageProducer producer = check new (BROKER_URL, connectionConfig());
-    check producer->send({queueName: BINDING_SVC_POSITIVE_QUEUE}, {payload: <float>3.5});
+    check producer->send({payload: <float>3.5}, {queueName: BINDING_SVC_POSITIVE_QUEUE});
     check producer->close();
 
     waitForBindingPayload(floatBindingRecorder);
@@ -222,7 +222,7 @@ function testServiceBindDecimalPayload() returns error? {
     runtime:sleep(2);
 
     MessageProducer producer = check new (BROKER_URL, connectionConfig());
-    check producer->send({queueName: BINDING_SVC_POSITIVE_QUEUE}, {payload: 12.75d});
+    check producer->send({payload: 12.75d}, {queueName: BINDING_SVC_POSITIVE_QUEUE});
     check producer->close();
 
     waitForBindingPayload(decimalBindingRecorder);
@@ -252,7 +252,7 @@ function testServiceBindBooleanPayload() returns error? {
     runtime:sleep(2);
 
     MessageProducer producer = check new (BROKER_URL, connectionConfig());
-    check producer->send({queueName: BINDING_SVC_POSITIVE_QUEUE}, {payload: true});
+    check producer->send({payload: true}, {queueName: BINDING_SVC_POSITIVE_QUEUE});
     check producer->close();
 
     waitForBindingPayload(booleanBindingRecorder);
@@ -282,7 +282,7 @@ function testServiceBindBytesPayload() returns error? {
     runtime:sleep(2);
 
     MessageProducer producer = check new (BROKER_URL, connectionConfig());
-    check producer->send({queueName: BINDING_SVC_POSITIVE_QUEUE}, {payload: "hello-bytes-binding".toBytes()});
+    check producer->send({payload: "hello-bytes-binding".toBytes()}, {queueName: BINDING_SVC_POSITIVE_QUEUE});
     check producer->close();
 
     waitForBindingPayload(bytesBindingRecorder);
@@ -313,7 +313,7 @@ function testServiceBindXmlPayload() returns error? {
 
     xml orderXml = xml `<order><id>42</id></order>`;
     MessageProducer producer = check new (BROKER_URL, connectionConfig());
-    check producer->send({queueName: BINDING_SVC_POSITIVE_QUEUE}, {payload: orderXml});
+    check producer->send({payload: orderXml}, {queueName: BINDING_SVC_POSITIVE_QUEUE});
     check producer->close();
 
     waitForBindingPayload(xmlBindingRecorder);
@@ -347,7 +347,7 @@ function testServiceBindJsonPayload() returns error? {
 
     json orderJson = {name: "json-order", tags: ["a", "b"]};
     MessageProducer producer = check new (BROKER_URL, connectionConfig());
-    check producer->send({queueName: BINDING_SVC_POSITIVE_QUEUE}, {payload: orderJson});
+    check producer->send({payload: orderJson}, {queueName: BINDING_SVC_POSITIVE_QUEUE});
     check producer->close();
 
     waitForBindingPayload(jsonBindingRecorder);
@@ -378,7 +378,7 @@ function testServiceBindFlatRecordPayload() returns error? {
 
     DataBindingFlatRecord flatRecord = {name: "Alice", age: 30};
     MessageProducer producer = check new (BROKER_URL, connectionConfig());
-    check producer->send({queueName: BINDING_SVC_POSITIVE_QUEUE}, {payload: flatRecord});
+    check producer->send({payload: flatRecord}, {queueName: BINDING_SVC_POSITIVE_QUEUE});
     check producer->close();
 
     waitForBindingPayload(recordBindingRecorder);
@@ -409,7 +409,7 @@ function testServiceBindNestedRecordPayload() returns error? {
 
     DataBindingPerson person = {name: "Bob", age: 40, address: {city: "Colombo", country: "LK"}};
     MessageProducer producer = check new (BROKER_URL, connectionConfig());
-    check producer->send({queueName: BINDING_SVC_POSITIVE_QUEUE}, {payload: person});
+    check producer->send({payload: person}, {queueName: BINDING_SVC_POSITIVE_QUEUE});
     check producer->close();
 
     waitForBindingPayload(nestedRecordBindingRecorder);
@@ -440,7 +440,7 @@ function testServiceBindMapPayload() returns error? {
 
     map<Value> orderMap = {id: 7, active: true, tags: {a: "b"}};
     MessageProducer producer = check new (BROKER_URL, connectionConfig());
-    check producer->send({queueName: BINDING_SVC_POSITIVE_QUEUE}, {payload: orderMap});
+    check producer->send({payload: orderMap}, {queueName: BINDING_SVC_POSITIVE_QUEUE});
     check producer->close();
 
     waitForBindingPayload(mapBindingRecorder);
@@ -471,7 +471,7 @@ function testServiceBindWithCaller() returns error? {
     runtime:sleep(2);
 
     MessageProducer producer = check new (BROKER_URL, connectionConfig());
-    check producer->send({queueName: BINDING_SVC_POSITIVE_QUEUE}, {payload: "hello-caller-binding"});
+    check producer->send({payload: "hello-caller-binding"}, {queueName: BINDING_SVC_POSITIVE_QUEUE});
     check producer->close();
 
     waitForBindingPayload(callerBindingRecorder);
@@ -514,7 +514,7 @@ function testServiceBindMismatchIntSentStringExpected() returns error? {
     runtime:sleep(2);
 
     MessageProducer producer = check new (BROKER_URL, connectionConfig());
-    check producer->send({queueName: BINDING_SVC_MISMATCH_STRING_QUEUE}, {payload: 42});
+    check producer->send({payload: 42}, {queueName: BINDING_SVC_MISMATCH_STRING_QUEUE});
     check producer->close();
 
     waitForBindingError(mismatchStringRecorder);
@@ -547,7 +547,7 @@ function testServiceBindMismatchStringSentIntExpected() returns error? {
     runtime:sleep(2);
 
     MessageProducer producer = check new (BROKER_URL, connectionConfig());
-    check producer->send({queueName: BINDING_SVC_MISMATCH_INT_QUEUE}, {payload: "not-an-int"});
+    check producer->send({payload: "not-an-int"}, {queueName: BINDING_SVC_MISMATCH_INT_QUEUE});
     check producer->close();
 
     waitForBindingError(mismatchIntRecorder);
@@ -581,7 +581,7 @@ function testServiceBindMismatchIncompatibleRecord() returns error? {
 
     DataBindingFlatRecord flatRecord = {name: "Charlie", age: 25};
     MessageProducer producer = check new (BROKER_URL, connectionConfig());
-    check producer->send({queueName: BINDING_SVC_MISMATCH_RECORD_QUEUE}, {payload: flatRecord});
+    check producer->send({payload: flatRecord}, {queueName: BINDING_SVC_MISMATCH_RECORD_QUEUE});
     check producer->close();
 
     waitForBindingError(mismatchRecordRecorder);
@@ -616,10 +616,10 @@ function testServiceBindMismatchWithNoOnErrorHandler() returns error? {
 
     MessageProducer producer = check new (BROKER_URL, connectionConfig());
     // First message: wrong wire shape for 'string' -> binding fails; no onError exists to observe it.
-    check producer->send({queueName: BINDING_SVC_NO_ONERROR_QUEUE}, {payload: 42});
+    check producer->send({payload: 42}, {queueName: BINDING_SVC_NO_ONERROR_QUEUE});
     runtime:sleep(1);
     // Second message: well-formed -> must still be delivered, proving the dispatcher wasn't wedged.
-    check producer->send({queueName: BINDING_SVC_NO_ONERROR_QUEUE}, {payload: "still-works"});
+    check producer->send({payload: "still-works"}, {queueName: BINDING_SVC_NO_ONERROR_QUEUE});
     check producer->close();
 
     waitForBindingPayload(noOnErrorRecorder);

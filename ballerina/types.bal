@@ -204,7 +204,7 @@ public type RetryConfiguration record {|
 |};
 
 # Common connection configuration shared between producer and consumer
-public type CommonConnectionConfiguration record {|
+public type CommonConnectionConfiguration record {
     # The message VPN to connect to
     string messageVpn = "default";
     # The authentication configuration (basic, Kerberos, or OAuth2)
@@ -239,7 +239,7 @@ public type CommonConnectionConfiguration record {|
     boolean calculateMessageExpiration = false;
     # Retry configuration for connection attempts
     RetryConfiguration retryConfig?;
-|};
+};
 
 # Producer-specific configuration
 # Note: Destination is passed at send-time, not specified in configuration

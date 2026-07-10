@@ -126,7 +126,7 @@ isolated function publish(Destination destination, string payload, DeliveryMode 
     });
     // Sent as a `string` payload (-> TextMessage on the wire) to match the `StringPayloadMessage`-typed
     // `onMessage` handlers below, which reject a `BytesMessage`.
-    check producer->send(destination, {payload, deliveryMode});
+    check producer->send({payload, deliveryMode}, destination);
     check producer->close();
 }
 

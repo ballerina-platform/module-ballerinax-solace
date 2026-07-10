@@ -124,9 +124,9 @@ Now, you can use the available connector operations to interact with the Solace 
 #### Produce a message to a queue
 
 ```ballerina
-check producer->send({queueName}, {
+check producer->send({
     payload: "This is a sample message"
-});
+}, {queueName});
 ```
 
 #### Retrieve a message from a queue

@@ -94,6 +94,37 @@ isolated function testProducerInitWithTooManyTrustedCommonNames() returns error?
     }
 }
 
+@test:Config {groups: ["producer", "init", "validation", "negative"]}
+isolated function testProducerInitWithUsernameTooLong() returns error? {
+    MessageProducer|error producer = new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: "a-very-long-username-that-exceeds-32-characters", password: BROKER_PASSWORD}
+    });
+
+    test:assertTrue(producer is error, "username longer than 32 characters should fail validation");
+    if producer is error {
+        test:assertEquals(producer.message(), "Username cannot exceed 32 characters");
+    }
+}
+
+@test:Config {groups: ["producer", "init", "validation", "negative"]}
+isolated function testProducerInitWithPasswordTooLong() returns error? {
+    string tooLongPassword = "";
+    foreach int i in 0 ..< 129 {
+        tooLongPassword += "a";
+    }
+
+    MessageProducer|error producer = new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: tooLongPassword}
+    });
+
+    test:assertTrue(producer is error, "password longer than 128 characters should fail validation");
+    if producer is error {
+        test:assertEquals(producer.message(), "Password cannot exceed 128 characters");
+    }
+}
+
 @test:Config {groups: ["producer", "init"]}
 isolated function testProducerInitWithClientName() returns error? {
     MessageProducer producer = check new (BROKER_URL, {
@@ -152,8 +183,8 @@ isolated function testProducerSendTextToQueue() returns error? {
     });
 
     check producer->send(
-        {queueName: PRODUCER_TEXT_QUEUE},
-        {payload: TEXT_MESSAGE_CONTENT.toBytes()}
+        {payload: TEXT_MESSAGE_CONTENT.toBytes()},
+        {queueName: PRODUCER_TEXT_QUEUE}
     );
 
     check producer->close();
@@ -170,8 +201,8 @@ isolated function testProducerSendTextToTopic() returns error? {
     });
 
     check producer->send(
-        {topicName: PRODUCER_TOPIC},
-        {payload: TEXT_MESSAGE_CONTENT.toBytes()}
+        {payload: TEXT_MESSAGE_CONTENT.toBytes()},
+        {topicName: PRODUCER_TOPIC}
     );
 
     check producer->close();
@@ -188,7 +219,6 @@ isolated function testProducerSendWithProperties() returns error? {
     });
 
     check producer->send(
-        {queueName: PRODUCER_PROPERTIES_QUEUE},
         {
         payload: TEXT_MESSAGE_CONTENT.toBytes(),
         properties: {
@@ -197,7 +227,8 @@ isolated function testProducerSendWithProperties() returns error? {
             "customerId": "12345",
             "isProcessed": false
         }
-    }
+    },
+        {queueName: PRODUCER_PROPERTIES_QUEUE}
     );
 
     check producer->close();
@@ -214,7 +245,6 @@ isolated function testProducerSendWithMetadata() returns error? {
     });
 
     check producer->send(
-        {queueName: PRODUCER_METADATA_QUEUE},
         {
         payload: TEXT_MESSAGE_CONTENT.toBytes(),
         correlationId: "corr-123",
@@ -222,7 +252,8 @@ isolated function testProducerSendWithMetadata() returns error? {
         applicationMessageType: "ORDER_CREATED",
         senderId: "sender-789",
         replyTo: {queueName: "reply/queue"}
-    }
+    },
+        {queueName: PRODUCER_METADATA_QUEUE}
     );
 
     check producer->close();
@@ -239,12 +270,12 @@ isolated function testProducerSendWithTTL() returns error? {
     });
 
     check producer->send(
-        {queueName: PRODUCER_TTL_QUEUE},
         {
         payload: TEXT_MESSAGE_CONTENT.toBytes(),
         timeToLive: 60000,
         deliveryMode: PERSISTENT
-    }
+    },
+        {queueName: PRODUCER_TTL_QUEUE}
     );
 
     check producer->close();
@@ -261,12 +292,12 @@ isolated function testProducerSendPersistentMessage() returns error? {
     });
 
     check producer->send(
-        {queueName: PRODUCER_PERSISTENT_QUEUE},
         {
         payload: TEXT_MESSAGE_CONTENT.toBytes(),
         deliveryMode: PERSISTENT,
         priority: 128
-    }
+    },
+        {queueName: PRODUCER_PERSISTENT_QUEUE}
     );
 
     check producer->close();
@@ -285,11 +316,11 @@ isolated function testProducerSendWithUserData() returns error? {
     byte[] userData = [1, 2, 3, 4, 5];
 
     check producer->send(
-        {queueName: PRODUCER_USERDATA_QUEUE},
         {
         payload: TEXT_MESSAGE_CONTENT.toBytes(),
         userData: userData
-    }
+    },
+        {queueName: PRODUCER_USERDATA_QUEUE}
     );
 
     check producer->close();
@@ -327,19 +358,19 @@ isolated function testProducerTransactedCommit() returns error? {
     // Send multiple messages (buffered in transaction)
     // Note: Transacted messages must use PERSISTENT delivery mode
     check producer->send(
-        {queueName: PRODUCER_TX_COMMIT_QUEUE},
         {
         payload: "Message 1".toBytes(),
         deliveryMode: PERSISTENT
-    }
+    },
+        {queueName: PRODUCER_TX_COMMIT_QUEUE}
     );
 
     check producer->send(
-        {queueName: PRODUCER_TX_COMMIT_QUEUE},
         {
         payload: "Message 2".toBytes(),
         deliveryMode: PERSISTENT
-    }
+    },
+        {queueName: PRODUCER_TX_COMMIT_QUEUE}
     );
 
     // Commit transaction
@@ -362,11 +393,11 @@ isolated function testProducerTransactedRollback() returns error? {
     // Send messages (buffered in transaction)
     // Note: Transacted messages must use PERSISTENT delivery mode
     check producer->send(
-        {queueName: PRODUCER_TX_ROLLBACK_QUEUE},
         {
         payload: "Message to rollback".toBytes(),
         deliveryMode: PERSISTENT
-    }
+    },
+        {queueName: PRODUCER_TX_ROLLBACK_QUEUE}
     );
 
     // Rollback transaction (messages discarded)
@@ -407,38 +438,38 @@ isolated function testProducerTransactedMultipleCommits() returns error? {
 
     // First transaction
     check producer->send(
-        {queueName: PRODUCER_TX_MULTIPLE_QUEUE},
         {
         payload: "TX1 Message 1".toBytes(),
         deliveryMode: PERSISTENT
-    }
+    },
+        {queueName: PRODUCER_TX_MULTIPLE_QUEUE}
     );
     check producer->'commit();
 
     // Second transaction
     check producer->send(
-        {queueName: PRODUCER_TX_MULTIPLE_QUEUE},
         {
         payload: "TX2 Message 1".toBytes(),
         deliveryMode: PERSISTENT
-    }
+    },
+        {queueName: PRODUCER_TX_MULTIPLE_QUEUE}
     );
     check producer->send(
-        {queueName: PRODUCER_TX_MULTIPLE_QUEUE},
         {
         payload: "TX2 Message 2".toBytes(),
         deliveryMode: PERSISTENT
-    }
+    },
+        {queueName: PRODUCER_TX_MULTIPLE_QUEUE}
     );
     check producer->'commit();
 
     // Third transaction
     check producer->send(
-        {queueName: PRODUCER_TX_MULTIPLE_QUEUE},
         {
         payload: "TX3 Message 1".toBytes(),
         deliveryMode: PERSISTENT
-    }
+    },
+        {queueName: PRODUCER_TX_MULTIPLE_QUEUE}
     );
     check producer->'commit();
 
@@ -461,8 +492,8 @@ isolated function testProducerWithGenerateTimestamps() returns error? {
     });
 
     check producer->send(
-        {queueName: PRODUCER_TEXT_QUEUE},
-        {payload: TEXT_MESSAGE_CONTENT.toBytes()}
+        {payload: TEXT_MESSAGE_CONTENT.toBytes()},
+        {queueName: PRODUCER_TEXT_QUEUE}
     );
 
     check producer->close();
@@ -480,13 +511,13 @@ isolated function testProducerWithGenerateSequenceNumbers() returns error? {
     });
 
     check producer->send(
-        {queueName: PRODUCER_TEXT_QUEUE},
-        {payload: "Seq Message 1".toBytes()}
+        {payload: "Seq Message 1".toBytes()},
+        {queueName: PRODUCER_TEXT_QUEUE}
     );
 
     check producer->send(
-        {queueName: PRODUCER_TEXT_QUEUE},
-        {payload: "Seq Message 2".toBytes()}
+        {payload: "Seq Message 2".toBytes()},
+        {queueName: PRODUCER_TEXT_QUEUE}
     );
 
     check producer->close();
@@ -504,12 +535,12 @@ isolated function testProducerWithCalculateMessageExpiration() returns error? {
     });
 
     check producer->send(
-        {queueName: PRODUCER_TTL_QUEUE},
         {
         payload: TEXT_MESSAGE_CONTENT.toBytes(),
         timeToLive: 30000,
         deliveryMode: PERSISTENT
-    }
+    },
+        {queueName: PRODUCER_TTL_QUEUE}
     );
 
     check producer->close();

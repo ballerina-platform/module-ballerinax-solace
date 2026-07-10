@@ -131,12 +131,12 @@ public class ProducerActions {
      *
      * @param env            the Ballerina environment (injected for tracing)
      * @param producer       the Ballerina producer object
-     * @param destinationMap the destination (Topic or Queue)
      * @param message        the message to send
+     * @param destinationMap the destination (Topic or Queue)
      * @return null on success, BError on failure
      */
-    public static BError send(Environment env, BObject producer, BMap<BString, Object> destinationMap,
-                              BMap<BString, Object> message) {
+    public static BError send(Environment env, BObject producer, BMap<BString, Object> message,
+                              BMap<BString, Object> destinationMap) {
         String destinationName = getDestinationName(destinationMap);
         SolaceTracingUtil.traceResourceInvocation(env, producer, destinationName);
         try {

@@ -60,10 +60,7 @@ public record ConsumerConfiguration(
         }
 
         ConsumerSubscriptionConfig config = ConsumerSubscriptionConfig.fromBMap(subscriptionConfigMap);
-
-        if (config instanceof TopicConsumerConfig topicConfig) {
-            topicConfig.validate();
-        }
+        config.validate();
 
         return config;
     }

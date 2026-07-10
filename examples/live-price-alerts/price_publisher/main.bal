@@ -33,11 +33,11 @@ function publish(solace:MessageProducer producer, string topic, PriceUpdate upda
     // changePercent is duplicated into properties (selectors filter on properties/headers, not
     // payload fields) so a durable topic endpoint subscriber could select on it - see the
     // example doc's Variations section.
-    check producer->send({topicName: topic}, {
+    check producer->send({
         payload: update,
         deliveryMode: solace:DIRECT,
         properties: {"changePercent": update.changePercent}
-    });
+    }, {topicName: topic});
     log:printInfo("Price update published", topic = topic, symbol = update.symbol,
             changePercent = update.changePercent);
 }

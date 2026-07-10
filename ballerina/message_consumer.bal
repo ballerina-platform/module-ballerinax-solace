@@ -54,8 +54,8 @@ public isolated client class MessageConsumer {
     # + url - The broker URL with format: [protocol:]host[:port]
     # + config - The consumer configuration (composed of connection config + subscription config)
     # + return - Error if initialization fails
-public isolated function init(string url, *ConsumerConfiguration config) returns Error? {
-        check validateConfigurations(config.compressionLevel, config.secureSocket);
+    public isolated function init(string url, *ConsumerConfiguration config) returns Error? {
+        check validateConfigurations(config);
         return self.initConsumer(url, config);
     }
 

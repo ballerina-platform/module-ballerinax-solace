@@ -49,8 +49,8 @@ isolated function testConsumerAcknowledge() returns error? {
     });
 
     check producer->send(
-        {queueName: ACK_SINGLE_QUEUE},
-        {payload: "Message to ACK".toBytes()}
+        {payload: "Message to ACK".toBytes()},
+        {queueName: ACK_SINGLE_QUEUE}
     );
 
     check producer->close();
@@ -86,18 +86,18 @@ isolated function testConsumerAcknowledgeMultiple() returns error? {
     });
 
     check producer->send(
-        {queueName: ACK_MULTIPLE_QUEUE},
-        {payload: "ACK Message 1".toBytes()}
+        {payload: "ACK Message 1".toBytes()},
+        {queueName: ACK_MULTIPLE_QUEUE}
     );
 
     check producer->send(
-        {queueName: ACK_MULTIPLE_QUEUE},
-        {payload: "ACK Message 2".toBytes()}
+        {payload: "ACK Message 2".toBytes()},
+        {queueName: ACK_MULTIPLE_QUEUE}
     );
 
     check producer->send(
-        {queueName: ACK_MULTIPLE_QUEUE},
-        {payload: "ACK Message 3".toBytes()}
+        {payload: "ACK Message 3".toBytes()},
+        {queueName: ACK_MULTIPLE_QUEUE}
     );
 
     check producer->close();
@@ -147,8 +147,8 @@ isolated function testConsumerNackWithRequeue() returns error? {
     });
 
     check producer->send(
-        {queueName: NACK_REQUEUE_QUEUE},
-        {payload: "Message to NACK with requeue".toBytes()}
+        {payload: "Message to NACK with requeue".toBytes()},
+        {queueName: NACK_REQUEUE_QUEUE}
     );
 
     check producer->close();
@@ -201,8 +201,8 @@ isolated function testConsumerNackWithReject() returns error? {
     });
 
     check producer->send(
-        {queueName: NACK_REJECT_QUEUE},
-        {payload: "Message to NACK without requeue".toBytes()}
+        {payload: "Message to NACK without requeue".toBytes()},
+        {queueName: NACK_REJECT_QUEUE}
     );
 
     check producer->close();
@@ -248,8 +248,8 @@ isolated function testConsumerUnacknowledgedRedelivery() returns error? {
     });
 
     check producer->send(
-        {queueName: ACK_REDELIVERY_QUEUE},
-        {payload: "Message for redelivery test".toBytes()}
+        {payload: "Message for redelivery test".toBytes()},
+        {queueName: ACK_REDELIVERY_QUEUE}
     );
 
     check producer->close();

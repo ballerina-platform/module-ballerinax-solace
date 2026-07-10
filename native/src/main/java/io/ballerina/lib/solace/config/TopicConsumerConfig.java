@@ -149,11 +149,14 @@ public record TopicConsumerConfig(
     }
 
     /**
-     * Validates that endpointName is provided for DURABLE endpoints.
+     * Validates the shared flow-control bounds, then that endpointName is provided for DURABLE endpoints.
      *
-     * @throws IllegalArgumentException if endpointName is missing for DURABLE endpoints
+     * @throws IllegalArgumentException if a flow-control bound is violated, or endpointName is missing for
+     *                                   DURABLE endpoints
      */
+    @Override
     public void validate() {
+        ConsumerSubscriptionConfig.super.validate();
         if (isDurable() && (endpointName == null || endpointName.isEmpty())) {
             throw new IllegalArgumentException(
                     "endpointName is required for DURABLE topic endpoints"

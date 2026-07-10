@@ -38,8 +38,15 @@ const string TEXT_MESSAGE_CONTENT = "Hello Solace SMF!";
 // Convenience aliases for tests that assert on a concrete payload type - narrows the now-`anydata`
 // `Message.payload` field back to a specific type via structural record narrowing. Purely a
 // static-type convenience; the wire format/behavior is unaffected.
-type BytesPayloadMessage record {|*Message; byte[] payload;|};
-type StringPayloadMessage record {|*Message; string payload;|};
+type BytesPayloadMessage record {|
+    *Message;
+    byte[] payload;
+|};
+
+type StringPayloadMessage record {|
+    *Message;
+    string payload;
+|};
 
 // Producer test queues
 const string PRODUCER_INIT_QUEUE = "test/producer/init/queue";

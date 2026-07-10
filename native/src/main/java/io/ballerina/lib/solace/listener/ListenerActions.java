@@ -128,6 +128,7 @@ public class ListenerActions {
 
             BMap<BString, Object> serviceConfig = Service.getServiceConfigAnnotation(service);
             ConsumerSubscriptionConfig subscriptionConfig = ConsumerSubscriptionConfig.fromBMap(serviceConfig);
+            subscriptionConfig.validate();
             boolean isTransacted = (Boolean) listener.getNativeData(NATIVE_TRANSACTED);
 
             // On a transacted listener, settlement only happens via caller->commit()/rollback() on the shared
@@ -141,7 +142,6 @@ public class ListenerActions {
             }
 
             if (subscriptionConfig instanceof TopicConsumerConfig topicConfig) {
-                topicConfig.validate();
                 if (isTransacted && !topicConfig.isDurable()) {
                     return CommonUtils.createError("Transacted mode is not supported for direct topic subscriptions. "
                             + "Use DURABLE endpoint type for guaranteed delivery with transactions.");

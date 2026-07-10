@@ -28,10 +28,10 @@ public function main() returns error? {
     ];
 
     foreach StockUpdate update in updates {
-        check producer->send({queueName: STOCK_UPDATES_QUEUE}, {
+        check producer->send({
             payload: update,
             deliveryMode: solace:PERSISTENT
-        });
+        }, {queueName: STOCK_UPDATES_QUEUE});
         log:printInfo("Stock update sent", item = update.item, delta = update.delta);
     }
 

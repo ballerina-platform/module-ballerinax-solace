@@ -47,8 +47,8 @@ isolated function testConsumerTransactedCommit() returns error? {
     });
 
     check producer->send(
-        {queueName: CONSUMER_TX_COMMIT_QUEUE},
-        {payload: "Transacted commit message".toBytes()}
+                {payload: "Transacted commit message".toBytes()},
+        {queueName: CONSUMER_TX_COMMIT_QUEUE}
     );
 
     check producer->close();
@@ -102,8 +102,8 @@ isolated function testConsumerTransactedRollback() returns error? {
     });
 
     check producer->send(
-        {queueName: CONSUMER_TX_ROLLBACK_QUEUE},
-        {payload: "Transacted rollback message".toBytes()}
+                {payload: "Transacted rollback message".toBytes()},
+        {queueName: CONSUMER_TX_ROLLBACK_QUEUE}
     );
 
     check producer->close();
@@ -162,18 +162,18 @@ isolated function testConsumerTransactedMultipleMessages() returns error? {
     });
 
     check producer->send(
-        {queueName: CONSUMER_TX_MULTIPLE_QUEUE},
-        {payload: "TX Message 1".toBytes()}
+                {payload: "TX Message 1".toBytes()},
+        {queueName: CONSUMER_TX_MULTIPLE_QUEUE}
     );
 
     check producer->send(
-        {queueName: CONSUMER_TX_MULTIPLE_QUEUE},
-        {payload: "TX Message 2".toBytes()}
+                {payload: "TX Message 2".toBytes()},
+        {queueName: CONSUMER_TX_MULTIPLE_QUEUE}
     );
 
     check producer->send(
-        {queueName: CONSUMER_TX_MULTIPLE_QUEUE},
-        {payload: "TX Message 3".toBytes()}
+                {payload: "TX Message 3".toBytes()},
+        {queueName: CONSUMER_TX_MULTIPLE_QUEUE}
     );
 
     check producer->close();
@@ -232,13 +232,13 @@ isolated function testConsumerTransactedMixedOperations() returns error? {
     });
 
     check producer->send(
-        {queueName: CONSUMER_TX_MIXED_QUEUE},
-        {payload: "Mixed TX Message 1".toBytes()}
+                {payload: "Mixed TX Message 1".toBytes()},
+        {queueName: CONSUMER_TX_MIXED_QUEUE}
     );
 
     check producer->send(
-        {queueName: CONSUMER_TX_MIXED_QUEUE},
-        {payload: "Mixed TX Message 2".toBytes()}
+                {payload: "Mixed TX Message 2".toBytes()},
+        {queueName: CONSUMER_TX_MIXED_QUEUE}
     );
 
     check producer->close();
@@ -339,19 +339,19 @@ isolated function testProducerConsumerCoordinatedTransaction() returns error? {
     });
 
     check producer->send(
-        {queueName: CONSUMER_TX_COORDINATED_QUEUE},
-        {
+                {
         payload: "Coordinated TX Message 1".toBytes(),
         deliveryMode: PERSISTENT
-    }
+    },
+        {queueName: CONSUMER_TX_COORDINATED_QUEUE}
     );
 
     check producer->send(
-        {queueName: CONSUMER_TX_COORDINATED_QUEUE},
-        {
+                {
         payload: "Coordinated TX Message 2".toBytes(),
         deliveryMode: PERSISTENT
-    }
+    },
+        {queueName: CONSUMER_TX_COORDINATED_QUEUE}
     );
 
     // Commit producer transaction
@@ -414,13 +414,13 @@ isolated function testEndToEndTransaction() returns error? {
 
     // Send messages in transaction
     check producer->send(
-        {queueName: E2E_QUEUE},
-        {payload: "E2E Message 1".toBytes(), deliveryMode: PERSISTENT}
+                {payload: "E2E Message 1".toBytes(), deliveryMode: PERSISTENT},
+        {queueName: E2E_QUEUE}
     );
 
     check producer->send(
-        {queueName: E2E_QUEUE},
-        {payload: "E2E Message 2".toBytes(), deliveryMode: PERSISTENT}
+                {payload: "E2E Message 2".toBytes(), deliveryMode: PERSISTENT},
+        {queueName: E2E_QUEUE}
     );
 
     // Commit producer

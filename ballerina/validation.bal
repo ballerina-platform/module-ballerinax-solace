@@ -14,8 +14,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-isolated function validateConfigurations(int compressionLevel, SecureSocket? secureSocket) returns Error? {
+isolated function validateConfigurations(CommonConnectionConfiguration config) returns Error? {
     // Validate compression level
+    int compressionLevel = config.compressionLevel;
     if compressionLevel < 0 {
         return error Error("ZLIB compression level must be at least 0 (no compression)");
     }
@@ -23,7 +24,22 @@ isolated function validateConfigurations(int compressionLevel, SecureSocket? sec
         return error Error("ZLIB compression level cannot exceed 9 (maximum compression)");
     }
 
+    // Validate auth configurations
+    AuthConfiguration? authConfig = config.auth;
+    if authConfig is BasicAuthConfiguration {
+        string username = authConfig.username;
+        if username.length() > 32 {
+            return error Error("Username cannot exceed 32 characters");
+        }
+
+        string? password = authConfig.password;
+        if password is string && password.length() > 128 {
+            return error Error("Password cannot exceed 128 characters");
+        }
+    }
+
     // Validate secure-socket configurations
+    SecureSocket? secureSocket = config.secureSocket;
     if secureSocket is SecureSocket {
         string[]? trustedCommonNames = secureSocket.trustedCommonNames;
         if trustedCommonNames is string[] && trustedCommonNames.length() > 16 {

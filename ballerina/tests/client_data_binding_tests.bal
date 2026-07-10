@@ -40,16 +40,16 @@ type ClientBindingIncompatibleRecord record {|
 
 isolated function publishToQueue(string queueName, anydata payload) returns error? {
     MessageProducer producer = check new (BROKER_URL, connectionConfig());
-    check producer->send({queueName}, {payload});
+    check producer->send({payload}, {queueName});
     check producer->close();
 }
 
 isolated function newBindingConsumer(string queueName) returns MessageConsumer|error =>
     new (BROKER_URL, {
-        messageVpn: MESSAGE_VPN,
-        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
-        subscriptionConfig: {queueName}
-    });
+    messageVpn: MESSAGE_VPN,
+    auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
+    subscriptionConfig: {queueName}
+});
 
 // ========================================
 // Positive cases: all run sequentially against the single shared `BINDING_CLIENT_POSITIVE_QUEUE`

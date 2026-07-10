@@ -106,8 +106,8 @@ isolated function sendMessageToQueueTls(string queueName, string content) return
     });
 
     check producer->send(
-        {queueName: queueName},
-        {payload: content.toBytes()}
+        {payload: content.toBytes()},
+        {queueName: queueName}
     );
 
     check producer->close();

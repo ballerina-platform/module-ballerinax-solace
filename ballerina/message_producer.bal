@@ -45,7 +45,7 @@ public isolated client class MessageProducer {
     # + config - The producer connection configuration
     # + return - Error if initialization fails
     public isolated function init(string url, *ProducerConfiguration config) returns Error? {
-        check validateConfigurations(config.compressionLevel, config.secureSocket);
+        check validateConfigurations(config);
         return self.initProducer(url, config);
     }
 
@@ -56,10 +56,10 @@ public isolated client class MessageProducer {
 
     # Send a message to the specified destination.
     #
-    # + destination - The destination to send to (topic or queue)
     # + message - The message to send (payload and optional properties)
+    # + destination - The destination to send to (topic or queue)
     # + return - Error if send fails
-    isolated remote function send(Destination destination, Message message) returns Error? {
+    isolated remote function send(Message message, Destination destination) returns Error? {
         string|map<Value>|byte[] payload = convertPayload(message.payload);
         map<Property> properties = prepareProperties(message);
         InternalMessage internalMessage = {
@@ -80,10 +80,10 @@ public isolated client class MessageProducer {
             properties,
             userData: message.userData
         };
-        return self.externSend(destination, internalMessage);
+        return self.externSend(internalMessage, destination);
     }
 
-    isolated function externSend(Destination destination, InternalMessage message) returns Error? = @java:Method {
+    isolated function externSend(InternalMessage message, Destination destination) returns Error? = @java:Method {
         'class: "io.ballerina.lib.solace.producer.ProducerActions",
         name: "send"
     } external;
