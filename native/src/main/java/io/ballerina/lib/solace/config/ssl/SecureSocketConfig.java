@@ -76,7 +76,8 @@ public record SecureSocketConfig(
                 config.containsKey(KEY_STORE_KEY) ?
                         new KeyStoreConfig((BMap<BString, Object>) config.getMapValue(KEY_STORE_KEY)) : null,
                 config.containsKey(TRUSTED_COMMON_NAMES_KEY) ?
-                        List.of(convertToStringArray(config.getArrayValue(TRUSTED_COMMON_NAMES_KEY).getValues())) : null,
+                        List.of(convertToStringArray(
+                                config.getArrayValue(TRUSTED_COMMON_NAMES_KEY).getValues())) : null,
                 config.containsKey(EXCLUDED_PROTOCOLS_KEY) ?
                         List.of(convertToStringArray(config.getArrayValue(EXCLUDED_PROTOCOLS_KEY).getValues())) : null,
                 config.containsKey(CIPHER_SUITES_KEY) ?

@@ -60,12 +60,12 @@ public isolated class Listener {
     # + url - The broker URL with format: [protocol:]host[:port]
     # + config - The connection configuration (auth, SSL/TLS, retry, etc.)
     # + return - Error if initialization fails
-    public isolated function init(string url, *CommonConnectionConfiguration config) returns Error? {
+    public isolated function init(string url, *ListenerConfiguration config) returns Error? {
         check validateConfigurations(config.compressionLevel, config.secureSocket);
         return self.initListener(url, config);
     }
 
-    isolated function initListener(string url, CommonConnectionConfiguration config) returns Error? = @java:Method {
+    isolated function initListener(string url, ListenerConfiguration config) returns Error? = @java:Method {
         'class: "io.ballerina.lib.solace.listener.ListenerActions",
         name: "init"
     } external;

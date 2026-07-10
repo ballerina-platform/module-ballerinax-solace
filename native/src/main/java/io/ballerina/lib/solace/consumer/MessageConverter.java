@@ -24,20 +24,16 @@ import com.solacesystems.jcsmp.MapMessage;
 import com.solacesystems.jcsmp.SDTMap;
 import com.solacesystems.jcsmp.TextMessage;
 import com.solacesystems.jcsmp.XMLMessage;
-import io.ballerina.lib.solace.ModuleUtils;
 import io.ballerina.lib.solace.common.BallerinaSolaceDatabindingException;
 import io.ballerina.lib.solace.common.DestinationConverter;
 import io.ballerina.lib.solace.common.PropertyConverter;
-import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.types.ArrayType;
 import io.ballerina.runtime.api.types.IntersectionType;
 import io.ballerina.runtime.api.types.MapType;
-import io.ballerina.runtime.api.types.PredefinedTypes;
 import io.ballerina.runtime.api.types.RecordType;
 import io.ballerina.runtime.api.types.Type;
 import io.ballerina.runtime.api.types.TypeTags;
-import io.ballerina.runtime.api.types.UnionType;
 import io.ballerina.runtime.api.utils.JsonUtils;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.utils.TypeUtils;
@@ -75,15 +71,6 @@ import static io.ballerina.lib.solace.common.MessageFieldConstants.USER_DATA_KEY
  * caller-declared target type.
  */
 public class MessageConverter {
-
-    // Define union types for map values
-    private static final UnionType MSG_PROPERTY_TYPE = TypeCreator.createUnionType(
-            PredefinedTypes.TYPE_BOOLEAN, PredefinedTypes.TYPE_INT, PredefinedTypes.TYPE_BYTE,
-            PredefinedTypes.TYPE_FLOAT, PredefinedTypes.TYPE_STRING);
-
-    // Create typed MapType instances matching Ballerina types
-    private static final MapType BALLERINA_MSG_PROPERTY_TYPE = TypeCreator.createMapType(
-            "Property", MSG_PROPERTY_TYPE, ModuleUtils.getModule());
 
     /**
      * Converts a JCSMP XMLMessage to a Ballerina Message record, data-binding the payload into the type
@@ -181,8 +168,10 @@ public class MessageConverter {
         // Set properties if present
         SDTMap sdtProperties = xmlMessage.getProperties();
         if (sdtProperties != null) {
+            Type propertiesType = TypeUtils.getReferredType(messageType.getFields()
+                    .get(PROPERTIES_KEY.getValue()).getFieldType());
             BMap<BString, Object> properties = PropertyConverter.sdtMapToBallerina(sdtProperties,
-                    BALLERINA_MSG_PROPERTY_TYPE);
+                    (MapType) propertiesType);
             if (!properties.isEmpty()) {
                 message.put(PROPERTIES_KEY, properties);
             }

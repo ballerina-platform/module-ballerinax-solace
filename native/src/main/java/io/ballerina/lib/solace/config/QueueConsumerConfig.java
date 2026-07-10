@@ -28,8 +28,9 @@ import io.ballerina.runtime.api.values.BString;
 import java.math.BigDecimal;
 
 /**
- * Queue consumer configuration for synchronous (pull-based) consumption. Represents the subscription to a queue
- * endpoint for receiving guaranteed messages. Maps to QueueSubscription in Ballerina types.bal.
+ * Queue consumer configuration. Represents the subscription to a queue endpoint for receiving guaranteed messages,
+ * shared by both the synchronous (pull-based) MessageConsumer and the asynchronous (push-based) Listener. Maps to
+ * QueueConfiguration/QueueServiceConfiguration in Ballerina types.bal.
  *
  * @param queueName                     the name of the queue to consume from
  * @param temporary                     whether this is a temporary queue (auto-deleted when session disconnects)

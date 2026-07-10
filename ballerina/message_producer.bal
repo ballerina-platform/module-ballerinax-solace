@@ -61,7 +61,7 @@ public isolated client class MessageProducer {
     # + return - Error if send fails
     isolated remote function send(Destination destination, Message message) returns Error? {
         string|map<Value>|byte[] payload = convertPayload(message.payload);
-        map<anydata> properties = prepareProperties(message);
+        map<Property> properties = prepareProperties(message);
         InternalMessage internalMessage = {
             payload,
             deliveryMode: message.deliveryMode,
@@ -136,10 +136,10 @@ isolated function convertPayload(anydata payload) returns string|map<Value>|byte
     }
 }
 
-isolated function prepareProperties(Message message) returns map<anydata> {
-    map<anydata> properties = {};
-    if message.properties is map<anydata> {
-        properties = (<map<anydata>>message.properties).clone();
+isolated function prepareProperties(Message message) returns map<Property> {
+    map<Property> properties = {};
+    if message.properties is map<Property> {
+        properties = (<map<Property>>message.properties).clone();
     }
     if message.payload is xml {
         properties[SOLACE_ISXML_PROP] = true;

@@ -27,8 +27,9 @@ import io.ballerina.runtime.api.values.BString;
 import java.math.BigDecimal;
 
 /**
- * Topic consumer configuration for synchronous (pull-based) consumption. Represents the subscription to a topic for
- * receiving messages. Maps to TopicSubscription in Ballerina types.bal.
+ * Topic consumer configuration. Represents the subscription to a topic for receiving messages, shared by both the
+ * synchronous (pull-based) MessageConsumer and the asynchronous (push-based) Listener. Maps to
+ * TopicConfiguration/TopicServiceConfiguration in Ballerina types.bal.
  *
  * @param topicName                     the name of the topic to subscribe to
  * @param ackMode                       the JCSMP acknowledgement mode (SUPPORTED_MESSAGE_ACK_AUTO or

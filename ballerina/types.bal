@@ -45,9 +45,6 @@ public type Queue record {|
 public type Destination Topic|Queue;
 
 # Acknowledgement modes for message consumption
-// Since we create this for session does it apply for producer? If so what does it do?
-// Ans: It does not apply to producer. It is only for consumers and session level configuration
-// in JCSMP is so that all consumers created on that session inherit the ack mode as a default
 public enum AcknowledgementMode {
     AUTO_ACK,
     CLIENT_ACK
@@ -98,8 +95,6 @@ public type AuthConfiguration BasicAuthConfiguration|KerberosConfiguration|OAuth
 # SSL/TLS certificate validation configuration
 public type CertificateValidation record {|
     # Enable certificate validation
-    // What if we disable validateDate and validateHostname but keep this enabled? Check JCSMP docs
-    // Ans: We cannot do that as there are other validations like Certificate Chain Validation
     boolean enabled = true;
     # Validate the certificate's expiration date
     boolean validateDate = true;
@@ -252,10 +247,16 @@ public type ProducerConfiguration record {|
     *CommonConnectionConfiguration;
 |};
 
+# Listener configuration for asynchronous (push-based) message consumption
+# Note: Subscription (queue or topic) is specified per-service via the ServiceConfig annotation
+public type ListenerConfiguration record {|
+    *CommonConnectionConfiguration;
+|};
+
 # Common consumer subscription fields
 # Note: Flow control properties below only apply to FlowReceiver usage (queues and durable topic endpoints)
 # They are ignored for direct topic subscriptions which use XMLMessageConsumer
-public type CommonConsumerConfig record {|
+public type CommonConsumerConfiguration record {|
     # Optional SQL-92 message selector for filtering messages on the broker before delivery
     # Applies to both queue consumers and durable topic endpoint subscriptions (flows only).
     # Not supported for direct topic subscriptions. Filters messages based on their properties and headers.
@@ -272,7 +273,7 @@ public type CommonConsumerConfig record {|
     # Auto-start the flow upon creation (default false) - FlowReceiver only
     boolean startState?;
     # Prevent receiving messages published on same session (default false) - FlowReceiver only
-    boolean noLocal?;
+    boolean noLocal = false;
     # Enable active/inactive flow indication (default false) - FlowReceiver only
     boolean activeFlowIndication?;
     # Number of reconnection attempts after flow goes down (-1 = infinite, default -1) - FlowReceiver only
@@ -282,8 +283,8 @@ public type CommonConsumerConfig record {|
 |};
 
 # Queue consumer configuration for synchronous (pull-based) consumption
-public type QueueSubscription record {|
-    *CommonConsumerConfig;
+public type QueueConfiguration record {|
+    *CommonConsumerConfiguration;
     # The queue name to consume messages from
     string queueName;
     # Whether this is a temporary queue (auto-deleted when session disconnects)
@@ -293,9 +294,8 @@ public type QueueSubscription record {|
 |};
 
 # Topic consumer configuration for synchronous (pull-based) consumption
-public type TopicSubscription record {|
-    *CommonConsumerConfig;
-    // If all CommonConsumerConfig fields are FlowReceiver only we can have two different TopicConfigs, one for the durable case and one for the direct case
+public type TopicConfiguration record {|
+    *CommonConsumerConfiguration;
     # The topic name to subscribe to
     string topicName;
     # Endpoint type: DEFAULT (ephemeral/direct) or DURABLE (persisted on broker)
@@ -305,14 +305,14 @@ public type TopicSubscription record {|
     string endpointName?;
 |};
 
-# Consumer subscription configuration (sealed: QueueConsumerConfig | TopicConsumerConfig)
-public type ConsumerSubscription QueueSubscription|TopicSubscription;
+# Consumer subscription configuration: QueueConfiguration or TopicConfiguration
+public type SubscriptionConfiguration QueueConfiguration|TopicConfiguration;
 
 # Consumer configuration for synchronous (pull-based) message consumption via MessageConsumer
 public type ConsumerConfiguration record {|
     *CommonConnectionConfiguration;
     # The subscription configuration (queue or topic)
-    ConsumerSubscription subscriptionConfig;
+    SubscriptionConfiguration subscriptionConfig;
 |};
 
 # Delivery modes for messages
@@ -337,7 +337,7 @@ public enum EndpointType {
 # Common service subscription fields (listener subscription configuration)
 # Note: Flow control properties below only apply to FlowReceiver usage (queues and durable topic endpoints)
 # They are ignored for direct topic subscriptions which use XMLMessageConsumer
-public type CommonServiceConfig record {|
+public type CommonServiceConfiguration record {|
     # JCSMP acknowledgement mode
     AcknowledgementMode ackMode = AUTO_ACK;
     # Optional SQL-92 message selector for filtering messages on the broker before delivery
@@ -352,7 +352,7 @@ public type CommonServiceConfig record {|
     # Acknowledgement timer in seconds (0.02 - 1.5 seconds, default 0.0 seconds) - FlowReceiver only
     decimal ackTimer = 0.0;
     # Prevent receiving messages published on same session (default false) - FlowReceiver only
-    boolean noLocal?;
+    boolean noLocal = false;
     # Enable active/inactive flow indication (default false) - FlowReceiver only
     boolean activeFlowIndication?;
     # Number of reconnection attempts after flow goes down (-1 = infinite, default -1) - FlowReceiver only
@@ -362,15 +362,15 @@ public type CommonServiceConfig record {|
 |};
 
 # Queue service configuration for asynchronous (push-based) consumption via Listener
-public type QueueServiceConfig record {|
-    *CommonServiceConfig;
+public type QueueServiceConfiguration record {|
+    *CommonServiceConfiguration;
     # The queue name to consume messages from
     string queueName;
 |};
 
 # Topic service configuration for asynchronous (push-based) consumption via Listener
-public type TopicServiceConfig record {|
-    *CommonServiceConfig;
+public type TopicServiceConfiguration record {|
+    *CommonServiceConfiguration;
     # The topic name to subscribe to
     string topicName;
     # Endpoint type: DEFAULT (ephemeral/direct) or DURABLE (persisted on broker)
@@ -380,10 +380,9 @@ public type TopicServiceConfig record {|
     string endpointName?;
 |};
 
-# Service subscription configuration (sealed: QueueServiceConfig | TopicServiceConfig)
-public type ServiceConfiguration QueueServiceConfig|TopicServiceConfig;
+# Service subscription configuration (sealed: QueueServiceConfiguration | TopicServiceConfiguration)
+public type ServiceConfiguration QueueServiceConfiguration|TopicServiceConfiguration;
 
-// For the fields that are set by the broker mention that in the comment
 # Message type for publishing/consuming
 public type Message record {|
     # The payload of the message. When consuming, declare a narrowed subtype
@@ -391,21 +390,14 @@ public type Message record {|
     # into the declared type
     anydata payload;
     # Delivery mode for the message (DIRECT, PERSISTENT, or NON_PERSISTENT)
-    // Double check if we can set this in the message level. If PERSISTENT and NON_PERSISTENT are same we can remove one
-    // Ans: Yes, it can ONLY be set at message level. We can remove NON_PERSISTENT as its same as PERSISTENT
     DeliveryMode deliveryMode = DIRECT;
     # Message priority (0-255, where 0 is lowest and 255 is highest)
     byte priority?;
     # Time-to-live in milliseconds (0 = never expires, only for PERSISTENT/NON_PERSISTENT modes)
     int timeToLive?;
     # Application-defined message ID for correlation
-    // Can we make it messageId and messageType
-    // Ans: messageId is a deprecated field in JCSMP used for acknowledgements. Since these two fields are
-    // supposed application defined I feel we should keep them as is to avoid confusion.
     string applicationMessageId?;
     # Application-defined message type
-    // Check if this is only string? And why is it there?
-    // Ans: this and applicationId are both string and are used by applications only
     string applicationMessageType?;
     # Correlation ID for request-reply patterns
     string correlationId?;
@@ -427,10 +419,13 @@ public type Message record {|
     # Number of times this message has been delivered
     int deliveryCount?;
     # Properties map for custom key-value pairs
-    map<anydata> properties?;
+    map<Property> properties?;
     # Application-specific user data attachment (max 36 bytes)
     byte[] userData?;
 |};
+
+# Represents the allowed value types for a Solace message property.
+public type Property boolean|int|float|string|byte[]|map<Property>;
 
 # Represents the allowed value types for entries in a Solace MapMessage payload.
 public type Value boolean|int|float|string|byte[]|map<Value>;
@@ -438,23 +433,39 @@ public type Value boolean|int|float|string|byte[]|map<Value>;
 # A property key used internally to mark that a message's text payload is XML.
 public const SOLACE_ISXML_PROP = "solace_isXML";
 
-// Internal representation of a Solace message crossing into native code for `send`. The payload is
-// narrowed to the concrete wire shapes native code understands; everything else mirrors `Message`.
+# Internal representation of a Solace message crossing into native code for `send`. The payload is
+# narrowed to the concrete wire shapes native code understands; everything else mirrors `Message`.
 type InternalMessage record {|
+    # The payload encoded in one of the wire-level shapes expected by native code.
     string|map<Value>|byte[] payload;
+    # Delivery mode for the message (DIRECT or PERSISTENT).
     DeliveryMode deliveryMode = DIRECT;
+    # Message priority (0-255, where 0 is lowest and 255 is highest).
     byte priority?;
+    # Time-to-live in milliseconds (0 = never expires).
     int timeToLive?;
+    # Application-defined message ID for correlation.
     string applicationMessageId?;
+    # Application-defined message type.
     string applicationMessageType?;
+    # Correlation ID for request-reply patterns.
     string correlationId?;
+    # Reply-to destination for request-reply patterns.
     Destination replyTo?;
+    # Sender ID (set by client or broker).
     string senderId?;
+    # Sender timestamp in UTC milliseconds from epoch.
     int senderTimestamp?;
+    # Receive timestamp in UTC milliseconds from epoch (set by broker).
     int receiveTimestamp?;
+    # Sequence number for message ordering.
     int sequenceNumber?;
+    # Whether message was previously delivered.
     boolean redelivered?;
+    # Number of times this message has been delivered.
     int deliveryCount?;
-    map<anydata> properties?;
+    # Properties map for custom key-value pairs.
+    map<Property> properties?;
+    # Application-specific user data attachment.
     byte[] userData?;
 |};

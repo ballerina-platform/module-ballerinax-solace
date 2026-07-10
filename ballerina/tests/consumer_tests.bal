@@ -285,6 +285,7 @@ isolated function testConsumerReceiveWithProperties() returns error? {
         }
     });
 
+    byte[] binaryProp = [1, 2, 3, 4];
     check producer->send(
         {queueName: CONSUMER_PROPERTIES_QUEUE},
         {
@@ -292,7 +293,9 @@ isolated function testConsumerReceiveWithProperties() returns error? {
         properties: {
             "orderType": "URGENT",
             "priority": 5,
-            "customerId": "12345"
+            "customerId": "12345",
+            "binaryProp": binaryProp,
+            "nestedProp": {"region": "EU", "retryCount": 2}
         }
     }
     );
@@ -313,11 +316,14 @@ isolated function testConsumerReceiveWithProperties() returns error? {
 
     test:assertTrue(msg is Message, "Should receive a message");
     if msg is Message {
-        test:assertTrue(msg.properties is map<anydata>, "Should have properties");
-        if msg.properties is map<anydata> {
+        test:assertTrue(msg.properties is map<Property>, "Should have properties");
+        if msg.properties is map<Property> {
             test:assertEquals(msg.properties["orderType"], "URGENT", "orderType should match");
             test:assertEquals(msg.properties["priority"], 5, "priority should match");
             test:assertEquals(msg.properties["customerId"], "12345", "customerId should match");
+            test:assertEquals(msg.properties["binaryProp"], binaryProp, "binaryProp should match");
+            test:assertEquals(msg.properties["nestedProp"], {"region": "EU", "retryCount": 2},
+                    "nestedProp should match");
         }
     }
 
