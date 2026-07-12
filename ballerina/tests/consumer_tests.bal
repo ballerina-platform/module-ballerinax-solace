@@ -424,6 +424,54 @@ isolated function testConsumerReceiveWithProperties() returns error? {
 }
 
 @test:Config {groups: ["consumer", "receive"]}
+isolated function testConsumerReceiveWithExpiration() returns error? {
+    // Send message with a TTL, with expiration calculation enabled
+    MessageProducer producer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        calculateMessageExpiration: true,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        }
+    });
+
+    check producer->send(
+        {
+        payload: TEXT_MESSAGE_CONTENT.toBytes(),
+        deliveryMode: PERSISTENT,
+        timeToLive: 60d
+    },
+        {queueName: CONSUMER_EXPIRATION_QUEUE}
+    );
+
+    check producer->close();
+
+    // Receive and verify expiration is populated
+    MessageConsumer consumer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        subscriptionConfig: {queueName: CONSUMER_EXPIRATION_QUEUE}
+    });
+
+    Message? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+
+    test:assertTrue(msg is Message, "Should receive a message");
+    if msg is Message {
+        int? expiration = msg.expiration;
+        test:assertTrue(expiration is int,
+                "Expiration should be populated when calculateMessageExpiration is enabled");
+        if expiration is int {
+            test:assertTrue(expiration > 0, "Expiration should be greater than zero when TTL is set");
+        }
+    }
+
+    check consumer->close();
+}
+
+@test:Config {groups: ["consumer", "receive"]}
 isolated function testConsumerReceiveWithMetadata() returns error? {
     // Send message with metadata
     MessageProducer producer = check new (BROKER_URL, {

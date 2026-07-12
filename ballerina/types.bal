@@ -134,19 +134,12 @@ public type KeyStore record {|
     SslStoreFormat format = JKS;
 |};
 
-# SSL protocol version 3.0
-public const SSLv30 = "sslv3";
-# TLS protocol version 1.0
-public const TLSv10 = "tlsv1";
-# TLS protocol version 1.1
-public const TLSv11 = "tlsv11";
-# TLS protocol version 1.2
-public const TLSv12 = "tlsv12";
-# SSL protocol version SSLv2Hello
-public const SSLv2Hello = "SSLv2Hello";
-
 # Represents the supported SSL/TLS protocol versions.
-public type Protocol SSLv30|TLSv10|TLSv11|TLSv12|SSLv2Hello|string;
+public enum Protocol {
+    TLSV1_1,
+    TLSV1_2,
+    TLSV1_3
+}
 
 # Cipher suite: TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384
 public const ECDHE_RSA_AES256_CBC_SHA384 = "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384";
@@ -182,8 +175,8 @@ public type SecureSocket record {|
     KeyStore keyStore?;
     # The list of trusted common names for certificate validation
     string[] trustedCommonNames?;
-    # The SSL protocols NOT to use
-    Protocol[] excludedProtocols = [SSLv2Hello];
+    # The SSL/TLS protocols NOT to use. None are excluded by default
+    Protocol[] excludedProtocols = [];
     # The list of cipher suites to enable for the connection.
     # If not specified, the default cipher suites for the JVM are used
     SslCipherSuite[] cipherSuites?;
@@ -204,7 +197,7 @@ public type RetryConfiguration record {|
 |};
 
 # Common connection configuration shared between producer and consumer
-public type CommonConnectionConfiguration record {
+type CommonConnectionConfiguration record {
     # The message VPN to connect to
     string messageVpn = "default";
     # The authentication configuration (basic, Kerberos, or OAuth2)
@@ -215,28 +208,16 @@ public type CommonConnectionConfiguration record {
     string clientName?;
     # A description for the application client
     string clientDescription = "Ballerina Solace Connector";
+    # Enable transacted messaging
+    boolean transacted = false;
+    # ZLIB compression level (0 = disabled, 1-9 = compression)
+    int compressionLevel = 0;
     # The local interface IP address to bind for outbound connections
     string localhost?;
     # The maximum time in seconds for a connection attempt
     decimal connectTimeout = 30.0;
     # The maximum time in seconds for reading connection replies
     decimal readTimeout = 10.0;
-    # ZLIB compression level (0 = disabled, 1-9 = compression)
-    int compressionLevel = 0;
-    # Enable transacted messaging
-    boolean transacted = false;
-    # Whether to generate a receive timestamp on incoming messages (set by broker)
-    # When enabled, incoming messages will have receiveTimestamp automatically set
-    boolean generateReceiveTimestamps = false;
-    # Whether to generate a send timestamp in outgoing messages
-    # When enabled, outgoing messages will have senderTimestamp automatically set if not already provided
-    boolean generateSendTimestamps = false;
-    # Whether to generate a sequence number in outgoing messages
-    # When enabled, outgoing messages will have sequenceNumber automatically generated if not already set
-    boolean generateSequenceNumbers = false;
-    # Whether to calculate message expiration time in outgoing and incoming messages
-    # When enabled, JCSMP calculates message expiration based on timeToLive field
-    boolean calculateMessageExpiration = false;
     # Retry configuration for connection attempts
     RetryConfiguration retryConfig?;
 };
@@ -245,33 +226,50 @@ public type CommonConnectionConfiguration record {
 # Note: Destination is passed at send-time, not specified in configuration
 public type ProducerConfiguration record {|
     *CommonConnectionConfiguration;
+    # Whether to generate a send timestamp in outgoing messages
+    # When enabled, outgoing messages will have senderTimestamp automatically set if not already provided
+    boolean generateSendTimestamps = false;
+    # Whether to generate a sequence number in outgoing messages
+    # When enabled, outgoing messages will have sequenceNumber automatically generated if not already set
+    boolean generateSequenceNumbers = false;
+    # Whether to calculate message expiration time in outgoing messages
+    # When enabled, JCSMP calculates message expiration based on the timeToLive field
+    boolean calculateMessageExpiration = false;
+|};
+
+# Common connection configuration for consumer and listener sessions, which additionally receive messages
+type CommonConsumerConnectionConfiguration record {|
+    *CommonConnectionConfiguration;
+    # Whether to generate a receive timestamp on incoming messages
+    # When enabled, incoming messages will have receiveTimestamp automatically set by the client on receipt
+    boolean generateReceiveTimestamps = false;
 |};
 
 # Listener configuration for asynchronous (push-based) message consumption
 # Note: Subscription (queue or topic) is specified per-service via the ServiceConfig annotation
 public type ListenerConfiguration record {|
-    *CommonConnectionConfiguration;
+    *CommonConsumerConnectionConfiguration;
 |};
 
 # Common consumer subscription fields
 # Note: Flow control properties below only apply to FlowReceiver usage (queues and durable topic endpoints)
 # They are ignored for direct topic subscriptions which use XMLMessageConsumer
-public type CommonConsumerConfiguration record {|
+type CommonConsumerConfiguration record {|
+    # JCSMP message acknowledgement mode
+    AcknowledgementMode ackMode = AUTO_ACK;
     # Optional SQL-92 message selector for filtering messages on the broker before delivery
     # Applies to both queue consumers and durable topic endpoint subscriptions (flows only).
     # Not supported for direct topic subscriptions. Filters messages based on their properties and headers.
     # Example: "OrderType = 'URGENT' AND Priority > 5" - only messages matching this condition will be delivered.
     string messageSelector?;
-    # JCSMP message acknowledgement mode
-    AcknowledgementMode ackMode = AUTO_ACK;
-    # JCSMP flow control transport window size (1-255, default 255) - FlowReceiver only
-    int transportWindowSize?;
-    # Acknowledgement threshold as percentage of window size (1-75, default 0) - FlowReceiver only
-    int ackThreshold?;
-    # Acknowledgement timer in seconds (0.02 - 1.5, default 0) - FlowReceiver only
-    decimal ackTimer = 0.0;
     # Prevent receiving messages published on same session (default false) - FlowReceiver only
     boolean noLocal = false;
+    # JCSMP flow control transport window size (1-255, default 255) - FlowReceiver only
+    int transportWindowSize?;
+    # Acknowledgement threshold as percentage of window size (1-75, default 0)
+    int ackThreshold?;
+    # Acknowledgement timer in seconds (0.02 - 1.5). Disabled by default
+    decimal ackTimer?;
     # Enable active/inactive flow indication (default false) - FlowReceiver only
     boolean activeFlowIndication?;
     # Number of reconnection attempts after flow goes down (-1 = infinite, default -1) - FlowReceiver only
@@ -309,7 +307,7 @@ public type SubscriptionConfiguration QueueConfiguration|TopicConfiguration;
 
 # Consumer configuration for synchronous (pull-based) message consumption via MessageConsumer
 public type ConsumerConfiguration record {|
-    *CommonConnectionConfiguration;
+    *CommonConsumerConnectionConfiguration;
     # The subscription configuration (queue or topic)
     SubscriptionConfiguration subscriptionConfig;
 |};
@@ -327,14 +325,14 @@ public enum DeliveryMode {
     PERSISTENT
 }
 
-# Durability of a queue or topic subscription: TEMPORARY (ephemeral, auto-deleted) or DURABLE (persisted on broker)
+# Durability of a queue or topic subscription: DURABLE (persisted on broker) or TEMPORARY (ephemeral, auto-deleted)
 public enum Durability {
-    TEMPORARY,
-    DURABLE
+    DURABLE,
+    TEMPORARY
 }
 
 # Common service subscription fields (listener subscription configuration)
-public type CommonServiceConfiguration record {|
+type CommonServiceConfiguration record {|
     *CommonConsumerConfiguration;
 |};
 
@@ -368,10 +366,10 @@ public type Message record {|
     anydata payload;
     # Delivery mode for the message (DIRECT, PERSISTENT, or NON_PERSISTENT)
     DeliveryMode deliveryMode = DIRECT;
-    # Message priority (0-255, where 0 is lowest and 255 is highest)
-    byte priority?;
-    # Time-to-live in milliseconds (0 = never expires, only for PERSISTENT/NON_PERSISTENT modes)
-    int timeToLive?;
+    # Message priority (0-9, where 9 is the highest)
+    int priority?;
+    # Time-to-live in seconds (0 = never expires, only for PERSISTENT/NON_PERSISTENT modes)
+    decimal timeToLive?;
     # Application-defined message ID for correlation
     string applicationMessageId?;
     # Application-defined message type
@@ -384,28 +382,31 @@ public type Message record {|
     string senderId?;
     # Sender timestamp in UTC milliseconds from epoch
     int senderTimestamp?;
-    # Receive timestamp in UTC milliseconds from epoch (set by broker)
-    int receiveTimestamp?;
     # Sequence number for message ordering (application-managed)
     # Set by the application for message ordering and duplicate detection. Can be auto-generated if sequence number
     # generation is enabled in the session. Once set, value is preserved across message resends and available on both
     # direct and guaranteed message delivery. Note: distinct from broker-generated topicSequenceNumber.
     int sequenceNumber?;
-    # Whether message was previously delivered
-    boolean redelivered?;
-    # Number of times this message has been delivered
-    int deliveryCount?;
     # Properties map for custom key-value pairs
     map<Property> properties?;
     # Application-specific user data attachment (max 36 bytes)
     byte[] userData?;
+    # Receive timestamp in UTC milliseconds from epoch (set by broker)
+    int receiveTimestamp?;
+    # Whether message was previously delivered
+    boolean redelivered?;
+    # Number of times this message has been delivered
+    int deliveryCount?;
+    # Message expiration time in UTC milliseconds from epoch (calculated by the sending client only when
+    # `calculateMessageExpiration` is enabled on the producer configuration; `0`/unset otherwise)
+    int expiration?;
 |};
 
 # Represents the allowed value types for a Solace message property.
-public type Property boolean|int|float|string|byte[]|map<Property>;
+public type Property boolean|int|byte|float|string|byte[]|map<Property>;
 
 # Represents the allowed value types for entries in a Solace MapMessage payload.
-public type Value boolean|int|float|string|byte[]|map<Value>;
+public type Value boolean|int|byte|float|string|byte[]|map<Value>;
 
 # A property key used internally to mark that a message's text payload is XML.
 public const SOLACE_ISXML_PROP = "solace_isXML";
@@ -417,10 +418,10 @@ type InternalMessage record {|
     string|map<Value>|byte[] payload;
     # Delivery mode for the message (DIRECT or PERSISTENT).
     DeliveryMode deliveryMode = DIRECT;
-    # Message priority (0-255, where 0 is lowest and 255 is highest).
-    byte priority?;
-    # Time-to-live in milliseconds (0 = never expires).
-    int timeToLive?;
+    # Message priority (0-9, where 9 is the highest).
+    int priority?;
+    # Time-to-live in seconds (0 = never expires).
+    decimal timeToLive?;
     # Application-defined message ID for correlation.
     string applicationMessageId?;
     # Application-defined message type.
@@ -433,16 +434,19 @@ type InternalMessage record {|
     string senderId?;
     # Sender timestamp in UTC milliseconds from epoch.
     int senderTimestamp?;
-    # Receive timestamp in UTC milliseconds from epoch (set by broker).
-    int receiveTimestamp?;
     # Sequence number for message ordering.
     int sequenceNumber?;
-    # Whether message was previously delivered.
-    boolean redelivered?;
-    # Number of times this message has been delivered.
-    int deliveryCount?;
     # Properties map for custom key-value pairs.
     map<Property> properties?;
     # Application-specific user data attachment.
     byte[] userData?;
+    # Receive timestamp in UTC milliseconds from epoch (set by broker).
+    int receiveTimestamp?;
+    # Whether message was previously delivered.
+    boolean redelivered?;
+    # Number of times this message has been delivered.
+    int deliveryCount?;
+    # Message expiration time in UTC milliseconds from epoch (calculated by the sending client only when
+    # `calculateMessageExpiration` is enabled on the producer configuration; `0`/unset otherwise).
+    int expiration?;
 |};

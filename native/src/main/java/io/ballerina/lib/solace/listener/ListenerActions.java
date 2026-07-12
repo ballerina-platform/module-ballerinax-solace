@@ -33,8 +33,8 @@ import com.solacesystems.jcsmp.transaction.TransactedSession;
 import io.ballerina.lib.solace.ModuleUtils;
 import io.ballerina.lib.solace.common.CommonUtils;
 import io.ballerina.lib.solace.config.ConfigurationUtils;
-import io.ballerina.lib.solace.config.ConnectionConfiguration;
 import io.ballerina.lib.solace.config.ConsumerSubscriptionConfig;
+import io.ballerina.lib.solace.config.ListenerConfiguration;
 import io.ballerina.lib.solace.config.QueueConsumerConfig;
 import io.ballerina.lib.solace.config.TopicConsumerConfig;
 import io.ballerina.lib.solace.consumer.AcknowledgementMode;
@@ -80,13 +80,15 @@ public class ListenerActions {
      */
     public static Object init(Environment env, BObject listener, BString url, BMap<BString, Object> config) {
         try {
-            ConnectionConfiguration connectionConfig = new ConnectionConfiguration(config);
-            JCSMPProperties props = ConfigurationUtils.buildJCSMPProperties(url.getValue(), connectionConfig);
+            ListenerConfiguration listenerConfig = new ListenerConfiguration(config);
+            JCSMPProperties props =
+                    ConfigurationUtils.buildJCSMPProperties(url.getValue(), listenerConfig.connectionConfig());
+            ConfigurationUtils.applyReceiveTimestampProperty(props, listenerConfig.generateReceiveTimestamps());
 
             JCSMPSession session = JCSMPFactory.onlyInstance().createSession(props);
             session.connect();
 
-            boolean isTransacted = connectionConfig.transacted();
+            boolean isTransacted = listenerConfig.connectionConfig().transacted();
             TransactedSession txSession = isTransacted ? session.createTransactedSession() : null;
 
             listener.addNativeData(NATIVE_SESSION, session);

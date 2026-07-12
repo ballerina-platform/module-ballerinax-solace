@@ -73,6 +73,7 @@ const string CONSUMER_TEXT_QUEUE = "test/consumer/text/queue";
 const string CONSUMER_BINARY_QUEUE = "test/consumer/binary/queue";
 const string CONSUMER_PROPERTIES_QUEUE = "test/consumer/properties/queue";
 const string CONSUMER_METADATA_QUEUE = "test/consumer/metadata/queue";
+const string CONSUMER_EXPIRATION_QUEUE = "test/consumer/expiration/queue";
 const string CONSUMER_TIMEOUT_QUEUE = "test/consumer/timeout/queue";
 const string CONSUMER_NOWAIT_QUEUE = "test/consumer/nowait/queue";
 const string CONSUMER_SELECTOR_QUEUE = "test/consumer/selector/queue";

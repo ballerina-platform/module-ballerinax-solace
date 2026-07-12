@@ -172,7 +172,7 @@ Service clientAckService = @ServiceConfig {
 // ========================================
 @test:Config {groups: ["listener", "init"]}
 function testListenerInit() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     check solaceListener.gracefulStop();
 }
 
@@ -181,7 +181,7 @@ function testListenerInit() returns error? {
 // ========================================
 @test:Config {groups: ["listener"]}
 function testListenerQueueAutoAck() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     check solaceListener.attach(autoAckService);
     check solaceListener.'start();
     // Let the flow/subscription become fully active before publishing, so the first message is not
@@ -208,7 +208,7 @@ function testListenerQueueAutoAck() returns error? {
 // ========================================
 @test:Config {groups: ["listener"]}
 function testListenerDirectTopic() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     check solaceListener.attach(directTopicService);
     check solaceListener.'start();
     // Let the flow/subscription become fully active before publishing, so the first message is not
@@ -228,7 +228,7 @@ function testListenerDirectTopic() returns error? {
 // ========================================
 @test:Config {groups: ["listener", "clientack"]}
 function testListenerClientAckWithCaller() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     check solaceListener.attach(clientAckService);
     check solaceListener.'start();
     // Let the flow/subscription become fully active before publishing, so the first message is not
@@ -255,7 +255,7 @@ function testListenerClientAckWithCaller() returns error? {
 // ========================================
 @test:Config {groups: ["listener", "negative"]}
 function testListenerAttachWithoutAnnotation() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     Service noAnnotationService = service object {
         remote function onMessage(Message message) returns error? {
         }
@@ -270,7 +270,7 @@ function testListenerAttachWithoutAnnotation() returns error? {
 // ========================================
 @test:Config {groups: ["listener", "negative"]}
 function testListenerAttachWithoutOnMessage() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     Service noOnMessageService = @ServiceConfig {
         queueName: LISTENER_AUTOACK_QUEUE
     } service object {
@@ -300,7 +300,7 @@ Service durableTopicService = @ServiceConfig {
 
 @test:Config {groups: ["listener", "durable"]}
 function testListenerDurableTopic() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     check solaceListener.attach(durableTopicService);
     check solaceListener.'start();
     // Let the flow/subscription become fully active before publishing, so the first message is not
@@ -339,7 +339,7 @@ Service nackService = @ServiceConfig {
 
 @test:Config {groups: ["listener", "clientack"]}
 function testListenerNackRequeueRedelivery() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     check solaceListener.attach(nackService);
     check solaceListener.'start();
     // Let the flow/subscription become fully active before publishing, so the first message is not

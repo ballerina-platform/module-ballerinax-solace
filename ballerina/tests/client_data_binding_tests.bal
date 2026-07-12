@@ -39,7 +39,7 @@ type ClientBindingIncompatibleRecord record {|
 |};
 
 isolated function publishToQueue(string queueName, anydata payload) returns error? {
-    MessageProducer producer = check new (BROKER_URL, connectionConfig());
+    MessageProducer producer = check new (BROKER_URL, {...connectionConfig()});
     check producer->send({payload}, {queueName});
     check producer->close();
 }

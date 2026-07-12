@@ -42,10 +42,6 @@ import java.math.BigDecimal;
  * @param readTimeout                maximum time in milliseconds for reading replies
  * @param compressionLevel           ZLIB compression level (0-9, 0 = disabled)
  * @param transacted                 true to enable transacted messaging
- * @param generateReceiveTimestamps  whether to generate receive timestamps on incoming messages
- * @param generateSendTimestamps     whether to generate send timestamps on outgoing messages
- * @param generateSequenceNumbers    whether to generate sequence numbers on outgoing messages
- * @param calculateMessageExpiration whether to calculate message expiration from TTL
  * @param auth                       authentication configuration, or null
  * @param retryConfig                retry configuration, or null
  * @param secureSocket               SSL/TLS configuration, or null
@@ -59,10 +55,6 @@ public record ConnectionConfiguration(
         long readTimeout,
         int compressionLevel,
         boolean transacted,
-        boolean generateReceiveTimestamps,
-        boolean generateSendTimestamps,
-        boolean generateSequenceNumbers,
-        boolean calculateMessageExpiration,
         AuthConfiguration auth,
         RetryConfig retryConfig,
         SecureSocketConfig secureSocket) {
@@ -75,11 +67,6 @@ public record ConnectionConfiguration(
     private static final BString READ_TIMEOUT_KEY = StringUtils.fromString("readTimeout");
     private static final BString COMPRESSION_LEVEL_KEY = StringUtils.fromString("compressionLevel");
     private static final BString TRANSACTED_KEY = StringUtils.fromString("transacted");
-    private static final BString GENERATE_RECEIVE_TIMESTAMPS_KEY = StringUtils.fromString("generateReceiveTimestamps");
-    private static final BString GENERATE_SEND_TIMESTAMPS_KEY = StringUtils.fromString("generateSendTimestamps");
-    private static final BString GENERATE_SEQUENCE_NUMBERS_KEY = StringUtils.fromString("generateSequenceNumbers");
-    private static final BString CALCULATE_MESSAGE_EXPIRATION_KEY =
-            StringUtils.fromString("calculateMessageExpiration");
     private static final BString AUTH_KEY = StringUtils.fromString("auth");
     private static final BString RETRY_CONFIG_KEY = StringUtils.fromString("retryConfig");
     private static final BString SECURE_SOCKET_KEY = StringUtils.fromString("secureSocket");
@@ -99,10 +86,6 @@ public record ConnectionConfiguration(
                 decimalToMillis(((BDecimal) config.get(READ_TIMEOUT_KEY)).decimalValue()),
                 Math.toIntExact(config.getIntValue(COMPRESSION_LEVEL_KEY)),
                 config.getBooleanValue(TRANSACTED_KEY),
-                config.getBooleanValue(GENERATE_RECEIVE_TIMESTAMPS_KEY),
-                config.getBooleanValue(GENERATE_SEND_TIMESTAMPS_KEY),
-                config.getBooleanValue(GENERATE_SEQUENCE_NUMBERS_KEY),
-                config.getBooleanValue(CALCULATE_MESSAGE_EXPIRATION_KEY),
                 getAuthConfig(config),
                 getRetryConfig(config),
                 getSecureSocketConfig(config)

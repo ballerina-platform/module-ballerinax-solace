@@ -60,7 +60,7 @@ public sealed interface ConsumerSubscriptionConfig permits QueueConsumerConfig, 
 
     Integer ackThreshold();
 
-    int ackTimerInMsecs();
+    Integer ackTimerInMsecs();
 
     Boolean noLocal();
 
@@ -72,9 +72,9 @@ public sealed interface ConsumerSubscriptionConfig permits QueueConsumerConfig, 
 
     /**
      * Validates the flow-control bounds shared by queue and topic subscriptions: {@code transportWindowSize}
-     * (1-255), {@code ackThreshold} (1-75), and {@code ackTimer} (20-1500ms / 0.02-1.5s). A value of {@code 0} for
-     * {@code ackTimerInMsecs} means "not configured" (matches the Ballerina-side {@code decimal ackTimer = 0.0}
-     * default), so it is not bounds-checked.
+     * (1-255), {@code ackThreshold} (1-75), and {@code ackTimer} (20-1500ms / 0.02-1.5s). {@code ackTimerInMsecs}
+     * is {@code null} when the Ballerina-side {@code ackTimer} is left unset (disabled by default), so it is
+     * not bounds-checked in that case.
      * <p>
      * Used by both the pull-based {@code MessageConsumer} and the push-based {@code Listener} paths, since both
      * construct these records from a {@code CommonConsumerConfig}/{@code CommonServiceConfig}-shaped map via
@@ -91,8 +91,8 @@ public sealed interface ConsumerSubscriptionConfig permits QueueConsumerConfig, 
         if (threshold != null && (threshold < 1 || threshold > 75)) {
             throw new IllegalArgumentException("ackThreshold must be between 1 and 75");
         }
-        int timerMs = ackTimerInMsecs();
-        if (timerMs != 0 && (timerMs < 20 || timerMs > 1500)) {
+        Integer timerMs = ackTimerInMsecs();
+        if (timerMs != null && (timerMs < 20 || timerMs > 1500)) {
             throw new IllegalArgumentException("ackTimer must be between 0.02 and 1.5 seconds");
         }
     }

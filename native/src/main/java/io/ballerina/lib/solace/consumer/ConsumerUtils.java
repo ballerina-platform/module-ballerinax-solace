@@ -70,7 +70,9 @@ public class ConsumerUtils {
         if (config.ackThreshold() != null) {
             flowProps.setAckThreshold(config.ackThreshold());
         }
-        flowProps.setAckTimerInMsecs(config.ackTimerInMsecs());
+        if (config.ackTimerInMsecs() != null) {
+            flowProps.setAckTimerInMsecs(config.ackTimerInMsecs());
+        }
         if (config.noLocal() != null) {
             flowProps.setNoLocal(config.noLocal());
         }

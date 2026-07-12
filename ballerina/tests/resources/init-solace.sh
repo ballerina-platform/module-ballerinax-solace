@@ -55,8 +55,12 @@ create_queue() {
         sleep 3
     done
 
-    # Subscribe queue to topic with same name (for topic-to-queue mapping)
-    curl -X POST "$SEMP_URL/msgVpns/$VPN/queues/$queue_name/subscriptions" \
+    # Subscribe queue to topic with same name (for topic-to-queue mapping). The queue name is a
+    # URL path segment here (unlike the JSON body above), so literal '/' characters must be
+    # percent-encoded or SEMP splits it into multiple path segments and rejects it as INVALID_PATH.
+    local queue_name_encoded
+    queue_name_encoded=$(printf '%s' "$queue_name" | sed 's#/#%2F#g')
+    curl -X POST "$SEMP_URL/msgVpns/$VPN/queues/$queue_name_encoded/subscriptions" \
         -u "$AUTH" \
         -H "Content-Type: application/json" \
         -d "{
@@ -120,6 +124,7 @@ create_queue "test/consumer/binary/queue"
 create_queue "test/consumer/properties/queue"
 create_queue "test/consumer/metadata/queue"
 create_queue "test/consumer/timeout/queue"
+create_queue "test/consumer/expiration/queue"
 create_queue "test/consumer/nowait/queue"
 create_queue "test/consumer/selector/queue"
 create_queue "test/consumer/multiple/queue"

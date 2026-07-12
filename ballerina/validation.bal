@@ -47,3 +47,10 @@ isolated function validateConfigurations(CommonConnectionConfiguration config) r
         }
     }
 }
+
+isolated function validateMessage(Message message) returns Error? {
+    int? priority = message.priority;
+    if priority is int && (priority < 0 || priority > 9) {
+        return error Error("priority must be between 0 and 9");
+    }
+}

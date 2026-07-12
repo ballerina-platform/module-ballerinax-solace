@@ -272,7 +272,7 @@ isolated function testProducerSendWithTTL() returns error? {
     check producer->send(
         {
         payload: TEXT_MESSAGE_CONTENT.toBytes(),
-        timeToLive: 60000,
+        timeToLive: 60d,
         deliveryMode: PERSISTENT
     },
         {queueName: PRODUCER_TTL_QUEUE}
@@ -295,7 +295,7 @@ isolated function testProducerSendPersistentMessage() returns error? {
         {
         payload: TEXT_MESSAGE_CONTENT.toBytes(),
         deliveryMode: PERSISTENT,
-        priority: 128
+        priority: 7
     },
         {queueName: PRODUCER_PERSISTENT_QUEUE}
     );
@@ -537,7 +537,7 @@ isolated function testProducerWithCalculateMessageExpiration() returns error? {
     check producer->send(
         {
         payload: TEXT_MESSAGE_CONTENT.toBytes(),
-        timeToLive: 30000,
+        timeToLive: 30d,
         deliveryMode: PERSISTENT
     },
         {queueName: PRODUCER_TTL_QUEUE}

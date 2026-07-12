@@ -65,12 +65,6 @@ public final class ConfigurationUtils {
             props.setProperty(JCSMPProperties.LOCALHOST, config.localhost());
         }
 
-        // Set timestamp and sequence number generation
-        props.setProperty(JCSMPProperties.GENERATE_RCV_TIMESTAMPS, config.generateReceiveTimestamps());
-        props.setProperty(JCSMPProperties.GENERATE_SEND_TIMESTAMPS, config.generateSendTimestamps());
-        props.setProperty(JCSMPProperties.GENERATE_SEQUENCE_NUMBERS, config.generateSequenceNumbers());
-        props.setProperty(JCSMPProperties.CALCULATE_MESSAGE_EXPIRATION, config.calculateMessageExpiration());
-
         // Set channel properties (timeouts, retries, compression)
         setChannelProperties(props, config);
 
@@ -83,6 +77,33 @@ public final class ConfigurationUtils {
         }
 
         return props;
+    }
+
+    /**
+     * Applies send-side timestamp/sequence-number/expiration generation properties. Only relevant for a
+     * publishing (producer) session.
+     *
+     * @param props                      the JCSMPProperties to update
+     * @param generateSendTimestamps     whether to generate send timestamps on outgoing messages
+     * @param generateSequenceNumbers    whether to generate sequence numbers on outgoing messages
+     * @param calculateMessageExpiration whether to calculate message expiration from TTL
+     */
+    public static void applyProducerTimestampProperties(JCSMPProperties props, boolean generateSendTimestamps,
+            boolean generateSequenceNumbers, boolean calculateMessageExpiration) {
+        props.setProperty(JCSMPProperties.GENERATE_SEND_TIMESTAMPS, generateSendTimestamps);
+        props.setProperty(JCSMPProperties.GENERATE_SEQUENCE_NUMBERS, generateSequenceNumbers);
+        props.setProperty(JCSMPProperties.CALCULATE_MESSAGE_EXPIRATION, calculateMessageExpiration);
+    }
+
+    /**
+     * Applies receive-side timestamp generation property. Only relevant for a receiving (consumer/listener)
+     * session.
+     *
+     * @param props                     the JCSMPProperties to update
+     * @param generateReceiveTimestamps whether to generate receive timestamps on incoming messages
+     */
+    public static void applyReceiveTimestampProperty(JCSMPProperties props, boolean generateReceiveTimestamps) {
+        props.setProperty(JCSMPProperties.GENERATE_RCV_TIMESTAMPS, generateReceiveTimestamps);
     }
 
     /**
@@ -209,7 +230,7 @@ public final class ConfigurationUtils {
     }
 
     /**
-     * Maps protocol names from Ballerina constants to Solace's expected proper-cased values.
+     * Maps protocol names from Ballerina constants to Solace's expected values.
      *
      * @param protocols array of protocol names
      * @return mapped array of protocol names
@@ -217,12 +238,10 @@ public final class ConfigurationUtils {
     private static String[] mapProtocols(String[] protocols) {
         return Arrays.stream(protocols).map(protocol -> {
             return switch (protocol) {
-                case "sslv3" -> "SSLv3";
-                case "tlsv1" -> "TLSv1";
-                case "tlsv11" -> "TLSv1.1";
-                case "tlsv12" -> "TLSv1.2";
-                case "SSLv2Hello" -> "SSLv2Hello";
-                default -> protocol;
+                case "TLSV1_1" -> "tlsv1.1";
+                case "TLSV1_2" -> "tlsv1.2";
+                case "TLSV1_3" -> "tlsv1.3";
+                default -> throw new IllegalArgumentException("Unsupported protocol: " + protocol);
             };
         }).toArray(String[]::new);
     }

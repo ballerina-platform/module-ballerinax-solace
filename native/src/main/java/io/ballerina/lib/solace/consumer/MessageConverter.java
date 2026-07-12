@@ -44,6 +44,7 @@ import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
 import io.ballerina.runtime.api.values.BTypedesc;
 
+import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
@@ -53,6 +54,7 @@ import static io.ballerina.lib.solace.common.MessageFieldConstants.APPLICATION_M
 import static io.ballerina.lib.solace.common.MessageFieldConstants.CORRELATION_ID_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.DELIVERY_COUNT_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.DELIVERY_MODE_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.EXPIRATION_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.PAYLOAD_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.PRIORITY_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.PROPERTIES_KEY;
@@ -94,13 +96,13 @@ public class MessageConverter {
         // Set priority if present (getPriority returns -1 if not set)
         int priority = xmlMessage.getPriority();
         if (priority >= 0) {
-            message.put(PRIORITY_KEY, (byte) priority);
+            message.put(PRIORITY_KEY, (long) priority);
         }
 
-        // Set time to live
+        // Set time to live (milliseconds converted to decimal seconds)
         long ttl = xmlMessage.getTimeToLive();
         if (ttl > 0) {
-            message.put(TIME_TO_LIVE_KEY, (int) ttl);
+            message.put(TIME_TO_LIVE_KEY, ValueCreator.createDecimalValue(BigDecimal.valueOf(ttl, 3)));
         }
 
         // Set application message ID if present
@@ -163,6 +165,12 @@ public class MessageConverter {
                 message.put(DELIVERY_COUNT_KEY, deliveryCount);
             }
         } catch (UnsupportedOperationException ignored) {
+        }
+
+        // Set expiration if present (set by broker only when calculateMessageExpiration is enabled; 0 means not set)
+        long expiration = xmlMessage.getExpiration();
+        if (expiration > 0) {
+            message.put(EXPIRATION_KEY, expiration);
         }
 
         // Set properties if present

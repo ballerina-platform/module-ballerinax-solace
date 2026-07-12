@@ -41,6 +41,7 @@ public class MessageFieldConstants {
     public static final BString SEQUENCE_NUMBER_KEY = StringUtils.fromString("sequenceNumber");
     public static final BString REDELIVERED_KEY = StringUtils.fromString("redelivered");
     public static final BString DELIVERY_COUNT_KEY = StringUtils.fromString("deliveryCount");
+    public static final BString EXPIRATION_KEY = StringUtils.fromString("expiration");
     public static final BString PROPERTIES_KEY = StringUtils.fromString("properties");
     public static final BString USER_DATA_KEY = StringUtils.fromString("userData");
 

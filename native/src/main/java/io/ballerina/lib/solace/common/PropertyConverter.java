@@ -138,6 +138,7 @@ public class PropertyConverter {
             case Boolean b -> sdtMap.putBoolean(key, b);
             case Long l -> sdtMap.putLong(key, l);
             case Integer i -> sdtMap.putInteger(key, i);
+            case Byte b -> sdtMap.putByte(key, b);
             case Double v -> sdtMap.putDouble(key, v);
             case Float v -> sdtMap.putFloat(key, v);
             case BArray bArray -> sdtMap.putBytes(key, bArray.getBytes());

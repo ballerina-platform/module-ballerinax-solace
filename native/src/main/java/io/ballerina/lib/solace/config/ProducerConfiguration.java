@@ -18,6 +18,7 @@
 
 package io.xlibb.solace.config;
 
+import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
 
@@ -25,9 +26,21 @@ import io.ballerina.runtime.api.values.BString;
  * Producer-specific configuration containing connection configuration. Maps to ProducerConfiguration in Ballerina
  * types.bal.
  *
- * @param connectionConfig connection configuration for broker connection
+ * @param connectionConfig           connection configuration for broker connection
+ * @param generateSendTimestamps     whether to generate send timestamps on outgoing messages
+ * @param generateSequenceNumbers    whether to generate sequence numbers on outgoing messages
+ * @param calculateMessageExpiration whether to calculate message expiration from TTL
  */
-public record ProducerConfiguration(ConnectionConfiguration connectionConfig) {
+public record ProducerConfiguration(
+        ConnectionConfiguration connectionConfig,
+        boolean generateSendTimestamps,
+        boolean generateSequenceNumbers,
+        boolean calculateMessageExpiration) {
+
+    private static final BString GENERATE_SEND_TIMESTAMPS_KEY = StringUtils.fromString("generateSendTimestamps");
+    private static final BString GENERATE_SEQUENCE_NUMBERS_KEY = StringUtils.fromString("generateSequenceNumbers");
+    private static final BString CALCULATE_MESSAGE_EXPIRATION_KEY =
+            StringUtils.fromString("calculateMessageExpiration");
 
     /**
      * Creates a ProducerConfiguration from a Ballerina map record. The map contains connection configuration fields.
@@ -35,6 +48,11 @@ public record ProducerConfiguration(ConnectionConfiguration connectionConfig) {
      * @param config the Ballerina configuration map
      */
     public ProducerConfiguration(BMap<BString, Object> config) {
-        this(new ConnectionConfiguration(config));
+        this(
+                new ConnectionConfiguration(config),
+                config.getBooleanValue(GENERATE_SEND_TIMESTAMPS_KEY),
+                config.getBooleanValue(GENERATE_SEQUENCE_NUMBERS_KEY),
+                config.getBooleanValue(CALCULATE_MESSAGE_EXPIRATION_KEY)
+        );
     }
 }

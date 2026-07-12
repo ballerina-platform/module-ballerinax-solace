@@ -126,12 +126,12 @@ Service stringBindingService = @ServiceConfig {
 
 @test:Config {groups: ["listener", "databinding"]}
 function testServiceBindStringPayload() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     check solaceListener.attach(stringBindingService);
     check solaceListener.'start();
     runtime:sleep(2);
 
-    MessageProducer producer = check new (BROKER_URL, connectionConfig());
+    MessageProducer producer = check new (BROKER_URL, {...connectionConfig()});
     check producer->send({payload: "hello-string-binding"}, {queueName: BINDING_SVC_POSITIVE_QUEUE});
     check producer->close();
 
@@ -156,12 +156,12 @@ Service intBindingService = @ServiceConfig {
 
 @test:Config {groups: ["listener", "databinding"], dependsOn: [testServiceBindStringPayload]}
 function testServiceBindIntPayload() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     check solaceListener.attach(intBindingService);
     check solaceListener.'start();
     runtime:sleep(2);
 
-    MessageProducer producer = check new (BROKER_URL, connectionConfig());
+    MessageProducer producer = check new (BROKER_URL, {...connectionConfig()});
     check producer->send({payload: 42}, {queueName: BINDING_SVC_POSITIVE_QUEUE});
     check producer->close();
 
@@ -186,12 +186,12 @@ Service floatBindingService = @ServiceConfig {
 
 @test:Config {groups: ["listener", "databinding"], dependsOn: [testServiceBindIntPayload]}
 function testServiceBindFloatPayload() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     check solaceListener.attach(floatBindingService);
     check solaceListener.'start();
     runtime:sleep(2);
 
-    MessageProducer producer = check new (BROKER_URL, connectionConfig());
+    MessageProducer producer = check new (BROKER_URL, {...connectionConfig()});
     check producer->send({payload: <float>3.5}, {queueName: BINDING_SVC_POSITIVE_QUEUE});
     check producer->close();
 
@@ -216,12 +216,12 @@ Service decimalBindingService = @ServiceConfig {
 
 @test:Config {groups: ["listener", "databinding"], dependsOn: [testServiceBindFloatPayload]}
 function testServiceBindDecimalPayload() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     check solaceListener.attach(decimalBindingService);
     check solaceListener.'start();
     runtime:sleep(2);
 
-    MessageProducer producer = check new (BROKER_URL, connectionConfig());
+    MessageProducer producer = check new (BROKER_URL, {...connectionConfig()});
     check producer->send({payload: 12.75d}, {queueName: BINDING_SVC_POSITIVE_QUEUE});
     check producer->close();
 
@@ -246,12 +246,12 @@ Service booleanBindingService = @ServiceConfig {
 
 @test:Config {groups: ["listener", "databinding"], dependsOn: [testServiceBindDecimalPayload]}
 function testServiceBindBooleanPayload() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     check solaceListener.attach(booleanBindingService);
     check solaceListener.'start();
     runtime:sleep(2);
 
-    MessageProducer producer = check new (BROKER_URL, connectionConfig());
+    MessageProducer producer = check new (BROKER_URL, {...connectionConfig()});
     check producer->send({payload: true}, {queueName: BINDING_SVC_POSITIVE_QUEUE});
     check producer->close();
 
@@ -276,12 +276,12 @@ Service bytesBindingService = @ServiceConfig {
 
 @test:Config {groups: ["listener", "databinding"], dependsOn: [testServiceBindBooleanPayload]}
 function testServiceBindBytesPayload() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     check solaceListener.attach(bytesBindingService);
     check solaceListener.'start();
     runtime:sleep(2);
 
-    MessageProducer producer = check new (BROKER_URL, connectionConfig());
+    MessageProducer producer = check new (BROKER_URL, {...connectionConfig()});
     check producer->send({payload: "hello-bytes-binding".toBytes()}, {queueName: BINDING_SVC_POSITIVE_QUEUE});
     check producer->close();
 
@@ -306,13 +306,13 @@ Service xmlBindingService = @ServiceConfig {
 
 @test:Config {groups: ["listener", "databinding"], dependsOn: [testServiceBindBytesPayload]}
 function testServiceBindXmlPayload() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     check solaceListener.attach(xmlBindingService);
     check solaceListener.'start();
     runtime:sleep(2);
 
     xml orderXml = xml `<order><id>42</id></order>`;
-    MessageProducer producer = check new (BROKER_URL, connectionConfig());
+    MessageProducer producer = check new (BROKER_URL, {...connectionConfig()});
     check producer->send({payload: orderXml}, {queueName: BINDING_SVC_POSITIVE_QUEUE});
     check producer->close();
 
@@ -340,13 +340,13 @@ Service jsonBindingService = @ServiceConfig {
 
 @test:Config {groups: ["listener", "databinding"], dependsOn: [testServiceBindXmlPayload]}
 function testServiceBindJsonPayload() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     check solaceListener.attach(jsonBindingService);
     check solaceListener.'start();
     runtime:sleep(2);
 
     json orderJson = {name: "json-order", tags: ["a", "b"]};
-    MessageProducer producer = check new (BROKER_URL, connectionConfig());
+    MessageProducer producer = check new (BROKER_URL, {...connectionConfig()});
     check producer->send({payload: orderJson}, {queueName: BINDING_SVC_POSITIVE_QUEUE});
     check producer->close();
 
@@ -371,13 +371,13 @@ Service recordBindingService = @ServiceConfig {
 
 @test:Config {groups: ["listener", "databinding"], dependsOn: [testServiceBindJsonPayload]}
 function testServiceBindFlatRecordPayload() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     check solaceListener.attach(recordBindingService);
     check solaceListener.'start();
     runtime:sleep(2);
 
     DataBindingFlatRecord flatRecord = {name: "Alice", age: 30};
-    MessageProducer producer = check new (BROKER_URL, connectionConfig());
+    MessageProducer producer = check new (BROKER_URL, {...connectionConfig()});
     check producer->send({payload: flatRecord}, {queueName: BINDING_SVC_POSITIVE_QUEUE});
     check producer->close();
 
@@ -402,13 +402,13 @@ Service nestedRecordBindingService = @ServiceConfig {
 
 @test:Config {groups: ["listener", "databinding"], dependsOn: [testServiceBindFlatRecordPayload]}
 function testServiceBindNestedRecordPayload() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     check solaceListener.attach(nestedRecordBindingService);
     check solaceListener.'start();
     runtime:sleep(2);
 
     DataBindingPerson person = {name: "Bob", age: 40, address: {city: "Colombo", country: "LK"}};
-    MessageProducer producer = check new (BROKER_URL, connectionConfig());
+    MessageProducer producer = check new (BROKER_URL, {...connectionConfig()});
     check producer->send({payload: person}, {queueName: BINDING_SVC_POSITIVE_QUEUE});
     check producer->close();
 
@@ -433,13 +433,13 @@ Service mapBindingService = @ServiceConfig {
 
 @test:Config {groups: ["listener", "databinding"], dependsOn: [testServiceBindNestedRecordPayload]}
 function testServiceBindMapPayload() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     check solaceListener.attach(mapBindingService);
     check solaceListener.'start();
     runtime:sleep(2);
 
     map<Value> orderMap = {id: 7, active: true, tags: {a: "b"}};
-    MessageProducer producer = check new (BROKER_URL, connectionConfig());
+    MessageProducer producer = check new (BROKER_URL, {...connectionConfig()});
     check producer->send({payload: orderMap}, {queueName: BINDING_SVC_POSITIVE_QUEUE});
     check producer->close();
 
@@ -465,12 +465,12 @@ Service callerBindingService = @ServiceConfig {
 
 @test:Config {groups: ["listener", "databinding"], dependsOn: [testServiceBindMapPayload]}
 function testServiceBindWithCaller() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     check solaceListener.attach(callerBindingService);
     check solaceListener.'start();
     runtime:sleep(2);
 
-    MessageProducer producer = check new (BROKER_URL, connectionConfig());
+    MessageProducer producer = check new (BROKER_URL, {...connectionConfig()});
     check producer->send({payload: "hello-caller-binding"}, {queueName: BINDING_SVC_POSITIVE_QUEUE});
     check producer->close();
 
@@ -508,12 +508,12 @@ Service mismatchStringExpectedService = @ServiceConfig {
 
 @test:Config {groups: ["listener", "databinding", "negative"]}
 function testServiceBindMismatchIntSentStringExpected() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     check solaceListener.attach(mismatchStringExpectedService);
     check solaceListener.'start();
     runtime:sleep(2);
 
-    MessageProducer producer = check new (BROKER_URL, connectionConfig());
+    MessageProducer producer = check new (BROKER_URL, {...connectionConfig()});
     check producer->send({payload: 42}, {queueName: BINDING_SVC_MISMATCH_STRING_QUEUE});
     check producer->close();
 
@@ -541,12 +541,12 @@ Service mismatchIntExpectedService = @ServiceConfig {
 
 @test:Config {groups: ["listener", "databinding", "negative"]}
 function testServiceBindMismatchStringSentIntExpected() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     check solaceListener.attach(mismatchIntExpectedService);
     check solaceListener.'start();
     runtime:sleep(2);
 
-    MessageProducer producer = check new (BROKER_URL, connectionConfig());
+    MessageProducer producer = check new (BROKER_URL, {...connectionConfig()});
     check producer->send({payload: "not-an-int"}, {queueName: BINDING_SVC_MISMATCH_INT_QUEUE});
     check producer->close();
 
@@ -574,13 +574,13 @@ Service mismatchRecordExpectedService = @ServiceConfig {
 
 @test:Config {groups: ["listener", "databinding", "negative"]}
 function testServiceBindMismatchIncompatibleRecord() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     check solaceListener.attach(mismatchRecordExpectedService);
     check solaceListener.'start();
     runtime:sleep(2);
 
     DataBindingFlatRecord flatRecord = {name: "Charlie", age: 25};
-    MessageProducer producer = check new (BROKER_URL, connectionConfig());
+    MessageProducer producer = check new (BROKER_URL, {...connectionConfig()});
     check producer->send({payload: flatRecord}, {queueName: BINDING_SVC_MISMATCH_RECORD_QUEUE});
     check producer->close();
 
@@ -609,12 +609,12 @@ Service noOnErrorBindingService = @ServiceConfig {
 
 @test:Config {groups: ["listener", "databinding", "negative"]}
 function testServiceBindMismatchWithNoOnErrorHandler() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     check solaceListener.attach(noOnErrorBindingService);
     check solaceListener.'start();
     runtime:sleep(2);
 
-    MessageProducer producer = check new (BROKER_URL, connectionConfig());
+    MessageProducer producer = check new (BROKER_URL, {...connectionConfig()});
     // First message: wrong wire shape for 'string' -> binding fails; no onError exists to observe it.
     check producer->send({payload: 42}, {queueName: BINDING_SVC_NO_ONERROR_QUEUE});
     runtime:sleep(1);

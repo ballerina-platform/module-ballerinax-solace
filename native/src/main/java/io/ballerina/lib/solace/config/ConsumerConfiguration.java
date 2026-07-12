@@ -24,15 +24,18 @@ import io.ballerina.runtime.api.values.BString;
 
 /**
  * Consumer configuration for synchronous (pull-based) message consumption via MessageConsumer. Composes
- * CommonConnectionConfiguration and a ConsumerSubscriptionConfig (queue or topic).
+ * CommonConsumerConnectionConfiguration and a ConsumerSubscriptionConfig (queue or topic).
  *
- * @param connectionConfig   the common connection configuration
- * @param subscriptionConfig the consumer subscription configuration (queue or topic)
+ * @param connectionConfig          the common connection configuration
+ * @param generateReceiveTimestamps whether to generate receive timestamps on incoming messages
+ * @param subscriptionConfig        the consumer subscription configuration (queue or topic)
  */
 public record ConsumerConfiguration(
         ConnectionConfiguration connectionConfig,
+        boolean generateReceiveTimestamps,
         ConsumerSubscriptionConfig subscriptionConfig) {
 
+    private static final BString GENERATE_RECEIVE_TIMESTAMPS_KEY = StringUtils.fromString("generateReceiveTimestamps");
     private static final BString SUBSCRIPTION_CONFIG_KEY = StringUtils.fromString("subscriptionConfig");
 
     /**
@@ -44,6 +47,7 @@ public record ConsumerConfiguration(
     public ConsumerConfiguration(BMap<BString, Object> config) {
         this(
                 new ConnectionConfiguration(config),
+                config.getBooleanValue(GENERATE_RECEIVE_TIMESTAMPS_KEY),
                 getSubscriptionConfig((BMap<BString, Object>) config.getMapValue(SUBSCRIPTION_CONFIG_KEY))
         );
     }

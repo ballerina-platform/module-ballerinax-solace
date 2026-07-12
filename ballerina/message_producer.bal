@@ -60,6 +60,7 @@ public isolated client class MessageProducer {
     # + destination - The destination to send to (topic or queue)
     # + return - Error if send fails
     isolated remote function send(Message message, Destination destination) returns Error? {
+        check validateMessage(message);
         string|map<Value>|byte[] payload = convertPayload(message.payload);
         map<Property> properties = prepareProperties(message);
         InternalMessage internalMessage = {

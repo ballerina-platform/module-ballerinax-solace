@@ -23,7 +23,7 @@ import ballerina/test;
 
 @test:Config {groups: ["listener", "validation", "negative"]}
 function testValidationMissingServiceConfig() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     Service noAnnotationService = service object {
         remote function onMessage(Message message) returns error? {
         }
@@ -39,7 +39,7 @@ function testValidationMissingServiceConfig() returns error? {
 
 @test:Config {groups: ["listener", "validation", "negative"]}
 function testValidationResourceMethodsRejected() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     Service resourceService = @ServiceConfig {
         queueName: BINDING_VALIDATION_QUEUE
     } service object {
@@ -57,7 +57,7 @@ function testValidationResourceMethodsRejected() returns error? {
 
 @test:Config {groups: ["listener", "validation", "negative"]}
 function testValidationNoRemoteMethods() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     Service noMethodsService = @ServiceConfig {
         queueName: BINDING_VALIDATION_QUEUE
     } service object {
@@ -72,7 +72,7 @@ function testValidationNoRemoteMethods() returns error? {
 
 @test:Config {groups: ["listener", "validation", "negative"]}
 function testValidationTooManyRemoteMethods() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     Service tooManyMethodsService = @ServiceConfig {
         queueName: BINDING_VALIDATION_QUEUE
     } service object {
@@ -93,7 +93,7 @@ function testValidationTooManyRemoteMethods() returns error? {
 
 @test:Config {groups: ["listener", "validation", "negative"]}
 function testValidationInvalidRemoteMethodName() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     Service invalidNameService = @ServiceConfig {
         queueName: BINDING_VALIDATION_QUEUE
     } service object {
@@ -110,7 +110,7 @@ function testValidationInvalidRemoteMethodName() returns error? {
 
 @test:Config {groups: ["listener", "validation", "negative"]}
 function testValidationMissingOnMessageMethod() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     Service onlyOnErrorService = @ServiceConfig {
         queueName: BINDING_VALIDATION_QUEUE
     } service object {
@@ -127,7 +127,7 @@ function testValidationMissingOnMessageMethod() returns error? {
 
 @test:Config {groups: ["listener", "validation", "negative"]}
 function testValidationOnMessageTooManyParams() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     Service tooManyParamsService = @ServiceConfig {
         queueName: BINDING_VALIDATION_QUEUE
     } service object {
@@ -144,7 +144,7 @@ function testValidationOnMessageTooManyParams() returns error? {
 
 @test:Config {groups: ["listener", "validation", "negative"]}
 function testValidationOnMessageWrongParamType() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     Service wrongParamTypeService = @ServiceConfig {
         queueName: BINDING_VALIDATION_QUEUE
     } service object {
@@ -162,7 +162,7 @@ function testValidationOnMessageWrongParamType() returns error? {
 
 @test:Config {groups: ["listener", "validation", "negative"]}
 function testValidationOnMessageMissingMessageParam() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     Service callerOnlyService = @ServiceConfig {
         queueName: BINDING_VALIDATION_QUEUE
     } service object {
@@ -179,7 +179,7 @@ function testValidationOnMessageMissingMessageParam() returns error? {
 
 @test:Config {groups: ["listener", "validation", "negative"]}
 function testValidationOnErrorWrongParamCount() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     Service badOnErrorService = @ServiceConfig {
         queueName: BINDING_VALIDATION_QUEUE
     } service object {
@@ -198,7 +198,7 @@ function testValidationOnErrorWrongParamCount() returns error? {
 
 @test:Config {groups: ["listener", "validation", "negative"]}
 function testValidationOnErrorWrongParamType() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     Service wrongOnErrorTypeService = @ServiceConfig {
         queueName: BINDING_VALIDATION_QUEUE
     } service object {
@@ -222,7 +222,7 @@ function testValidationOnErrorWrongParamType() returns error? {
 
 @test:Config {groups: ["listener", "validation", "negative"]}
 function testValidationServiceTransportWindowSizeTooHigh() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     Service invalidWindowSizeService = @ServiceConfig {
         queueName: BINDING_VALIDATION_QUEUE,
         transportWindowSize: 256
@@ -240,7 +240,7 @@ function testValidationServiceTransportWindowSizeTooHigh() returns error? {
 
 @test:Config {groups: ["listener", "validation", "negative"]}
 function testValidationServiceAckThresholdTooHigh() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     Service invalidAckThresholdService = @ServiceConfig {
         queueName: BINDING_VALIDATION_QUEUE,
         ackThreshold: 76
@@ -258,7 +258,7 @@ function testValidationServiceAckThresholdTooHigh() returns error? {
 
 @test:Config {groups: ["listener", "validation", "negative"]}
 function testValidationServiceAckTimerTooHigh() returns error? {
-    Listener solaceListener = check new (BROKER_URL, connectionConfig());
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
     Service invalidAckTimerService = @ServiceConfig {
         queueName: BINDING_VALIDATION_QUEUE,
         ackTimer: 2.0

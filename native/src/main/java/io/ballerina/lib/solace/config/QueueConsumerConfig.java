@@ -41,7 +41,7 @@ import java.math.BigDecimal;
  * @param selector                      optional SQL-92 message selector expression for filtering
  * @param transportWindowSize           JCSMP transport window size for flow control (1-255, default 255)
  * @param ackThreshold                  ACK threshold as percentage of window size (1-75, default 0)
- * @param ackTimerInMsecs               ACK timer in milliseconds (20-1500, default 0)
+ * @param ackTimerInMsecs               ACK timer in milliseconds (20-1500). Disabled (null) by default
  * @param noLocal                       prevent receiving messages published on same session (default false)
  * @param activeFlowIndication          enable active/inactive flow indication (default false)
  * @param reconnectTries                number of reconnection attempts after flow goes down (-1 = infinite)
@@ -54,7 +54,7 @@ public record QueueConsumerConfig(
         String selector,
         Integer transportWindowSize,
         Integer ackThreshold,
-        int ackTimerInMsecs,
+        Integer ackTimerInMsecs,
         Boolean noLocal,
         Boolean activeFlowIndication,
         Integer reconnectTries,
@@ -90,7 +90,7 @@ public record QueueConsumerConfig(
                 extractSelector(config),
                 extractOptionalInteger(config, TRANSPORT_WINDOW_SIZE_KEY),
                 extractOptionalInteger(config, ACK_THRESHOLD_KEY),
-                decimalToMillis(((BDecimal) config.get(ACK_TIMER_KEY)).decimalValue()),
+                extractOptionalDecimalMillis(config, ACK_TIMER_KEY),
                 config.containsKey(NO_LOCAL_KEY) ? config.getBooleanValue(NO_LOCAL_KEY) : null,
                 config.containsKey(ACTIVE_FLOW_INDICATION_KEY) ? config.getBooleanValue(ACTIVE_FLOW_INDICATION_KEY) :
                         null,
@@ -127,6 +127,14 @@ public record QueueConsumerConfig(
 
     private static int decimalToMillis(BigDecimal seconds) {
         return seconds.multiply(BigDecimal.valueOf(1000)).intValue();
+    }
+
+    private static Integer extractOptionalDecimalMillis(BMap<BString, Object> config, BString key) {
+        Object value = config.get(key);
+        if (value instanceof BDecimal decimal) {
+            return decimalToMillis(decimal.decimalValue());
+        }
+        return null;
     }
 
     /**
