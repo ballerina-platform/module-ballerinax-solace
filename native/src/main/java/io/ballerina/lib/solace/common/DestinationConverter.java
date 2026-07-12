@@ -22,6 +22,7 @@ import com.solacesystems.jcsmp.Destination;
 import com.solacesystems.jcsmp.JCSMPFactory;
 import com.solacesystems.jcsmp.Queue;
 import com.solacesystems.jcsmp.Topic;
+import io.ballerina.lib.solace.ModuleUtils;
 import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BMap;
@@ -46,13 +47,16 @@ public class DestinationConverter {
             return null;
         }
 
-        BMap<BString, Object> destMap = ValueCreator.createMapValue();
         if (destination instanceof Topic topic) {
-            destMap.put(TOPIC_NAME_KEY, StringUtils.fromString(topic.getName()));
+            BMap<BString, Object> topicRecord = ValueCreator.createRecordValue(ModuleUtils.getModule(), "Topic");
+            topicRecord.put(TOPIC_NAME_KEY, StringUtils.fromString(topic.getName()));
+            return topicRecord;
         } else if (destination instanceof Queue queue) {
-            destMap.put(QUEUE_NAME_KEY, StringUtils.fromString(queue.getName()));
+            BMap<BString, Object> queueRecord = ValueCreator.createRecordValue(ModuleUtils.getModule(), "Queue");
+            queueRecord.put(QUEUE_NAME_KEY, StringUtils.fromString(queue.getName()));
+            return queueRecord;
         }
-        return destMap;
+        return null;
     }
 
     /**

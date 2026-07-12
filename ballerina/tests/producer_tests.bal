@@ -248,8 +248,8 @@ isolated function testProducerSendWithMetadata() returns error? {
         {
         payload: TEXT_MESSAGE_CONTENT.toBytes(),
         correlationId: "corr-123",
-        applicationMessageId: "app-msg-456",
-        applicationMessageType: "ORDER_CREATED",
+        messageId: "app-msg-456",
+        messageType: "ORDER_CREATED",
         senderId: "sender-789",
         replyTo: {queueName: "reply/queue"}
     },

@@ -486,8 +486,8 @@ isolated function testConsumerReceiveWithMetadata() returns error? {
         {
         payload: TEXT_MESSAGE_CONTENT.toBytes(),
         correlationId: "test-corr-id",
-        applicationMessageId: "test-app-msg-id",
-        applicationMessageType: "TEST_TYPE",
+        messageId: "test-app-msg-id",
+        messageType: "TEST_TYPE",
         senderId: "test-sender"
     },
         {queueName: CONSUMER_METADATA_QUEUE}
@@ -510,9 +510,14 @@ isolated function testConsumerReceiveWithMetadata() returns error? {
     test:assertTrue(msg is Message, "Should receive a message");
     if msg is Message {
         test:assertEquals(msg.correlationId, "test-corr-id", "correlationId should match");
-        test:assertEquals(msg.applicationMessageId, "test-app-msg-id", "applicationMessageId should match");
-        test:assertEquals(msg.applicationMessageType, "TEST_TYPE", "applicationMessageType should match");
+        test:assertEquals(msg.messageId, "test-app-msg-id", "messageId should match");
+        test:assertEquals(msg.messageType, "TEST_TYPE", "messageType should match");
         test:assertEquals(msg.senderId, "test-sender", "senderId should match");
+        Destination? destination = msg.destination;
+        test:assertTrue(destination is Queue, "destination should be the queue this message was published to");
+        if destination is Queue {
+            test:assertEquals(destination.queueName, CONSUMER_METADATA_QUEUE, "destination queueName should match");
+        }
     }
 
     check consumer->close();

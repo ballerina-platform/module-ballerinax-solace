@@ -371,9 +371,9 @@ public type Message record {|
     # Time-to-live in seconds (0 = never expires, only for PERSISTENT/NON_PERSISTENT modes)
     decimal timeToLive?;
     # Application-defined message ID for correlation
-    string applicationMessageId?;
+    string messageId?;
     # Application-defined message type
-    string applicationMessageType?;
+    string messageType?;
     # Correlation ID for request-reply patterns
     string correlationId?;
     # Reply-to destination for request-reply patterns
@@ -383,9 +383,7 @@ public type Message record {|
     # Sender timestamp in UTC milliseconds from epoch
     int senderTimestamp?;
     # Sequence number for message ordering (application-managed)
-    # Set by the application for message ordering and duplicate detection. Can be auto-generated if sequence number
-    # generation is enabled in the session. Once set, value is preserved across message resends and available on both
-    # direct and guaranteed message delivery. Note: distinct from broker-generated topicSequenceNumber.
+    # Set by the application for message ordering and duplicate detection.
     int sequenceNumber?;
     # Properties map for custom key-value pairs
     map<Property> properties?;
@@ -395,7 +393,9 @@ public type Message record {|
     int receiveTimestamp?;
     # Whether message was previously delivered
     boolean redelivered?;
-    # Number of times this message has been delivered
+    # Destination this message was published to (Only set on receive)
+    Destination destination?;
+    # Number of times this message has been delivered (Only set on receive)
     int deliveryCount?;
     # Message expiration time in UTC milliseconds from epoch (calculated by the sending client only when
     # `calculateMessageExpiration` is enabled on the producer configuration; `0`/unset otherwise)
@@ -423,9 +423,9 @@ type InternalMessage record {|
     # Time-to-live in seconds (0 = never expires).
     decimal timeToLive?;
     # Application-defined message ID for correlation.
-    string applicationMessageId?;
+    string messageId?;
     # Application-defined message type.
-    string applicationMessageType?;
+    string messageType?;
     # Correlation ID for request-reply patterns.
     string correlationId?;
     # Reply-to destination for request-reply patterns.
@@ -442,9 +442,11 @@ type InternalMessage record {|
     byte[] userData?;
     # Receive timestamp in UTC milliseconds from epoch (set by broker).
     int receiveTimestamp?;
+    # Destination this message was published to (Only set on receive).
+    Destination destination?;
     # Whether message was previously delivered.
     boolean redelivered?;
-    # Number of times this message has been delivered.
+    # Number of times this message has been delivered (Only set on receive).
     int deliveryCount?;
     # Message expiration time in UTC milliseconds from epoch (calculated by the sending client only when
     # `calculateMessageExpiration` is enabled on the producer configuration; `0`/unset otherwise).

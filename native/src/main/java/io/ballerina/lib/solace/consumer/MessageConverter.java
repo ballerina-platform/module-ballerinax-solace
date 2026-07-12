@@ -49,12 +49,13 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import static io.ballerina.lib.solace.common.Constants.NATIVE_MESSAGE;
-import static io.ballerina.lib.solace.common.MessageFieldConstants.APPLICATION_MESSAGE_ID_KEY;
-import static io.ballerina.lib.solace.common.MessageFieldConstants.APPLICATION_MESSAGE_TYPE_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.CORRELATION_ID_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.DELIVERY_COUNT_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.DELIVERY_MODE_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.DESTINATION_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.EXPIRATION_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.MESSAGE_ID_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.MESSAGE_TYPE_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.PAYLOAD_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.PRIORITY_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.PROPERTIES_KEY;
@@ -108,13 +109,13 @@ public class MessageConverter {
         // Set application message ID if present
         String appMsgId = xmlMessage.getApplicationMessageId();
         if (appMsgId != null) {
-            message.put(APPLICATION_MESSAGE_ID_KEY, StringUtils.fromString(appMsgId));
+            message.put(MESSAGE_ID_KEY, StringUtils.fromString(appMsgId));
         }
 
         // Set application message type if present
         String appMsgType = xmlMessage.getApplicationMessageType();
         if (appMsgType != null) {
-            message.put(APPLICATION_MESSAGE_TYPE_KEY, StringUtils.fromString(appMsgType));
+            message.put(MESSAGE_TYPE_KEY, StringUtils.fromString(appMsgType));
         }
 
         // Set correlation ID if present
@@ -171,6 +172,15 @@ public class MessageConverter {
         long expiration = xmlMessage.getExpiration();
         if (expiration > 0) {
             message.put(EXPIRATION_KEY, expiration);
+        }
+
+        // Set destination this message was published to, if present
+        Destination destination = xmlMessage.getDestination();
+        if (destination != null) {
+            BMap<BString, Object> destinationMap = DestinationConverter.fromJCSMPDestination(destination);
+            if (destinationMap != null) {
+                message.put(DESTINATION_KEY, destinationMap);
+            }
         }
 
         // Set properties if present

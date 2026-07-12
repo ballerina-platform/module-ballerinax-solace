@@ -37,10 +37,10 @@ import io.ballerina.runtime.api.values.BString;
 
 import java.math.BigDecimal;
 
-import static io.ballerina.lib.solace.common.MessageFieldConstants.APPLICATION_MESSAGE_ID_KEY;
-import static io.ballerina.lib.solace.common.MessageFieldConstants.APPLICATION_MESSAGE_TYPE_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.CORRELATION_ID_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.DELIVERY_MODE_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.MESSAGE_ID_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.MESSAGE_TYPE_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.PAYLOAD_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.PRIORITY_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.PROPERTIES_KEY;
@@ -128,13 +128,13 @@ public class MessageConverter {
         }
 
         // Application message ID
-        BString appMsgId = message.getStringValue(APPLICATION_MESSAGE_ID_KEY);
+        BString appMsgId = message.getStringValue(MESSAGE_ID_KEY);
         if (appMsgId != null) {
             jcsmpMessage.setApplicationMessageId(appMsgId.getValue());
         }
 
         // Application message type
-        BString appMsgType = message.getStringValue(APPLICATION_MESSAGE_TYPE_KEY);
+        BString appMsgType = message.getStringValue(MESSAGE_TYPE_KEY);
         if (appMsgType != null) {
             jcsmpMessage.setApplicationMessageType(appMsgType.getValue());
         }
