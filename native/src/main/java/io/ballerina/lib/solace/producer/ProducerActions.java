@@ -84,8 +84,7 @@ public class ProducerActions {
             ConfigurationUtils.applyProducerTimestampProperties(
                     jcsmpProps,
                     producerConfig.generateSendTimestamps(),
-                    producerConfig.generateSequenceNumbers(),
-                    producerConfig.calculateMessageExpiration());
+                    producerConfig.generateSequenceNumbers());
 
             // Create and connect base JCSMP session
             session = JCSMPFactory.onlyInstance().createSession(jcsmpProps);

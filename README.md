@@ -4,14 +4,6 @@
 
 The `ballerinax/solace` package provides APIs to interact with Solace PubSub+ brokers through the JCSMP API. It allows developers to programmatically produce and consume messages, manage topics and queues, and implement robust, event-driven solutions that leverage Solace’s high-performance messaging capabilities within Ballerina applications.
 
-## Setup guide
-
-[//]: # (TODO: Add detailed steps to obtain credentials and configure the module.)
-
-## Quickstart
-
-[//]: # (TODO: Add a quickstart guide to demonstrate a basic functionality of the module, including sample code snippets.)
-
 ## Examples
 
 The `ballerinax/solace` package provides practical examples illustrating its usage in various real-world scenarios. Explore these [examples](https://github.com/ballerina-platform/module-ballerinax-solace/tree/main/examples) to understand how to produce, consume, and reliably process messages with a Solace event broker.

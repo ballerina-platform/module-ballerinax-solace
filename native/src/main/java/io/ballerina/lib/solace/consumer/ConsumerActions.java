@@ -98,7 +98,8 @@ public class ConsumerActions {
             // Build JCSMP properties from configuration
             JCSMPProperties jcsmpProps =
                     ConfigurationUtils.buildJCSMPProperties(url.getValue(), consumerConfig.connectionConfig());
-            ConfigurationUtils.applyReceiveTimestampProperty(jcsmpProps, consumerConfig.generateReceiveTimestamps());
+            ConfigurationUtils.applyReceiveTimestampProperty(jcsmpProps, consumerConfig.generateReceiveTimestamps(),
+                    consumerConfig.calculateMessageExpiration());
 
             // Create and connect base JCSMP session
             session = JCSMPFactory.onlyInstance().createSession(jcsmpProps);

@@ -26,16 +26,20 @@ import io.ballerina.runtime.api.values.BString;
  * Consumer configuration for synchronous (pull-based) message consumption via MessageConsumer. Composes
  * CommonConsumerConnectionConfiguration and a ConsumerSubscriptionConfig (queue or topic).
  *
- * @param connectionConfig          the common connection configuration
- * @param generateReceiveTimestamps whether to generate receive timestamps on incoming messages
- * @param subscriptionConfig        the consumer subscription configuration (queue or topic)
+ * @param connectionConfig           the common connection configuration
+ * @param generateReceiveTimestamps  whether to generate receive timestamps on incoming messages
+ * @param calculateMessageExpiration whether to calculate message expiration on incoming messages
+ * @param subscriptionConfig         the consumer subscription configuration (queue or topic)
  */
 public record ConsumerConfiguration(
         ConnectionConfiguration connectionConfig,
         boolean generateReceiveTimestamps,
+        boolean calculateMessageExpiration,
         ConsumerSubscriptionConfig subscriptionConfig) {
 
     private static final BString GENERATE_RECEIVE_TIMESTAMPS_KEY = StringUtils.fromString("generateReceiveTimestamps");
+    private static final BString CALCULATE_MESSAGE_EXPIRATION_KEY =
+            StringUtils.fromString("calculateMessageExpiration");
     private static final BString SUBSCRIPTION_CONFIG_KEY = StringUtils.fromString("subscriptionConfig");
 
     /**
@@ -48,6 +52,7 @@ public record ConsumerConfiguration(
         this(
                 new ConnectionConfiguration(config),
                 config.getBooleanValue(GENERATE_RECEIVE_TIMESTAMPS_KEY),
+                config.getBooleanValue(CALCULATE_MESSAGE_EXPIRATION_KEY),
                 getSubscriptionConfig((BMap<BString, Object>) config.getMapValue(SUBSCRIPTION_CONFIG_KEY))
         );
     }

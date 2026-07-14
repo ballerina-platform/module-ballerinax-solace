@@ -40,10 +40,8 @@ import java.math.BigDecimal;
  *                                      SUPPORTED_MESSAGE_ACK_CLIENT)
  * @param selector                      optional SQL-92 message selector expression for filtering
  * @param transportWindowSize           JCSMP transport window size for flow control (1-255, default 255)
- * @param ackThreshold                  ACK threshold as percentage of window size (1-75, default 0)
+ * @param ackThreshold                  ACK threshold as percentage of window size (1-75, default 60)
  * @param ackTimerInMsecs               ACK timer in milliseconds (20-1500). Disabled (null) by default
- * @param noLocal                       prevent receiving messages published on same session (default false)
- * @param activeFlowIndication          enable active/inactive flow indication (default false)
  * @param reconnectTries                number of reconnection attempts after flow goes down (-1 = infinite)
  * @param reconnectRetryIntervalInMsecs wait time between reconnection attempts in ms (min 50, default 3000)
  */
@@ -55,8 +53,6 @@ public record QueueConsumerConfig(
         Integer transportWindowSize,
         Integer ackThreshold,
         Integer ackTimerInMsecs,
-        Boolean noLocal,
-        Boolean activeFlowIndication,
         Integer reconnectTries,
         int reconnectRetryIntervalInMsecs
 ) implements ConsumerSubscriptionConfig {
@@ -68,8 +64,6 @@ public record QueueConsumerConfig(
     private static final BString TRANSPORT_WINDOW_SIZE_KEY = StringUtils.fromString("transportWindowSize");
     private static final BString ACK_THRESHOLD_KEY = StringUtils.fromString("ackThreshold");
     private static final BString ACK_TIMER_KEY = StringUtils.fromString("ackTimer");
-    private static final BString NO_LOCAL_KEY = StringUtils.fromString("noLocal");
-    private static final BString ACTIVE_FLOW_INDICATION_KEY = StringUtils.fromString("activeFlowIndication");
     private static final BString RECONNECT_TRIES_KEY = StringUtils.fromString("reconnectTries");
     private static final BString RECONNECT_RETRY_INTERVAL_KEY = StringUtils.fromString("reconnectRetryInterval");
 
@@ -91,9 +85,6 @@ public record QueueConsumerConfig(
                 extractOptionalInteger(config, TRANSPORT_WINDOW_SIZE_KEY),
                 extractOptionalInteger(config, ACK_THRESHOLD_KEY),
                 extractOptionalDecimalMillis(config, ACK_TIMER_KEY),
-                config.containsKey(NO_LOCAL_KEY) ? config.getBooleanValue(NO_LOCAL_KEY) : null,
-                config.containsKey(ACTIVE_FLOW_INDICATION_KEY) ? config.getBooleanValue(ACTIVE_FLOW_INDICATION_KEY) :
-                        null,
                 extractOptionalInteger(config, RECONNECT_TRIES_KEY),
                 decimalToMillis(((BDecimal) config.get(RECONNECT_RETRY_INTERVAL_KEY)).decimalValue())
         );

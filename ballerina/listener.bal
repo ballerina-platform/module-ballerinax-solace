@@ -79,8 +79,7 @@ public isolated class Listener {
     # + name - Optional service name (ignored; subscription is taken from the annotation)
     # + return - Error if attachment fails
     public isolated function attach(Service s, string[]|string? name = ()) returns Error? = @java:Method {
-        'class: "io.ballerina.lib.solace.listener.ListenerActions",
-        name: "attach"
+        'class: "io.ballerina.lib.solace.listener.ListenerActions"
     } external;
 
     # Detach a service from the listener.
@@ -90,8 +89,7 @@ public isolated class Listener {
     # + s - The service object to detach
     # + return - Error if detachment fails
     public isolated function detach(Service s) returns Error? = @java:Method {
-        'class: "io.ballerina.lib.solace.listener.ListenerActions",
-        name: "detach"
+        'class: "io.ballerina.lib.solace.listener.ListenerActions"
     } external;
 
     # Start the listener.
@@ -100,8 +98,7 @@ public isolated class Listener {
     #
     # + return - Error if start fails
     public isolated function 'start() returns Error? = @java:Method {
-        'class: "io.ballerina.lib.solace.listener.ListenerActions",
-        name: "start"
+        'class: "io.ballerina.lib.solace.listener.ListenerActions"
     } external;
 
     # Gracefully stop the listener.
@@ -111,8 +108,7 @@ public isolated class Listener {
     #
     # + return - Error if stop fails
     public isolated function gracefulStop() returns Error? = @java:Method {
-        'class: "io.ballerina.lib.solace.listener.ListenerActions",
-        name: "gracefulStop"
+        'class: "io.ballerina.lib.solace.listener.ListenerActions"
     } external;
 
     # Immediately stop the listener.
@@ -121,7 +117,6 @@ public isolated class Listener {
     #
     # + return - Error if stop fails
     public isolated function immediateStop() returns Error? = @java:Method {
-        'class: "io.ballerina.lib.solace.listener.ListenerActions",
-        name: "immediateStop"
+        'class: "io.ballerina.lib.solace.listener.ListenerActions"
     } external;
 }

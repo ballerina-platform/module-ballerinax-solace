@@ -523,25 +523,3 @@ isolated function testProducerWithGenerateSequenceNumbers() returns error? {
     check producer->close();
 }
 
-@test:Config {groups: ["producer", "config"]}
-isolated function testProducerWithCalculateMessageExpiration() returns error? {
-    MessageProducer producer = check new (BROKER_URL, {
-        messageVpn: MESSAGE_VPN,
-        calculateMessageExpiration: true,
-        auth: {
-            username: BROKER_USERNAME,
-            password: BROKER_PASSWORD
-        }
-    });
-
-    check producer->send(
-        {
-        payload: TEXT_MESSAGE_CONTENT.toBytes(),
-        timeToLive: 30d,
-        deliveryMode: PERSISTENT
-    },
-        {queueName: PRODUCER_TTL_QUEUE}
-    );
-
-    check producer->close();
-}

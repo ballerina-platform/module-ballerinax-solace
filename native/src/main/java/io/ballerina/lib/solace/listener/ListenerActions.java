@@ -83,7 +83,8 @@ public class ListenerActions {
             ListenerConfiguration listenerConfig = new ListenerConfiguration(config);
             JCSMPProperties props =
                     ConfigurationUtils.buildJCSMPProperties(url.getValue(), listenerConfig.connectionConfig());
-            ConfigurationUtils.applyReceiveTimestampProperty(props, listenerConfig.generateReceiveTimestamps());
+            ConfigurationUtils.applyReceiveTimestampProperty(props, listenerConfig.generateReceiveTimestamps(),
+                    listenerConfig.calculateMessageExpiration());
 
             JCSMPSession session = JCSMPFactory.onlyInstance().createSession(props);
             session.connect();

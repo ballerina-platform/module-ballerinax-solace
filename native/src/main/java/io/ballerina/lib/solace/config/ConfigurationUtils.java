@@ -80,30 +80,34 @@ public final class ConfigurationUtils {
     }
 
     /**
-     * Applies send-side timestamp/sequence-number/expiration generation properties. Only relevant for a
-     * publishing (producer) session.
+     * Applies send-side timestamp/sequence-number generation properties. Only relevant for a publishing
+     * (producer) session.
      *
-     * @param props                      the JCSMPProperties to update
-     * @param generateSendTimestamps     whether to generate send timestamps on outgoing messages
-     * @param generateSequenceNumbers    whether to generate sequence numbers on outgoing messages
-     * @param calculateMessageExpiration whether to calculate message expiration from TTL
+     * @param props                   the JCSMPProperties to update
+     * @param generateSendTimestamps  whether to generate send timestamps on outgoing messages
+     * @param generateSequenceNumbers whether to generate sequence numbers on outgoing messages
      */
     public static void applyProducerTimestampProperties(JCSMPProperties props, boolean generateSendTimestamps,
-            boolean generateSequenceNumbers, boolean calculateMessageExpiration) {
+            boolean generateSequenceNumbers) {
         props.setProperty(JCSMPProperties.GENERATE_SEND_TIMESTAMPS, generateSendTimestamps);
         props.setProperty(JCSMPProperties.GENERATE_SEQUENCE_NUMBERS, generateSequenceNumbers);
-        props.setProperty(JCSMPProperties.CALCULATE_MESSAGE_EXPIRATION, calculateMessageExpiration);
     }
 
     /**
-     * Applies receive-side timestamp generation property. Only relevant for a receiving (consumer/listener)
-     * session.
+     * Applies receive-side timestamp/expiration generation properties. Only relevant for a receiving
+     * (consumer/listener) session. {@code calculateMessageExpiration} must be enabled here (not just on the
+     * producer) for {@code Message.expiration} to be populated on receipt when a message was published with a
+     * {@code timeToLive} - the wire protocol only transmits the relative TTL in that case, so the receiving
+     * session has to compute the absolute expiration itself from its own receipt time.
      *
      * @param props                     the JCSMPProperties to update
      * @param generateReceiveTimestamps whether to generate receive timestamps on incoming messages
+     * @param calculateMessageExpiration whether to calculate message expiration on incoming messages
      */
-    public static void applyReceiveTimestampProperty(JCSMPProperties props, boolean generateReceiveTimestamps) {
+    public static void applyReceiveTimestampProperty(JCSMPProperties props, boolean generateReceiveTimestamps,
+            boolean calculateMessageExpiration) {
         props.setProperty(JCSMPProperties.GENERATE_RCV_TIMESTAMPS, generateReceiveTimestamps);
+        props.setProperty(JCSMPProperties.CALCULATE_MESSAGE_EXPIRATION, calculateMessageExpiration);
     }
 
     /**

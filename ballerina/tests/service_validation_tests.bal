@@ -273,3 +273,22 @@ function testValidationServiceAckTimerTooHigh() returns error? {
     }
     check solaceListener.gracefulStop();
 }
+
+@test:Config {groups: ["listener", "validation", "negative"]}
+function testValidationDurableTopicServiceMissingEndpointName() returns error? {
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
+    Service missingEndpointService = @ServiceConfig {
+        topicName: CONSUMER_DURABLE_TOPIC,
+        durability: DURABLE
+    } service object {
+        remote function onMessage(Message message) returns error? {
+        }
+    };
+    error? result = solaceListener.attach(missingEndpointService);
+    test:assertTrue(result is error, "A DURABLE topic service with no endpointName should fail validation");
+    if result is error {
+        test:assertEquals(result.message(),
+                "Failed to attach service: endpointName is required when durability is DURABLE");
+    }
+    check solaceListener.gracefulStop();
+}

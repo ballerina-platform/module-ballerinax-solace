@@ -127,8 +127,6 @@ final class SolaceMessageListener implements XMLMessageListener {
 
     private void dispatchError(BError error) {
         if (nativeService.getOnError().isEmpty()) {
-            // No handler to observe this error: surface it instead of failing silently, matching the
-            // sibling solace.jms module's behavior for the same situation.
             ERR_OUT.println("Unexpected error occurred while message processing: " + error.getMessage());
             error.printStackTrace();
             return;

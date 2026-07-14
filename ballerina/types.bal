@@ -232,9 +232,6 @@ public type ProducerConfiguration record {|
     # Whether to generate a sequence number in outgoing messages
     # When enabled, outgoing messages will have sequenceNumber automatically generated if not already set
     boolean generateSequenceNumbers = false;
-    # Whether to calculate message expiration time in outgoing messages
-    # When enabled, JCSMP calculates message expiration based on the timeToLive field
-    boolean calculateMessageExpiration = false;
 |};
 
 # Common connection configuration for consumer and listener sessions, which additionally receive messages
@@ -243,6 +240,9 @@ type CommonConsumerConnectionConfiguration record {|
     # Whether to generate a receive timestamp on incoming messages
     # When enabled, incoming messages will have receiveTimestamp automatically set by the client on receipt
     boolean generateReceiveTimestamps = false;
+    # Whether to calculate message expiration time on incoming messages
+    # When enabled, incoming messages will have expiration populated from the timeToLive field on receipt
+    boolean calculateMessageExpiration = false;
 |};
 
 # Listener configuration for asynchronous (push-based) message consumption
@@ -252,8 +252,6 @@ public type ListenerConfiguration record {|
 |};
 
 # Common consumer subscription fields
-# Note: Flow control properties below only apply to FlowReceiver usage (queues and durable topic endpoints)
-# They are ignored for direct topic subscriptions which use XMLMessageConsumer
 type CommonConsumerConfiguration record {|
     # JCSMP message acknowledgement mode
     AcknowledgementMode ackMode = AUTO_ACK;
@@ -262,19 +260,15 @@ type CommonConsumerConfiguration record {|
     # Not supported for direct topic subscriptions. Filters messages based on their properties and headers.
     # Example: "OrderType = 'URGENT' AND Priority > 5" - only messages matching this condition will be delivered.
     string messageSelector?;
-    # Prevent receiving messages published on same session (default false) - FlowReceiver only
-    boolean noLocal = false;
-    # JCSMP flow control transport window size (1-255, default 255) - FlowReceiver only
-    int transportWindowSize?;
-    # Acknowledgement threshold as percentage of window size (1-75, default 0)
-    int ackThreshold?;
+    # JCSMP flow control transport window size (1-255)
+    int transportWindowSize = 255;
+    # Acknowledgement threshold as percentage of window size (1-75).
+    int ackThreshold = 60;
     # Acknowledgement timer in seconds (0.02 - 1.5). Disabled by default
     decimal ackTimer?;
-    # Enable active/inactive flow indication (default false) - FlowReceiver only
-    boolean activeFlowIndication?;
-    # Number of reconnection attempts after flow goes down (-1 = infinite, default -1) - FlowReceiver only
-    int reconnectTries?;
-    # Wait time between reconnection attempts in seconds (min 0.05 seconds, default 3.0 seconds) - FlowReceiver only
+    # Number of reconnection attempts after flow goes down (-1 = infinite)
+    int reconnectTries = -1;
+    # Wait time between reconnection attempts in seconds (min 0.05 seconds)
     decimal reconnectRetryInterval = 3.0;
 |};
 
@@ -327,25 +321,22 @@ public enum DeliveryMode {
 
 # Durability of a queue or topic subscription: DURABLE (persisted on broker) or TEMPORARY (ephemeral, auto-deleted)
 public enum Durability {
+    # Subscription is persisted on the broker and survives client disconnects.
     DURABLE,
+    # Subscription is ephemeral and auto-deleted when the client disconnects.
     TEMPORARY
 }
 
-# Common service subscription fields (listener subscription configuration)
-type CommonServiceConfiguration record {|
-    *CommonConsumerConfiguration;
-|};
-
 # Queue service configuration for asynchronous (push-based) consumption via Listener
 public type QueueServiceConfiguration record {|
-    *CommonServiceConfiguration;
+    *CommonConsumerConfiguration;
     # The queue name to consume messages from
     string queueName;
 |};
 
 # Topic service configuration for asynchronous (push-based) consumption via Listener
 public type TopicServiceConfiguration record {|
-    *CommonServiceConfiguration;
+    *CommonConsumerConfiguration;
     # The topic name to subscribe to
     string topicName;
     # Durability: TEMPORARY (ephemeral/direct) or DURABLE (persisted on broker)
@@ -397,8 +388,8 @@ public type Message record {|
     Destination destination?;
     # Number of times this message has been delivered (Only set on receive)
     int deliveryCount?;
-    # Message expiration time in UTC milliseconds from epoch (calculated by the sending client only when
-    # `calculateMessageExpiration` is enabled on the producer configuration; `0`/unset otherwise)
+    # Message expiration time in UTC milliseconds from epoch (populated by the client on receipt only when
+    # `calculateMessageExpiration` is enabled on the consumer/listener configuration; `0`/unset otherwise)
     int expiration?;
 |};
 
@@ -448,7 +439,7 @@ type InternalMessage record {|
     boolean redelivered?;
     # Number of times this message has been delivered (Only set on receive).
     int deliveryCount?;
-    # Message expiration time in UTC milliseconds from epoch (calculated by the sending client only when
-    # `calculateMessageExpiration` is enabled on the producer configuration; `0`/unset otherwise).
+    # Message expiration time in UTC milliseconds from epoch (populated by the client on receipt only when
+    # `calculateMessageExpiration` is enabled on the consumer/listener configuration; `0`/unset otherwise).
     int expiration?;
 |};

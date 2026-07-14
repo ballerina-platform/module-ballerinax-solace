@@ -23,14 +23,14 @@ import ballerina/jballerina.java;
 #
 # Example usage:
 # ```ballerina
-# final smf:MessageProducer producer = check new (
+# final solace:MessageProducer producer = check new (
 #     host = "tcp://broker:55555",
 #     auth = {username: "default"}
 # );
 #
-# smf:Message message = {
+# solace:Message message = {
 #     payload: "Hello Solace".toBytes(),
-#     deliveryMode: smf:PERSISTENT,
+#     deliveryMode: solace:PERSISTENT,
 #     priority: 4
 # };
 #
@@ -95,8 +95,7 @@ public isolated client class MessageProducer {
     #
     # + return - Error if commit fails
     isolated remote function 'commit() returns Error? = @java:Method {
-        'class: "io.xlibb.solace.producer.ProducerActions",
-        name: "commit"
+        'class: "io.ballerina.lib.solace.producer.ProducerActions"
     } external;
 
     # Rollback the current transaction.
@@ -105,8 +104,7 @@ public isolated client class MessageProducer {
     #
     # + return - Error if rollback fails
     isolated remote function 'rollback() returns Error? = @java:Method {
-        'class: "io.xlibb.solace.producer.ProducerActions",
-        name: "rollback"
+        'class: "io.ballerina.lib.solace.producer.ProducerActions"
     } external;
 
     # Close the producer and release all resources.
@@ -115,8 +113,7 @@ public isolated client class MessageProducer {
     #
     # + return - Error if close fails
     isolated remote function close() returns Error? = @java:Method {
-        'class: "io.xlibb.solace.producer.ProducerActions",
-        name: "close"
+        'class: "io.ballerina.lib.solace.producer.ProducerActions"
     } external;
 }
 

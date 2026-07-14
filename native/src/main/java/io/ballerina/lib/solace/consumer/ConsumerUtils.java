@@ -73,12 +73,6 @@ public class ConsumerUtils {
         if (config.ackTimerInMsecs() != null) {
             flowProps.setAckTimerInMsecs(config.ackTimerInMsecs());
         }
-        if (config.noLocal() != null) {
-            flowProps.setNoLocal(config.noLocal());
-        }
-        if (config.activeFlowIndication() != null) {
-            flowProps.setActiveFlowIndication(config.activeFlowIndication());
-        }
         if (config.reconnectTries() != null) {
             flowProps.setReconnectTries(config.reconnectTries());
         }

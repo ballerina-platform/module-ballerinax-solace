@@ -24,7 +24,7 @@ import ballerina/jballerina.java;
 #
 # Example queue consumer:
 # ```ballerina
-# final smf:MessageConsumer consumer = check new (
+# final solace:MessageConsumer consumer = check new (
 #     url = "tcp://broker:55555",
 #     auth = {username: "default"},
 #     subscriptionConfig = {
@@ -32,12 +32,12 @@ import ballerina/jballerina.java;
 #         ackMode: "SUPPORTED_MESSAGE_ACK_AUTO"
 #     }
 # );
-# smf:Message? msg = check consumer->receive(5.0);
+# solace:Message? msg = check consumer->receive(5.0);
 # ```
 #
 # Example topic consumer:
 # ```ballerina
-# final smf:MessageConsumer consumer = check new (
+# final solace:MessageConsumer consumer = check new (
 #     url = "tcp://broker:55555",
 #     auth = {username: "default"},
 #     subscriptionConfig = {
@@ -45,7 +45,7 @@ import ballerina/jballerina.java;
 #         durability: "TEMPORARY"
 #     }
 # );
-# smf:Message? msg = check consumer->receive(10.0);
+# solace:Message? msg = check consumer->receive(10.0);
 # ```
 public isolated client class MessageConsumer {
 
@@ -55,7 +55,7 @@ public isolated client class MessageConsumer {
     # + config - The consumer configuration (composed of connection config + subscription config)
     # + return - Error if initialization fails
     public isolated function init(string url, *ConsumerConfiguration config) returns Error? {
-        check validateConfigurations(config);
+        check validateConsumerConfigurations(config);
         return self.initConsumer(url, config);
     }
 
@@ -74,8 +74,7 @@ public isolated client class MessageConsumer {
     # `record {|*Message; T payload;|}` to have the payload data-bound into `T`
     # + return - The received message, or nil if timeout occurs; Error if receive fails
     isolated remote function receive(decimal? timeout = (), typedesc<Message> T = <>) returns T|Error? = @java:Method {
-        'class: "io.ballerina.lib.solace.consumer.ConsumerActions",
-        name: "receive"
+        'class: "io.ballerina.lib.solace.consumer.ConsumerActions"
     } external;
 
     # Receive a message without waiting.
@@ -87,8 +86,7 @@ public isolated client class MessageConsumer {
     # `record {|*Message; T payload;|}` to have the payload data-bound into `T`
     # + return - The received message, or nil if no message available; Error if receive fails
     isolated remote function receiveNoWait(typedesc<Message> T = <>) returns T|Error? = @java:Method {
-        'class: "io.ballerina.lib.solace.consumer.ConsumerActions",
-        name: "receiveNoWait"
+        'class: "io.ballerina.lib.solace.consumer.ConsumerActions"
     } external;
 
     # Acknowledge a message in CLIENT_ACKNOWLEDGE mode.
@@ -118,8 +116,7 @@ public isolated client class MessageConsumer {
     # If not, the message is simply discarded. (REJECTED outcome)
     # + return - Error if NACK fails
     isolated remote function nack(Message message, boolean requeue = true) returns Error? = @java:Method {
-        'class: "io.xlibb.solace.consumer.ConsumerActions",
-        name: "nack"
+        'class: "io.ballerina.lib.solace.consumer.ConsumerActions"
     } external;
 
     # Commit the current transaction.
@@ -128,8 +125,7 @@ public isolated client class MessageConsumer {
     #
     # + return - Error if commit fails
     isolated remote function 'commit() returns Error? = @java:Method {
-        'class: "io.xlibb.solace.consumer.ConsumerActions",
-        name: "commit"
+        'class: "io.ballerina.lib.solace.consumer.ConsumerActions"
     } external;
 
     # Rollback the current transaction.
@@ -138,16 +134,14 @@ public isolated client class MessageConsumer {
     #
     # + return - Error if rollback fails
     isolated remote function 'rollback() returns Error? = @java:Method {
-        'class: "io.xlibb.solace.consumer.ConsumerActions",
-        name: "rollback"
+        'class: "io.ballerina.lib.solace.consumer.ConsumerActions"
     } external;
 
     # Close the consumer and release all resources.
     #
     # + return - Error if close fails
     isolated remote function close() returns Error? = @java:Method {
-        'class: "io.xlibb.solace.consumer.ConsumerActions",
-        name: "close"
+        'class: "io.ballerina.lib.solace.consumer.ConsumerActions"
     } external;
 
     # Get the resolved name of the destination (queue or topic) this consumer is bound to.
@@ -157,8 +151,6 @@ public isolated client class MessageConsumer {
     #
     # + return - The destination name
     isolated remote function destinationName() returns string = @java:Method {
-        'class: "io.ballerina.lib.solace.consumer.ConsumerActions",
-        name: "destinationName"
+        'class: "io.ballerina.lib.solace.consumer.ConsumerActions"
     } external;
 }
-

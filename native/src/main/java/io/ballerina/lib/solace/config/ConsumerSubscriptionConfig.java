@@ -62,10 +62,6 @@ public sealed interface ConsumerSubscriptionConfig permits QueueConsumerConfig, 
 
     Integer ackTimerInMsecs();
 
-    Boolean noLocal();
-
-    Boolean activeFlowIndication();
-
     Integer reconnectTries();
 
     int reconnectRetryIntervalInMsecs();

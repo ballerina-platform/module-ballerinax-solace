@@ -48,6 +48,18 @@ isolated function validateConfigurations(CommonConnectionConfiguration config) r
     }
 }
 
+isolated function validateConsumerConfigurations(ConsumerConfiguration config) returns Error? {
+    check validateConfigurations(config);
+
+    SubscriptionConfiguration subscriptionConfig = config.subscriptionConfig;
+    if subscriptionConfig is TopicConfiguration && subscriptionConfig.durability == DURABLE {
+        string? endpointName = subscriptionConfig.endpointName;
+        if endpointName !is string || endpointName == "" {
+            return error Error("endpointName is required when durability is DURABLE");
+        }
+    }
+}
+
 isolated function validateMessage(Message message) returns Error? {
     int? priority = message.priority;
     if priority is int && (priority < 0 || priority > 9) {

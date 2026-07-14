@@ -156,6 +156,57 @@ isolated function testConsumerInitWithAckThresholdTooHigh() returns error? {
 }
 
 @test:Config {groups: ["consumer", "init", "validation", "negative"]}
+isolated function testConsumerInitWithAckThresholdTooLow() returns error? {
+    MessageConsumer|error consumer = new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
+        subscriptionConfig: {
+            queueName: CONSUMER_FLOW_QUEUE,
+            ackThreshold: 0
+        }
+    });
+
+    test:assertTrue(consumer is error, "ackThreshold of 0 should fail validation");
+    if consumer is error {
+        test:assertEquals(consumer.message(), "Failed to initialize consumer: ackThreshold must be between 1 and 75");
+    }
+}
+
+@test:Config {groups: ["consumer", "init"]}
+isolated function testConsumerInitWithAckThresholdLowerBound() returns error? {
+    MessageConsumer|error consumer = new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
+        subscriptionConfig: {
+            queueName: CONSUMER_FLOW_QUEUE,
+            ackThreshold: 1
+        }
+    });
+
+    test:assertFalse(consumer is error, "ackThreshold of 1 should pass validation");
+    if consumer is MessageConsumer {
+        check consumer->close();
+    }
+}
+
+@test:Config {groups: ["consumer", "init"]}
+isolated function testConsumerInitWithAckThresholdUpperBound() returns error? {
+    MessageConsumer|error consumer = new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
+        subscriptionConfig: {
+            queueName: CONSUMER_FLOW_QUEUE,
+            ackThreshold: 75
+        }
+    });
+
+    test:assertFalse(consumer is error, "ackThreshold of 75 should pass validation");
+    if consumer is MessageConsumer {
+        check consumer->close();
+    }
+}
+
+@test:Config {groups: ["consumer", "init", "validation", "negative"]}
 isolated function testConsumerInitWithAckTimerTooHigh() returns error? {
     MessageConsumer|error consumer = new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
@@ -184,6 +235,24 @@ isolated function testConsumerInitWithDurableQueueMissingName() returns error? {
     if consumer is error {
         test:assertEquals(consumer.message(),
                 "Failed to initialize consumer: queueName is required when durability is not TEMPORARY");
+    }
+}
+
+@test:Config {groups: ["consumer", "init", "validation", "negative"]}
+isolated function testConsumerInitWithDurableTopicMissingEndpointName() returns error? {
+    MessageConsumer|error consumer = new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
+        subscriptionConfig: {
+            topicName: CONSUMER_DURABLE_TOPIC,
+            durability: DURABLE
+        }
+    });
+
+    test:assertTrue(consumer is error, "A DURABLE topic with no endpointName should fail validation");
+    if consumer is error {
+        test:assertEquals(consumer.message(),
+                "Failed to initialize consumer: endpointName is required when durability is DURABLE");
     }
 }
 
@@ -425,10 +494,9 @@ isolated function testConsumerReceiveWithProperties() returns error? {
 
 @test:Config {groups: ["consumer", "receive"]}
 isolated function testConsumerReceiveWithExpiration() returns error? {
-    // Send message with a TTL, with expiration calculation enabled
+    // Send message with a TTL
     MessageProducer producer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
-        calculateMessageExpiration: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD
@@ -446,9 +514,10 @@ isolated function testConsumerReceiveWithExpiration() returns error? {
 
     check producer->close();
 
-    // Receive and verify expiration is populated
+    // Receive with expiration calculation enabled and verify expiration is populated
     MessageConsumer consumer = check new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
+        calculateMessageExpiration: true,
         auth: {
             username: BROKER_USERNAME,
             password: BROKER_PASSWORD

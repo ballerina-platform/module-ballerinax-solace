@@ -26,14 +26,18 @@ import io.ballerina.runtime.api.values.BString;
  * Listener configuration for asynchronous (push-based) message consumption. Maps to ListenerConfiguration in
  * Ballerina types.bal.
  *
- * @param connectionConfig          the common connection configuration
- * @param generateReceiveTimestamps whether to generate receive timestamps on incoming messages
+ * @param connectionConfig           the common connection configuration
+ * @param generateReceiveTimestamps  whether to generate receive timestamps on incoming messages
+ * @param calculateMessageExpiration whether to calculate message expiration on incoming messages
  */
 public record ListenerConfiguration(
         ConnectionConfiguration connectionConfig,
-        boolean generateReceiveTimestamps) {
+        boolean generateReceiveTimestamps,
+        boolean calculateMessageExpiration) {
 
     private static final BString GENERATE_RECEIVE_TIMESTAMPS_KEY = StringUtils.fromString("generateReceiveTimestamps");
+    private static final BString CALCULATE_MESSAGE_EXPIRATION_KEY =
+            StringUtils.fromString("calculateMessageExpiration");
 
     /**
      * Creates a ListenerConfiguration from a Ballerina map record. The map contains connection configuration fields.
@@ -43,7 +47,8 @@ public record ListenerConfiguration(
     public ListenerConfiguration(BMap<BString, Object> config) {
         this(
                 new ConnectionConfiguration(config),
-                config.getBooleanValue(GENERATE_RECEIVE_TIMESTAMPS_KEY)
+                config.getBooleanValue(GENERATE_RECEIVE_TIMESTAMPS_KEY),
+                config.getBooleanValue(CALCULATE_MESSAGE_EXPIRATION_KEY)
         );
     }
 }
