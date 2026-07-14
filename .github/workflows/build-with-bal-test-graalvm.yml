@@ -1,4 +1,5 @@
 name: GraalVM Check
+
 on:
   schedule:
     - cron: "30 18 1 * *"

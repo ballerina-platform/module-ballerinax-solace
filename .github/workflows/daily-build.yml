@@ -1,4 +1,5 @@
 name: Daily build
+
 on:
   schedule:
     - cron: "30 2 * * *"
