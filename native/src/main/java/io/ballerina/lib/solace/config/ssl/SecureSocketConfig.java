@@ -16,7 +16,7 @@
  *  under the License.
  */
 
-package io.xlibb.solace.config.ssl;
+package io.ballerina.lib.solace.config.ssl;
 
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BMap;
@@ -24,7 +24,7 @@ import io.ballerina.runtime.api.values.BString;
 
 import java.util.List;
 
-import static io.xlibb.solace.common.CommonUtils.convertToStringArray;
+import static io.ballerina.lib.solace.common.CommonUtils.convertToStringArray;
 
 /**
  * SSL/TLS configuration for secure connections.

@@ -16,7 +16,7 @@
  *  under the License.
  */
 
-package io.xlibb.solace.config.auth;
+package io.ballerina.lib.solace.config.auth;
 
 /**
  * Base interface for authentication configurations.

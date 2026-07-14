@@ -16,7 +16,7 @@
  *  under the License.
  */
 
-package io.xlibb.solace;
+package io.ballerina.lib.solace;
 
 import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.Module;

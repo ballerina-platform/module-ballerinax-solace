@@ -16,7 +16,7 @@
  *  under the License.
  */
 
-package io.xlibb.solace.common;
+package io.ballerina.lib.solace.common;
 
 import com.solacesystems.common.util.ByteArray;
 import com.solacesystems.jcsmp.JCSMPFactory;

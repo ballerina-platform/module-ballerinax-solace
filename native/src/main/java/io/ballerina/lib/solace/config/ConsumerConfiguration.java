@@ -16,7 +16,7 @@
  *  under the License.
  */
 
-package io.xlibb.solace.config;
+package io.ballerina.lib.solace.config;
 
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BMap;

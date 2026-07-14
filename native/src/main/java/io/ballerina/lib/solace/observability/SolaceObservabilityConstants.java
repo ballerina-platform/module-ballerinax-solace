@@ -16,7 +16,7 @@
  *  under the License.
  */
 
-package io.xlibb.solace.observability;
+package io.ballerina.lib.solace.observability;
 
 /**
  * Constants for Solace observability (metrics and tracing).

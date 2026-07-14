@@ -16,7 +16,7 @@
  *  under the License.
  */
 
-package io.xlibb.solace.common;
+package io.ballerina.lib.solace.common;
 
 import io.ballerina.lib.solace.ModuleUtils;
 import io.ballerina.runtime.api.creators.ErrorCreator;

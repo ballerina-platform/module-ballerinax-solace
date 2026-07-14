@@ -16,7 +16,7 @@
  *  under the License.
  */
 
-package io.xlibb.solace.common;
+package io.ballerina.lib.solace.common;
 
 import com.solacesystems.jcsmp.Destination;
 import com.solacesystems.jcsmp.JCSMPFactory;
@@ -28,8 +28,8 @@ import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
 
-import static io.xlibb.solace.common.MessageFieldConstants.QUEUE_NAME_KEY;
-import static io.xlibb.solace.common.MessageFieldConstants.TOPIC_NAME_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.QUEUE_NAME_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.TOPIC_NAME_KEY;
 
 /**
  * Utility for bidirectional conversion between JCSMP Destination and Ballerina Topic/Queue map.
@@ -93,13 +93,13 @@ public class DestinationConverter {
      * @throws Exception if destination is null or invalid type
      */
     public static Destination fromDestinationInterface(
-            io.xlibb.solace.producer.Destination destination)
+            io.ballerina.lib.solace.producer.Destination destination)
             throws Exception {
         return switch (destination) {
             case null -> throw new Exception("Destination cannot be null");
-            case io.xlibb.solace.producer.Topic(String topicName) ->
+            case io.ballerina.lib.solace.producer.Topic(String topicName) ->
                     JCSMPFactory.onlyInstance().createTopic(topicName);
-            case io.xlibb.solace.producer.Queue(String queueName) ->
+            case io.ballerina.lib.solace.producer.Queue(String queueName) ->
                     JCSMPFactory.onlyInstance().createQueue(queueName);
         };
 

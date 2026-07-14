@@ -42,7 +42,7 @@ plugins {
 }
 
 def projectName = 'solace'
-rootProject.name = "module-${projectName}"
+rootProject.name = 'module-ballerinax-solace'
 
 include ":checkstyle"
 include ":${projectName}-native"

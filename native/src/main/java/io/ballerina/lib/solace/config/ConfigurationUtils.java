@@ -16,7 +16,7 @@
  *  under the License.
  */
 
-package io.xlibb.solace.config;
+package io.ballerina.lib.solace.config;
 
 import com.solacesystems.jcsmp.JCSMPChannelProperties;
 import com.solacesystems.jcsmp.JCSMPProperties;

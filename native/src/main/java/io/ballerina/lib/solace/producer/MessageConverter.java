@@ -16,7 +16,7 @@
  *  under the License.
  */
 
-package io.xlibb.solace.producer;
+package io.ballerina.lib.solace.producer;
 
 import com.solacesystems.jcsmp.BytesMessage;
 import com.solacesystems.jcsmp.DeliveryMode;

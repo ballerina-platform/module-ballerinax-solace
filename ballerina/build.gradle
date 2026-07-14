@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (http://www.wso2.com)
+ * Copyright (c) 2026, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -25,7 +25,7 @@ plugins {
 description = 'Ballerina - Solace Connector'
 
 def packageName = "solace"
-def packageOrg = "xlibb"
+def packageOrg = "ballerinax"
 def tomlVersion = stripBallerinaExtensionVersion("${project.version}")
 def ballerinaTomlFilePlaceHolder = new File("${project.rootDir}/build-config/resources/Ballerina.toml")
 def ballerinaTomlFile = new File("$project.projectDir/Ballerina.toml")
@@ -66,11 +66,11 @@ dependencies {
     externalJars(group: 'com.solacesystems', name: 'sol-jcsmp', version: "${solaceJcsmpVersion}") {
         transitive = false
     }
-//    externalJars(group: 'com.solace', name: 'solace-serdes', version: "${solaceSerdesVersion}") {
-//        transitive = false
-//    }
-//
-//    /* Netty dependencies */
+    externalJars(group: 'com.solace', name: 'solace-serdes', version: "${solaceSerdesVersion}") {
+        transitive = false
+    }
+
+    /* Netty dependencies */
     externalJars(group: 'io.netty', name: 'netty-common', version: "${nettyVersion}") {
         transitive = false
     }
@@ -136,6 +136,10 @@ task updateTomlFiles {
         def newBallerinaToml = ballerinaTomlFilePlaceHolder.text.replace("@project.version@", project.version)
         newBallerinaToml = newBallerinaToml.replace("@toml.version@", tomlVersion)
         newBallerinaToml = newBallerinaToml.replace("@sol.jcsmp.version@", project.solaceJcsmpVersion)
+        newBallerinaToml = newBallerinaToml.replace('@solace.serdes.version@', project.solaceSerdesVersion)
+        newBallerinaToml = newBallerinaToml.replace('@commons.logging.version@', project.commonsLoggingVersion)
+        newBallerinaToml = newBallerinaToml.replace('@servicemix.jzlib.version@', project.servicemixJzlibVersion)
+        newBallerinaToml = newBallerinaToml.replace('@osgi.annotation.version@', project.osgiAnnotationVersion)
         newBallerinaToml = newBallerinaToml.replace('@netty.version@', project.nettyVersion)
         newBallerinaToml = newBallerinaToml.replace('@json.version@', project.jsonVersion)
         ballerinaTomlFile.text = newBallerinaToml
@@ -212,7 +216,7 @@ publishing {
     repositories {
         maven {
             name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/xlibb/module-solace")
+            url = uri("https://maven.pkg.github.com/ballerina-platform/module-${packageOrg}-${packageName}")
             credentials {
                 username = System.getenv("publishUser")
                 password = System.getenv("publishPAT")
@@ -231,6 +235,8 @@ build.dependsOn ":${packageName}-native:build"
 build.dependsOn generatePomFileForMavenPublication
 
 test.dependsOn ":${packageName}-native:build"
+test.dependsOn startSolaceServer
+test.finalizedBy stopSolaceServer
 
 publishToMavenLocal.dependsOn build
 publish.dependsOn build

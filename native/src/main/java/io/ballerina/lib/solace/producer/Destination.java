@@ -16,7 +16,7 @@
  *  under the License.
  */
 
-package io.xlibb.solace.producer;
+package io.ballerina.lib.solace.producer;
 
 /**
  * Sealed interface representing union of destination types.

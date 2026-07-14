@@ -60,7 +60,7 @@ public isolated client class MessageConsumer {
     }
 
     isolated function initConsumer(string url, ConsumerConfiguration config) returns Error? = @java:Method {
-        'class: "io.xlibb.solace.consumer.ConsumerActions",
+        'class: "io.ballerina.lib.solace.consumer.ConsumerActions",
         name: "init"
     } external;
 
@@ -99,7 +99,7 @@ public isolated client class MessageConsumer {
     # + message - The message to acknowledge
     # + return - Error if acknowledgement fails
     isolated remote function ack(Message message) returns Error? = @java:Method {
-        'class: "io.xlibb.solace.consumer.ConsumerActions",
+        'class: "io.ballerina.lib.solace.consumer.ConsumerActions",
         name: "acknowledge"
     } external;
 

@@ -16,7 +16,7 @@
  *  under the License.
  */
 
-package io.xlibb.solace.producer;
+package io.ballerina.lib.solace.producer;
 
 import com.solacesystems.jcsmp.JCSMPFactory;
 import com.solacesystems.jcsmp.JCSMPProperties;
@@ -39,19 +39,19 @@ import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
 
-import static io.xlibb.solace.common.Constants.NATIVE_CLOSED;
-import static io.xlibb.solace.common.Constants.NATIVE_PRODUCER;
-import static io.xlibb.solace.common.Constants.NATIVE_SESSION;
-import static io.xlibb.solace.common.Constants.NATIVE_TRANSACTED;
-import static io.xlibb.solace.common.Constants.NATIVE_TX_SESSION;
-import static io.xlibb.solace.common.Constants.NATIVE_URL;
-import static io.xlibb.solace.common.MessageFieldConstants.PAYLOAD_KEY;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.CONTEXT_PRODUCER;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_CLOSE;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_COMMIT;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_PUBLISH;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_ROLLBACK;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.UNKNOWN;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_CLOSED;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_PRODUCER;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_SESSION;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_TRANSACTED;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_TX_SESSION;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_URL;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.PAYLOAD_KEY;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.CONTEXT_PRODUCER;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_CLOSE;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_COMMIT;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_PUBLISH;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_ROLLBACK;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.UNKNOWN;
 
 /**
  * Producer actions - main entry point for Ballerina MessageProducer interop.

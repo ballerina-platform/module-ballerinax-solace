@@ -16,17 +16,17 @@
  *  under the License.
  */
 
-package io.xlibb.solace.observability;
+package io.ballerina.lib.solace.observability;
 
 import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.observability.ObserveUtils;
 import io.ballerina.runtime.observability.ObserverContext;
 
-import static io.xlibb.solace.observability.SolaceMetricsUtil.getDestination;
-import static io.xlibb.solace.observability.SolaceMetricsUtil.getUrl;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.TAG_KEY_DESTINATION;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.TAG_KEY_URL;
+import static io.ballerina.lib.solace.observability.SolaceMetricsUtil.getDestination;
+import static io.ballerina.lib.solace.observability.SolaceMetricsUtil.getUrl;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.TAG_KEY_DESTINATION;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.TAG_KEY_URL;
 
 /**
  * Tracing utility for the Solace connector.

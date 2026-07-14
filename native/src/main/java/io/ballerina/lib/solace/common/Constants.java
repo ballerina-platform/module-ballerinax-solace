@@ -16,7 +16,7 @@
  *  under the License.
  */
 
-package io.xlibb.solace.common;
+package io.ballerina.lib.solace.common;
 
 /**
  * Constants used to store native data in Ballerina objects.

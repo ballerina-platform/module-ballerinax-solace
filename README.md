@@ -1,4 +1,10 @@
-## Ballerina Solace connector
+# Ballerina Solace connector
+
+[![Build](https://github.com/ballerina-platform/module-ballerinax-solace/actions/workflows/ci.yml/badge.svg)](https://github.com/ballerina-platform/module-ballerinax-solace/actions/workflows/ci.yml)
+[![GitHub Last Commit](https://img.shields.io/github/last-commit/ballerina-platform/module-ballerinax-solace.svg)](https://github.com/ballerina-platform/module-ballerinax-solace/commits/master)
+[![GitHub Issues](https://img.shields.io/github/issues/ballerina-platform/ballerina-library/module/solace.svg?label=Open%20Issues)](https://github.com/ballerina-platform/ballerina-library/labels/module%solace)
+
+## Overview
 
 [Solace PubSub+](https://docs.solace.com/) is an advanced event-broker platform that enables event-driven communication across distributed applications using multiple messaging patterns such as publish/subscribe, request/reply, and queue-based messaging. It supports standard messaging protocols, including JMS, MQTT, AMQP, and REST, enabling seamless integration across diverse systems and environments.
 
@@ -91,3 +97,20 @@ Execute the commands below to build from the source.
    ```bash
    ./gradlew clean build -PpublishToCentral=true
    ```
+
+## Contribute to Ballerina
+
+As an open-source project, Ballerina welcomes contributions from the community.
+
+For more information, go to the [contribution guidelines](https://github.com/ballerina-platform/ballerina-lang/blob/master/CONTRIBUTING.md).
+
+## Code of conduct
+
+All the contributors are encouraged to read the [Ballerina Code of Conduct](https://ballerina.io/code-of-conduct).
+
+## Useful links
+
+* For more information go to the [`solace` package](https://central.ballerina.io/ballerinax/solace/latest).
+* For example demonstrations of the usage, go to [Ballerina By Examples](https://ballerina.io/learn/by-example/).
+* Chat live with us via our [Discord server](https://discord.gg/ballerinalang).
+* Post all technical questions on Stack Overflow with the [#ballerina](https://stackoverflow.com/questions/tagged/ballerina) tag.

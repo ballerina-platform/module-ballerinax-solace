@@ -16,7 +16,7 @@
  *  under the License.
  */
 
-package io.xlibb.solace.observability;
+package io.ballerina.lib.solace.observability;
 
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.observability.ObserveUtils;
@@ -24,21 +24,21 @@ import io.ballerina.runtime.observability.metrics.DefaultMetricRegistry;
 import io.ballerina.runtime.observability.metrics.MetricId;
 import io.ballerina.runtime.observability.metrics.MetricRegistry;
 
-import static io.xlibb.solace.common.Constants.NATIVE_DESTINATION;
-import static io.xlibb.solace.common.Constants.NATIVE_URL;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.CONNECTOR_NAME;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.CONTEXT_CONSUMER;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.CONTEXT_PRODUCER;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_CONNECTION;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.METRIC_CONSUMERS;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.METRIC_CONSUMED;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.METRIC_CONSUMED_SIZE;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.METRIC_ERRORS;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.METRIC_PUBLISHED;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.METRIC_PUBLISHED_SIZE;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.METRIC_PUBLISHERS;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.TAG_KEY_ERROR_TYPE;
-import static io.xlibb.solace.observability.SolaceObservabilityConstants.UNKNOWN;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_DESTINATION;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_URL;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.CONNECTOR_NAME;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.CONTEXT_CONSUMER;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.CONTEXT_PRODUCER;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_CONNECTION;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.METRIC_CONSUMERS;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.METRIC_CONSUMED;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.METRIC_CONSUMED_SIZE;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.METRIC_ERRORS;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.METRIC_PUBLISHED;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.METRIC_PUBLISHED_SIZE;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.METRIC_PUBLISHERS;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.TAG_KEY_ERROR_TYPE;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.UNKNOWN;
 
 /**
  * Metrics utility for the Solace connector.

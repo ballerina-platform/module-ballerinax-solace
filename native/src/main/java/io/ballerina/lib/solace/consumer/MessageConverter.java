@@ -16,7 +16,7 @@
  *  under the License.
  */
 
-package io.xlibb.solace.consumer;
+package io.ballerina.lib.solace.consumer;
 
 import com.solacesystems.jcsmp.BytesMessage;
 import com.solacesystems.jcsmp.Destination;

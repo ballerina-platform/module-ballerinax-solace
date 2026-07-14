@@ -32,7 +32,20 @@ fi
 # guaranteed messaging to stabilize, so give it extra headroom to avoid flaky transacted tests.
 sleep 10
 
-# Function to create a queue
+# Wait for the mock OAuth2/OIDC identity provider to be reachable
+echo "Waiting for mock IdP to start..."
+for i in $(seq 1 30); do
+    code=$(curl -s -o /dev/null -w "%{http_code}" "$MOCK_IDP_URL/default/.well-known/openid-configuration")
+    if [ "$code" = "200" ]; then
+        echo "Mock IdP is up."
+        break
+    fi
+    sleep 2
+done
+
+# Function to create a queue. Retries a few times: the SEMP API can report the broker as
+# reachable (see the readiness poll above) before its message-spool subsystem is actually
+# ready to accept queue creation, which otherwise fails with MESSAGE_SPOOL_DATA_NOT_AVAILABLE.
 create_queue() {
     local queue_name=$1
     echo "Creating queue: $queue_name"

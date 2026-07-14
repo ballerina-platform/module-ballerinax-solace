@@ -50,7 +50,7 @@ public isolated client class MessageProducer {
     }
 
     isolated function initProducer(string url, ProducerConfiguration config) returns Error? = @java:Method {
-        'class: "io.xlibb.solace.producer.ProducerActions",
+        'class: "io.ballerina.lib.solace.producer.ProducerActions",
         name: "init"
     } external;
 
