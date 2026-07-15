@@ -79,6 +79,8 @@ public class ListenerActions {
      * @return null on success, BError on failure
      */
     public static Object init(Environment env, BObject listener, BString url, BMap<BString, Object> config) {
+        JCSMPSession session = null;
+        TransactedSession txSession = null;
         try {
             ListenerConfiguration listenerConfig = new ListenerConfiguration(config);
             JCSMPProperties props =
@@ -86,11 +88,11 @@ public class ListenerActions {
             ConfigurationUtils.applyReceiveTimestampProperty(props, listenerConfig.generateReceiveTimestamps(),
                     listenerConfig.calculateMessageExpiration());
 
-            JCSMPSession session = JCSMPFactory.onlyInstance().createSession(props);
+            session = JCSMPFactory.onlyInstance().createSession(props);
             session.connect();
 
             boolean isTransacted = listenerConfig.connectionConfig().transacted();
-            TransactedSession txSession = isTransacted ? session.createTransactedSession() : null;
+            txSession = isTransacted ? session.createTransactedSession() : null;
 
             listener.addNativeData(NATIVE_SESSION, session);
             listener.addNativeData(NATIVE_TX_SESSION, txSession);
@@ -105,6 +107,12 @@ public class ListenerActions {
             listener.addNativeData(NATIVE_SERVICES, new ConcurrentHashMap<BObject, AttachedService>());
             return null;
         } catch (Exception e) {
+            if (txSession != null) {
+                CommonUtils.closeQuietly(txSession::close);
+            }
+            if (session != null) {
+                CommonUtils.closeQuietly(session::closeSession);
+            }
             return CommonUtils.createError("Failed to initialize listener", e);
         }
     }
@@ -251,31 +259,36 @@ public class ListenerActions {
     }
 
     private static Object stop(BObject listener, boolean graceful) {
-        try {
-            Map<BObject, AttachedService> services = servicesMap(listener);
-            for (AttachedService attached : services.values()) {
-                if (graceful) {
-                    attached.stop();
-                }
-                attached.close();
+        Map<BObject, AttachedService> services = servicesMap(listener);
+        Exception firstError = null;
+        for (AttachedService attached : services.values()) {
+            if (graceful) {
+                Exception e = CommonUtils.attemptClose(attached::stop);
+                firstError = firstError == null ? e : firstError;
             }
-            services.clear();
-
-            TransactedSession txSession = (TransactedSession) listener.getNativeData(NATIVE_TX_SESSION);
-            if (txSession != null) {
-                txSession.close();
-            }
-            JCSMPSession session = (JCSMPSession) listener.getNativeData(NATIVE_SESSION);
-            if (session != null) {
-                session.closeSession();
-            }
-
-            listener.addNativeData(NATIVE_STARTED, false);
-            listener.addNativeData(NATIVE_CLOSED, true);
-            return null;
-        } catch (Exception e) {
-            return CommonUtils.createError("Failed to stop listener", e);
+            Exception e = CommonUtils.attemptClose(attached::close);
+            firstError = firstError == null ? e : firstError;
         }
+        services.clear();
+
+        TransactedSession txSession = (TransactedSession) listener.getNativeData(NATIVE_TX_SESSION);
+        if (txSession != null) {
+            Exception e = CommonUtils.attemptClose(txSession::close);
+            firstError = firstError == null ? e : firstError;
+        }
+        JCSMPSession session = (JCSMPSession) listener.getNativeData(NATIVE_SESSION);
+        if (session != null) {
+            Exception e = CommonUtils.attemptClose(session::closeSession);
+            firstError = firstError == null ? e : firstError;
+        }
+
+        listener.addNativeData(NATIVE_STARTED, false);
+        listener.addNativeData(NATIVE_CLOSED, true);
+
+        if (firstError != null) {
+            return CommonUtils.createError("Failed to stop listener", firstError);
+        }
+        return null;
     }
 
     private static AttachedService createReceiver(JCSMPSession session, TransactedSession txSession,
@@ -319,7 +332,12 @@ public class ListenerActions {
         // Direct topic: asynchronous XMLMessageConsumer bound to the session.
         Topic topic = JCSMPFactory.onlyInstance().createTopic(topicConfig.topicName());
         XMLMessageConsumer consumer = session.getMessageConsumer(messageListener);
-        session.addSubscription(topic);
+        try {
+            session.addSubscription(topic);
+        } catch (Exception e) {
+            CommonUtils.closeQuietly(consumer::close);
+            throw e;
+        }
         return AttachedService.forDirectTopic(consumer, topic, session, messageListener);
     }
 

@@ -137,7 +137,25 @@ function testValidationOnMessageTooManyParams() returns error? {
     error? result = solaceListener.attach(tooManyParamsService);
     test:assertTrue(result is error, "onMessage with more than two parameters should fail");
     if result is error {
-        test:assertEquals(result.message(), "onMessage method can have only have either one or two parameters.");
+        test:assertEquals(result.message(), "onMessage method can only have either one or two parameters.");
+    }
+    check solaceListener.gracefulStop();
+}
+
+@test:Config {groups: ["listener", "validation", "negative"]}
+function testValidationOnMessageDuplicateMessageParam() returns error? {
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
+    Service duplicateMessageService = @ServiceConfig {
+        queueName: BINDING_VALIDATION_QUEUE
+    } service object {
+        remote function onMessage(Message message1, Message message2) returns error? {
+        }
+    };
+    error? result = solaceListener.attach(duplicateMessageService);
+    test:assertTrue(result is error, "onMessage with two Message parameters should fail");
+    if result is error {
+        test:assertEquals(result.message(),
+                "onMessage method must not declare more than one 'solace:Message' parameter.");
     }
     check solaceListener.gracefulStop();
 }

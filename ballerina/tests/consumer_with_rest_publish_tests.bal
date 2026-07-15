@@ -32,11 +32,13 @@ isolated function testReceiveJsonPayloads() returns error? {
     StringPayloadMessage? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
     test:assertTrue(msg is StringPayloadMessage, "Should receive a message");
     if msg is () {
+        check consumer->close();
         return;
     }
 
     json receivedPayload = check msg.payload.fromJsonString();
     test:assertEquals(receivedPayload, payload, "Received payload is different");
+    check consumer->close();
 }
 
 @test:Config {
@@ -52,10 +54,12 @@ isolated function testReceiveTextPayloads() returns error? {
     StringPayloadMessage? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
     test:assertTrue(msg is StringPayloadMessage, "Should receive a message");
     if msg is () {
+        check consumer->close();
         return;
     }
 
     test:assertEquals(msg.payload, payload, "Received payload is different");
+    check consumer->close();
 }
 
 @test:Config {
@@ -72,11 +76,13 @@ isolated function testReceiveXmlPayloads() returns error? {
     StringPayloadMessage? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
     test:assertTrue(msg is StringPayloadMessage, "Should receive a message");
     if msg is () {
+        check consumer->close();
         return;
     }
 
     xml receivedPayload = check xml:fromString(msg.payload);
     test:assertEquals(receivedPayload, payload, "Received payload is different");
+    check consumer->close();
 }
 
 @test:Config {
@@ -90,10 +96,12 @@ isolated function testReceiveBinaryPayload() returns error? {
     Message? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
     test:assertTrue(msg is Message, "Should receive a message");
     if msg is () {
+        check consumer->close();
         return;
     }
 
     test:assertEquals(msg.payload, payload, "Received payload is different");
+    check consumer->close();
 }
 
 @test:Config {
@@ -107,11 +115,13 @@ isolated function testReceiveInvalidJsonPayload() returns error? {
     StringPayloadMessage? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
     test:assertTrue(msg is StringPayloadMessage, "Should receive a message");
     if msg is () {
+        check consumer->close();
         return;
     }
 
     json|error receivedPayload = msg.payload.fromJsonString();
     test:assertTrue(receivedPayload is error, "Should fail to parse invalid JSON payload");
+    check consumer->close();
 }
 
 @test:Config {
@@ -122,6 +132,7 @@ isolated function testReceiveTimeoutWhenNothingPublished() returns error? {
 
     Message? msg = check consumer->receive(SHORT_RECEIVE_TIMEOUT);
     test:assertTrue(msg is (), "Should return null when no message is published");
+    check consumer->close();
 }
 
 isolated function createQueueConsumer(string queueName) returns MessageConsumer|error {

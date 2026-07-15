@@ -96,14 +96,19 @@ isolated function testProducerInitWithTooManyTrustedCommonNames() returns error?
 
 @test:Config {groups: ["producer", "init", "validation", "negative"]}
 isolated function testProducerInitWithUsernameTooLong() returns error? {
+    string tooLongUsername = "";
+    foreach int i in 0 ..< 190 {
+        tooLongUsername += "a";
+    }
+
     MessageProducer|error producer = new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
-        auth: {username: "a-very-long-username-that-exceeds-32-characters", password: BROKER_PASSWORD}
+        auth: {username: tooLongUsername, password: BROKER_PASSWORD}
     });
 
-    test:assertTrue(producer is error, "username longer than 32 characters should fail validation");
+    test:assertTrue(producer is error, "username longer than 189 characters should fail validation");
     if producer is error {
-        test:assertEquals(producer.message(), "Username cannot exceed 32 characters");
+        test:assertEquals(producer.message(), "Username cannot exceed 189 characters");
     }
 }
 

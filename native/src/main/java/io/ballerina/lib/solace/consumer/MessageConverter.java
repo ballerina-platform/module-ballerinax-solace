@@ -239,13 +239,19 @@ public class MessageConverter {
                 return getPayloadFromMapMessage(mapMessage, payloadType, typeTag);
             }
             if (xmlMessage instanceof BytesMessage bytesMessage) {
-                return getPayloadFromBytesMessage(bytesMessage.getData(), payloadType, typeTag);
+                byte[] data = bytesMessage.getData();
+                return getPayloadFromBytesMessage(data != null ? data : new byte[0], payloadType, typeTag);
             }
             // Other JCSMP message subtypes (e.g. a raw content message) carry no better native structure
             // than a byte attachment - treat identically to BytesMessage.
             ByteBuffer buf = xmlMessage.getAttachmentByteBuffer();
-            byte[] content = new byte[buf.remaining()];
-            buf.get(content);
+            byte[] content;
+            if (buf != null) {
+                content = new byte[buf.remaining()];
+                buf.get(content);
+            } else {
+                content = new byte[0];
+            }
             return getPayloadFromBytesMessage(content, payloadType, typeTag);
         } catch (BError bError) {
             throw new BallerinaSolaceDatabindingException("Data binding failed: " + bError.getDetails());

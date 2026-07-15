@@ -21,11 +21,15 @@ package io.ballerina.lib.solace.producer;
 import com.solacesystems.jcsmp.JCSMPException;
 import com.solacesystems.jcsmp.JCSMPStreamingPublishCorrelatingEventHandler;
 
+import java.util.logging.Logger;
+
 /**
  * Handler for JCSMP streaming publish events.
  * Manages acknowledgements and errors for guaranteed message delivery.
  */
 public class PublishEventHandler implements JCSMPStreamingPublishCorrelatingEventHandler {
+
+    private static final Logger LOGGER = Logger.getLogger(PublishEventHandler.class.getName());
 
     /**
      * Called when a publisher acknowledgement is received for a guaranteed delivery message.
@@ -34,8 +38,7 @@ public class PublishEventHandler implements JCSMPStreamingPublishCorrelatingEven
      */
     @Override
     public void responseReceivedEx(Object key) {
-        // Log successful acknowledgement if needed
-        // For now, we silently acknowledge success
+        // No-op: successful guaranteed-delivery acknowledgements are not currently surfaced anywhere.
     }
 
     /**
@@ -47,8 +50,7 @@ public class PublishEventHandler implements JCSMPStreamingPublishCorrelatingEven
      */
     @Override
     public void handleErrorEx(Object key, JCSMPException cause, long timestamp) {
-        // Log error if needed
-        // Error handling can be enhanced in future implementations
-        // For now, we log the error
+        LOGGER.warning(String.format(
+                "Guaranteed-delivery publish failed for correlation key '%s': %s", key, cause.getMessage()));
     }
 }

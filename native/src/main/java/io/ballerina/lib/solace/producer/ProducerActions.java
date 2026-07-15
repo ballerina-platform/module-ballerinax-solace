@@ -39,6 +39,8 @@ import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
 
+import java.nio.charset.StandardCharsets;
+
 import static io.ballerina.lib.solace.common.Constants.NATIVE_CLOSED;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_PRODUCER;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_SESSION;
@@ -346,6 +348,9 @@ public class ProducerActions {
         Object payload = message.get(PAYLOAD_KEY);
         if (payload instanceof BArray arr) {
             return arr.size();
+        }
+        if (payload instanceof BString str) {
+            return str.getValue().getBytes(StandardCharsets.UTF_8).length;
         }
         return 0;
     }

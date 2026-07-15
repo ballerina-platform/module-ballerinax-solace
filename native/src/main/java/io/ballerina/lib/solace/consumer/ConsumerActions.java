@@ -456,17 +456,15 @@ public class ConsumerActions {
         if (SUBSCRIPTION_TYPE_QUEUE.equals(subscriptionType) ||
                 SUBSCRIPTION_TYPE_DURABLE_TOPIC.equals(subscriptionType)) {
             if (flowReceiver != null) {
-                firstError = CommonUtils.attemptClose(() -> {
-                    flowReceiver.stop();
-                    flowReceiver.close();
-                });
+                firstError = CommonUtils.attemptClose(flowReceiver::stop);
+                Exception e = CommonUtils.attemptClose(flowReceiver::close);
+                firstError = firstError == null ? e : firstError;
             }
         } else if (SUBSCRIPTION_TYPE_DIRECT_TOPIC.equals(subscriptionType)) {
             if (xmlConsumer != null) {
-                firstError = CommonUtils.attemptClose(() -> {
-                    xmlConsumer.stop();
-                    xmlConsumer.close();
-                });
+                firstError = CommonUtils.attemptClose(xmlConsumer::stop);
+                Exception e = CommonUtils.attemptClose(xmlConsumer::close);
+                firstError = firstError == null ? e : firstError;
             }
         }
 

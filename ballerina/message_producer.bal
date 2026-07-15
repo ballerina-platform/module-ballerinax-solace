@@ -129,6 +129,8 @@ isolated function convertPayload(anydata payload) returns string|map<Value>|byte
         return payload.toString();
     } else if payload is int|boolean|float|decimal {
         return payload.toString().toBytes();
+    } else if payload is () {
+        return [];
     } else {
         return payload.toJsonString().toBytes();
     }

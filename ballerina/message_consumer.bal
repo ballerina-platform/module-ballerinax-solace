@@ -112,8 +112,9 @@ public isolated client class MessageConsumer {
     # For transacted flows, settlement outcomes are ignored.
     #
     # + message - The message to negatively acknowledge
-    # + requeue - If false, the message moves to the DMQ immediately, if configured.
-    # If not, the message is simply discarded. (REJECTED outcome)
+    # + requeue - If true (default), the message is made available for redelivery. (FAILED outcome)
+    # If false, the message moves to the DMQ immediately, if configured.
+    # If not configured, the message is simply discarded. (REJECTED outcome)
     # + return - Error if NACK fails
     isolated remote function nack(Message message, boolean requeue = true) returns Error? = @java:Method {
         'class: "io.ballerina.lib.solace.consumer.ConsumerActions"

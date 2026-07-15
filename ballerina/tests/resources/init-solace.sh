@@ -25,7 +25,8 @@ for i in $(seq 1 60); do
 done
 
 if [ "$vpn_up" != "true" ]; then
-    echo "WARNING: Message VPN did not report 'up' within the timeout; proceeding anyway."
+    echo "ERROR: Message VPN did not report 'up' within the timeout."
+    exit 1
 fi
 
 # Settle margin after the VPN reports up. The transaction subsystem needs a little longer than plain
@@ -67,6 +68,11 @@ create_queue() {
         fi
         sleep 3
     done
+
+    if echo "$response" | grep -q '"error"'; then
+        echo "ERROR: Failed to create queue '$queue_name' after 5 attempts: $response"
+        exit 1
+    fi
 
     # Subscribe queue to topic with same name (for topic-to-queue mapping). The queue name is a
     # URL path segment here (unlike the JSON body above), so literal '/' characters must be

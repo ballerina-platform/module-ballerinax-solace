@@ -145,3 +145,18 @@ function testProducerRoundTripScalars() returns error? {
         test:assertEquals(boolMsg.payload, true);
     }
 }
+
+@test:Config {groups: ["producer", "databinding"], dependsOn: [testProducerRoundTripScalars]}
+function testProducerRoundTripNilPayload() returns error? {
+    check publishToQueue(BINDING_PRODUCER_QUEUE, ());
+
+    MessageConsumer consumer = check newBindingConsumer(BINDING_PRODUCER_QUEUE);
+    BytesPayloadMessage? msg = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    check consumer->close();
+
+    test:assertTrue(msg is BytesPayloadMessage, "Should receive a message");
+    if msg is BytesPayloadMessage {
+        test:assertEquals(msg.payload, [],
+                "Nil payload should round-trip as an empty byte array, not the literal 'null' string");
+    }
+}
