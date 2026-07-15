@@ -1,0 +1,252 @@
+/*
+ * Copyright (c) 2025, WSO2 LLC. (http://www.wso2.org).
+ *
+ *  WSO2 LLC. licenses this file to you under the Apache License,
+ *  Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing,
+ *  software distributed under the License is distributed on an
+ *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations
+ *  under the License.
+ */
+
+package io.ballerina.lib.solace.config;
+
+import com.solacesystems.jcsmp.JCSMPChannelProperties;
+import com.solacesystems.jcsmp.JCSMPProperties;
+import io.ballerina.lib.solace.config.auth.AuthConfiguration;
+import io.ballerina.lib.solace.config.auth.BasicAuthConfiguration;
+import io.ballerina.lib.solace.config.auth.KerberosConfiguration;
+import io.ballerina.lib.solace.config.auth.OAuth2Configuration;
+import io.ballerina.lib.solace.config.retry.RetryConfig;
+import io.ballerina.lib.solace.config.ssl.KeyStoreConfig;
+import io.ballerina.lib.solace.config.ssl.SecureSocketConfig;
+import io.ballerina.lib.solace.config.ssl.TrustStoreConfig;
+
+import java.util.Arrays;
+
+/**
+ * Utility class for building JCSMP properties from Ballerina configuration objects.
+ */
+public final class ConfigurationUtils {
+
+    private ConfigurationUtils() {
+    }
+
+    /**
+     * Builds JCSMPProperties from a ConnectionConfiguration and host URL.
+     *
+     * @param host   the broker host URL (from Ballerina init's url parameter)
+     * @param config the connection configuration
+     * @return configured JCSMPProperties
+     * @throws Exception if configuration fails
+     */
+    public static JCSMPProperties buildJCSMPProperties(String host, ConnectionConfiguration config) throws Exception {
+        JCSMPProperties props = new JCSMPProperties();
+
+        // Set host and VPN
+        props.setProperty(JCSMPProperties.HOST, host);
+        props.setProperty(JCSMPProperties.VPN_NAME, config.messageVpn());
+
+        // Set client identification
+        if (config.clientName() != null) {
+            props.setProperty(JCSMPProperties.CLIENT_NAME, config.clientName());
+        }
+        props.setProperty(JCSMPProperties.APPLICATION_DESCRIPTION, config.clientDescription());
+
+        // Set local address if specified
+        if (config.localhost() != null) {
+            props.setProperty(JCSMPProperties.LOCALHOST, config.localhost());
+        }
+
+        // Set channel properties (timeouts, retries, compression)
+        setChannelProperties(props, config);
+
+        // Set authentication
+        setAuthentication(props, config.auth());
+
+        // Set SSL/TLS if configured
+        if (config.secureSocket() != null) {
+            setSecureSocket(props, config.secureSocket());
+        }
+
+        return props;
+    }
+
+    /**
+     * Applies send-side timestamp/sequence-number generation properties. Only relevant for a publishing
+     * (producer) session.
+     *
+     * @param props                   the JCSMPProperties to update
+     * @param generateSendTimestamps  whether to generate send timestamps on outgoing messages
+     * @param generateSequenceNumbers whether to generate sequence numbers on outgoing messages
+     */
+    public static void applyProducerTimestampProperties(JCSMPProperties props, boolean generateSendTimestamps,
+            boolean generateSequenceNumbers) {
+        props.setProperty(JCSMPProperties.GENERATE_SEND_TIMESTAMPS, generateSendTimestamps);
+        props.setProperty(JCSMPProperties.GENERATE_SEQUENCE_NUMBERS, generateSequenceNumbers);
+    }
+
+    /**
+     * Applies receive-side timestamp/expiration generation properties. Only relevant for a receiving
+     * (consumer/listener) session. {@code calculateMessageExpiration} must be enabled here (not just on the
+     * producer) for {@code Message.expiration} to be populated on receipt when a message was published with a
+     * {@code timeToLive} - the wire protocol only transmits the relative TTL in that case, so the receiving
+     * session has to compute the absolute expiration itself from its own receipt time.
+     *
+     * @param props                     the JCSMPProperties to update
+     * @param generateReceiveTimestamps whether to generate receive timestamps on incoming messages
+     * @param calculateMessageExpiration whether to calculate message expiration on incoming messages
+     */
+    public static void applyReceiveTimestampProperty(JCSMPProperties props, boolean generateReceiveTimestamps,
+            boolean calculateMessageExpiration) {
+        props.setProperty(JCSMPProperties.GENERATE_RCV_TIMESTAMPS, generateReceiveTimestamps);
+        props.setProperty(JCSMPProperties.CALCULATE_MESSAGE_EXPIRATION, calculateMessageExpiration);
+    }
+
+    /**
+     * Sets channel properties like timeouts, retries, and compression.
+     */
+    private static void setChannelProperties(JCSMPProperties props, ConnectionConfiguration config) {
+        JCSMPChannelProperties channelProps = (JCSMPChannelProperties) props.getProperty(
+                JCSMPProperties.CLIENT_CHANNEL_PROPERTIES);
+
+        // Set connection timeouts
+        channelProps.setProperty(JCSMPChannelProperties.CONNECT_TIMEOUT_IN_MILLIS,
+                (int) config.connectTimeout());
+        channelProps.setProperty(JCSMPChannelProperties.READ_TIMEOUT_IN_MILLIS,
+                (int) config.readTimeout());
+
+        // Set compression level
+        if (config.compressionLevel() > 0) {
+            channelProps.setProperty(JCSMPChannelProperties.COMPRESSION_LEVEL, config.compressionLevel());
+        }
+
+        // Set retry configuration if specified
+        if (config.retryConfig() != null) {
+            RetryConfig retry = config.retryConfig();
+            channelProps.setProperty(JCSMPChannelProperties.CONNECT_RETRIES, retry.connectRetries());
+            channelProps.setProperty(JCSMPChannelProperties.CONNECT_RETRIES_PER_HOST,
+                    retry.connectRetriesPerHost());
+            channelProps.setProperty(JCSMPChannelProperties.RECONNECT_RETRIES, retry.reconnectRetries());
+            channelProps.setProperty(JCSMPChannelProperties.RECONNECT_RETRY_WAIT_IN_MILLIS,
+                    (int) retry.reconnectRetryWait());
+        }
+    }
+
+    /**
+     * Sets authentication based on the AuthConfiguration type using sealed interface pattern.
+     */
+    private static void setAuthentication(JCSMPProperties props, AuthConfiguration auth) throws Exception {
+        if (auth == null) {
+            // Default to basic authentication with empty credentials
+            props.setProperty(JCSMPProperties.AUTHENTICATION_SCHEME, JCSMPProperties.AUTHENTICATION_SCHEME_BASIC);
+            return;
+        }
+
+        if (auth instanceof BasicAuthConfiguration(String username, String password)) {
+            props.setProperty(JCSMPProperties.AUTHENTICATION_SCHEME, JCSMPProperties.AUTHENTICATION_SCHEME_BASIC);
+            props.setProperty(JCSMPProperties.USERNAME, username);
+            if (password != null) {
+                props.setProperty(JCSMPProperties.PASSWORD, password);
+            }
+        } else if (auth instanceof KerberosConfiguration kerberosAuth) {
+            props.setProperty(JCSMPProperties.AUTHENTICATION_SCHEME, JCSMPProperties.AUTHENTICATION_SCHEME_GSS_KRB);
+            props.setProperty(JCSMPProperties.KRB_SERVICE_NAME, kerberosAuth.serviceName());
+            props.setProperty(JCSMPProperties.JAAS_LOGIN_CONTEXT, kerberosAuth.jaasLoginContext());
+            props.setProperty(JCSMPProperties.KRB_MUTUAL_AUTHENTICATION, kerberosAuth.mutualAuthentication());
+            props.setProperty(JCSMPProperties.JAAS_CONFIG_FILE_RELOAD_ENABLED,
+                    kerberosAuth.jaasConfigFileReloadEnabled());
+        } else if (auth instanceof OAuth2Configuration(String issuer, String accessToken, String oidcToken)) {
+            props.setProperty(JCSMPProperties.AUTHENTICATION_SCHEME, JCSMPProperties.AUTHENTICATION_SCHEME_OAUTH2);
+            if (issuer != null) {
+                props.setProperty(JCSMPProperties.OAUTH2_ISSUER_IDENTIFIER, issuer);
+            }
+            if (accessToken != null) {
+                props.setProperty(JCSMPProperties.OAUTH2_ACCESS_TOKEN, accessToken);
+            }
+            if (oidcToken != null) {
+                props.setProperty(JCSMPProperties.OIDC_ID_TOKEN, oidcToken);
+            }
+        }
+    }
+
+    /**
+     * Sets SSL/TLS configuration.
+     */
+    private static void setSecureSocket(JCSMPProperties props, SecureSocketConfig secureSocket) throws Exception {
+        // Set trust store for server certificate validation
+        if (secureSocket.trustStore() != null) {
+            TrustStoreConfig trustStore = secureSocket.trustStore();
+            props.setProperty(JCSMPProperties.SSL_TRUST_STORE, trustStore.location());
+            props.setProperty(JCSMPProperties.SSL_TRUST_STORE_PASSWORD, trustStore.password());
+            props.setProperty(JCSMPProperties.SSL_TRUST_STORE_FORMAT, trustStore.format());
+        }
+
+        // Set key store for client certificate authentication
+        if (secureSocket.keyStore() != null) {
+            KeyStoreConfig keyStore = secureSocket.keyStore();
+            props.setProperty(JCSMPProperties.SSL_KEY_STORE, keyStore.location());
+            props.setProperty(JCSMPProperties.SSL_KEY_STORE_PASSWORD, keyStore.password());
+            if (keyStore.keyPassword() != null) {
+                props.setProperty(JCSMPProperties.SSL_PRIVATE_KEY_PASSWORD, keyStore.keyPassword());
+            }
+            if (keyStore.keyAlias() != null) {
+                props.setProperty(JCSMPProperties.SSL_PRIVATE_KEY_ALIAS, keyStore.keyAlias());
+            }
+            props.setProperty(JCSMPProperties.SSL_KEY_STORE_FORMAT, keyStore.format());
+        }
+
+        // Set certificate validation
+        props.setProperty(JCSMPProperties.SSL_VALIDATE_CERTIFICATE, secureSocket.validation().enabled());
+        props.setProperty(JCSMPProperties.SSL_VALIDATE_CERTIFICATE_DATE, secureSocket.validation().validateDate());
+        props.setProperty(JCSMPProperties.SSL_VALIDATE_CERTIFICATE_HOST,
+                secureSocket.validation().validateHostname());
+
+        // Set trusted common names
+        if (secureSocket.trustedCommonNames() != null && !secureSocket.trustedCommonNames().isEmpty()) {
+            StringBuilder cnList = new StringBuilder();
+            for (String cn : secureSocket.trustedCommonNames()) {
+                if (cnList.length() > 0) {
+                    cnList.append(",");
+                }
+                cnList.append(cn);
+            }
+            props.setProperty(JCSMPProperties.SSL_TRUSTED_COMMON_NAME_LIST, cnList.toString());
+        }
+
+        // Set excluded SSL/TLS protocols
+        if (secureSocket.excludedProtocols() != null && !secureSocket.excludedProtocols().isEmpty()) {
+            String[] mapped = mapProtocols(secureSocket.excludedProtocols().toArray(new String[0]));
+            props.setProperty(JCSMPProperties.SSL_EXCLUDED_PROTOCOLS, String.join(",", mapped));
+        }
+
+        // Set cipher suites
+        if (secureSocket.cipherSuites() != null && !secureSocket.cipherSuites().isEmpty()) {
+            props.setProperty(JCSMPProperties.SSL_CIPHER_SUITES, String.join(",", secureSocket.cipherSuites()));
+        }
+    }
+
+    /**
+     * Maps protocol names from Ballerina constants to Solace's expected values.
+     *
+     * @param protocols array of protocol names
+     * @return mapped array of protocol names
+     */
+    private static String[] mapProtocols(String[] protocols) {
+        return Arrays.stream(protocols).map(protocol -> {
+            return switch (protocol) {
+                case "TLSV1_1" -> "tlsv1.1";
+                case "TLSV1_2" -> "tlsv1.2";
+                case "TLSV1_3" -> "tlsv1.3";
+                default -> throw new IllegalArgumentException("Unsupported protocol: " + protocol);
+            };
+        }).toArray(String[]::new);
+    }
+}

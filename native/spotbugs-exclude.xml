@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!--
+        CommonUtils.closeQuietly() intentionally discards the exception: it is a best-effort cleanup
+        helper for releasing resources already created before an init() failure, where a secondary
+        failure during cleanup must not surface to (or replace) the caller's original error.
+    -->
+    <Match>
+        <Class name="io.ballerina.lib.solace.common.CommonUtils"/>
+        <Method name="closeQuietly"/>
+        <Bug pattern="DE_MIGHT_IGNORE"/>
+    </Match>
+
+    <!--
+        Service.getConsumerService()/getMessagePayloadType() intentionally return the underlying
+        Ballerina runtime BObject/Type handles as-is: these are opaque runtime references (not
+        mutable data structures), and defensive copying a BObject/Type is neither meaningful nor
+        possible. This mirrors the same accessor pattern used throughout this native codebase (e.g.
+        AttachedService, ListenerActions) for exposing runtime handles.
+    -->
+    <Match>
+        <Class name="io.ballerina.lib.solace.listener.Service"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+</FindBugsFilter>

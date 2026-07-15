@@ -1,6 +1,6 @@
 # Compiled class file
 *.class
-*.balx
+
 # Log file
 *.log
 
@@ -10,8 +10,8 @@
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
 
-# macOS Files
-*.DS_Store
+# mac
+.DS_Store
 
 # Package Files
 *.jar
@@ -26,30 +26,38 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 
-# Ignore everything in this directory
-target
 .classpath
-.settings
 .project
-*.iml
-*.iws
-*.ipr
-.m2
-.vscode/
+.settings
+.vscode
 .cursor/
+
+# Files related to IntelliJ
 .idea
+*.iml
+*.ipr
+*.iws
+
+# Gradle build related files
+.gradle
+.m2
 
 # Ignore ballerina files
-target/
-generated/
 .ballerina
 **/Config.toml
 
-# Ignore Gradle project-specific cache directory
-.gradle
-
-# Ignore Gradle build output directory
+# Ignore output directories
 build
+target
+generated
 
-# Ignore Docker env file
+# Environment files
+*.env
 docker.env
+examples/**/Dependencies.toml
+
+CLAUDE.md
+.claude-tasks/
+
+# In-progress migration notes (tracked on the messaging-api-migration branch, not here)
+MIGRATION.md

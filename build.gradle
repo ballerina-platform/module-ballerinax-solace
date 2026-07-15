@@ -17,13 +17,19 @@
  */
 
 plugins {
-    id 'net.researchgate.release'
+    id "com.github.spotbugs-base"
+    id "com.github.johnrengelman.shadow"
+    id "de.undercouch.download"
+    id "net.researchgate.release"
 }
+
+description = 'Ballerina - Solace Connector'
 
 allprojects {
     group = project.group
     version = project.version
 
+    apply plugin: 'jacoco'
     apply plugin: 'maven-publish'
 
     repositories {
@@ -55,11 +61,12 @@ allprojects {
     }
 }
 
-def moduleVersion = project.version.replace("-SNAPSHOT", "")
-
 task build {
-    dependsOn(':solace-ballerina:build')
+    dependsOn(":solace-native:build")
+    dependsOn(":solace-ballerina:build")
 }
+
+def moduleVersion = project.version.replace("-SNAPSHOT", "")
 
 release {
     buildTasks = ['build']

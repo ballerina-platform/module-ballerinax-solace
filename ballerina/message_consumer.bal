@@ -1,0 +1,157 @@
+// Copyright (c) 2025 WSO2 LLC. (http://www.wso2.org).
+//
+// WSO2 LLC. licenses this file to you under the Apache License,
+// Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+import ballerina/jballerina.java;
+
+# MessageConsumer for synchronous (pull-based) message consumption from Solace.
+#
+# Supports both queue and topic subscriptions:
+# - Queue subscriptions: guaranteed message delivery via FlowReceiver
+# - Topic subscriptions: direct message delivery via XMLMessageConsumer
+#
+# Example queue consumer:
+# ```ballerina
+# final solace:MessageConsumer consumer = check new (
+#     url = "tcp://broker:55555",
+#     auth = {username: "default"},
+#     subscriptionConfig = {
+#         queueName: "orders",
+#         ackMode: "SUPPORTED_MESSAGE_ACK_AUTO"
+#     }
+# );
+# solace:Message? msg = check consumer->receive(5.0);
+# ```
+#
+# Example topic consumer:
+# ```ballerina
+# final solace:MessageConsumer consumer = check new (
+#     url = "tcp://broker:55555",
+#     auth = {username: "default"},
+#     subscriptionConfig = {
+#         topicName: "orders/*/created",
+#         durability: "TEMPORARY"
+#     }
+# );
+# solace:Message? msg = check consumer->receive(10.0);
+# ```
+public isolated client class MessageConsumer {
+
+    # Initialize a new MessageConsumer with the given configuration.
+    #
+    # + url - The broker URL with format: [protocol:]host[:port]
+    # + config - The consumer configuration (composed of connection config + subscription config)
+    # + return - Error if initialization fails
+    public isolated function init(string url, *ConsumerConfiguration config) returns Error? {
+        check validateConfigurations(config);
+        return self.initConsumer(url, config);
+    }
+
+    isolated function initConsumer(string url, ConsumerConfiguration config) returns Error? = @java:Method {
+        'class: "io.ballerina.lib.solace.consumer.ConsumerActions",
+        name: "init"
+    } external;
+
+    # Receive a message with a timeout.
+    #
+    # Blocks up to the specified timeout waiting for a message. Returns nil if no message
+    # arrives within the timeout period.
+    #
+    # + timeout - Maximum time in seconds to wait for a message. A nil or zero timeout never expires
+    # + T - Optional type description of the expected message type; declare a narrowed
+    # `record {|*Message; T payload;|}` to have the payload data-bound into `T`
+    # + return - The received message, or nil if timeout occurs; Error if receive fails
+    isolated remote function receive(decimal? timeout = (), typedesc<Message> T = <>) returns T|Error? = @java:Method {
+        'class: "io.ballerina.lib.solace.consumer.ConsumerActions"
+    } external;
+
+    # Receive a message without waiting.
+    #
+    # Returns immediately with a message if available, or nil if no message is available.
+    # This is a non-blocking operation.
+    #
+    # + T - Optional type description of the expected message type; declare a narrowed
+    # `record {|*Message; T payload;|}` to have the payload data-bound into `T`
+    # + return - The received message, or nil if no message available; Error if receive fails
+    isolated remote function receiveNoWait(typedesc<Message> T = <>) returns T|Error? = @java:Method {
+        'class: "io.ballerina.lib.solace.consumer.ConsumerActions"
+    } external;
+
+    # Acknowledge a message in CLIENT_ACKNOWLEDGE mode.
+    #
+    # Only use this method if the subscription is configured with ackMode = CLIENT_ACK.
+    # In AUTO mode, messages are acknowledged automatically.
+    #
+    # For transacted flows, calling this method has no effect.
+    #
+    # + message - The message to acknowledge
+    # + return - Error if acknowledgement fails
+    isolated remote function ack(Message message) returns Error? = @java:Method {
+        'class: "io.ballerina.lib.solace.consumer.ConsumerActions",
+        name: "acknowledge"
+    } external;
+
+    # Negatively acknowledge a message (NACK).
+    #
+    # Sends a negative acknowledgement for the message, indicating processing failure.
+    #
+    # Only use this method if the subscription is configured with ackMode = CLIENT_ACK
+    # and the consumer flow is configured to support required settlement outcomes.
+    # For transacted flows, settlement outcomes are ignored.
+    #
+    # + message - The message to negatively acknowledge
+    # + requeue - If true (default), the message is made available for redelivery. (FAILED outcome)
+    # If false, the message moves to the DMQ immediately, if configured.
+    # If not configured, the message is simply discarded. (REJECTED outcome)
+    # + return - Error if NACK fails
+    isolated remote function nack(Message message, boolean requeue = true) returns Error? = @java:Method {
+        'class: "io.ballerina.lib.solace.consumer.ConsumerActions"
+    } external;
+
+    # Commit the current transaction.
+    #
+    # Only applicable in transacted mode. Commits all message operations since the last commit/rollback.
+    #
+    # + return - Error if commit fails
+    isolated remote function 'commit() returns Error? = @java:Method {
+        'class: "io.ballerina.lib.solace.consumer.ConsumerActions"
+    } external;
+
+    # Rollback the current transaction.
+    #
+    # Only applicable in transacted mode. Rolls back all message operations since the last commit/rollback.
+    #
+    # + return - Error if rollback fails
+    isolated remote function 'rollback() returns Error? = @java:Method {
+        'class: "io.ballerina.lib.solace.consumer.ConsumerActions"
+    } external;
+
+    # Close the consumer and release all resources.
+    #
+    # + return - Error if close fails
+    isolated remote function close() returns Error? = @java:Method {
+        'class: "io.ballerina.lib.solace.consumer.ConsumerActions"
+    } external;
+
+    # Get the resolved name of the destination (queue or topic) this consumer is bound to.
+    #
+    # For a `durability: TEMPORARY` queue created without a `queueName` hint, this returns the broker-generated
+    # name - useful for publishing it as a `replyTo` address before any message has been received.
+    #
+    # + return - The destination name
+    isolated remote function destinationName() returns string = @java:Method {
+        'class: "io.ballerina.lib.solace.consumer.ConsumerActions"
+    } external;
+}

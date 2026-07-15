@@ -22,7 +22,7 @@ plugins {
     id 'io.ballerina.plugin'
 }
 
-description = 'Solace - Ballerina'
+description = 'Ballerina - Solace Connector'
 
 def packageName = "solace"
 def packageOrg = "ballerinax"
@@ -47,15 +47,101 @@ def stripBallerinaExtensionVersion(String extVersion) {
 ballerina {
     packageOrganization = packageOrg
     module = packageName
-    testCoverageParam = "--code-coverage --coverage-format=xml"
+    // Code coverage is disabled: the instrumented runtime intermittently hard-stalls the JCSMP
+    // asynchronous message-delivery callback (onMessage dispatch) under load, making the listener
+    // integration tests flaky. The tests pass reliably without instrumentation. Re-enable once the
+    // coverage/async-callback interaction is resolved.
+    testCoverageParam = ""
     isConnector = true
-    platform = "any"
+    platform = "java21"
+}
+
+configurations {
+    externalJars
+}
+
+dependencies {
+
+    /* Solace dependencies */
+    externalJars(group: 'com.solacesystems', name: 'sol-jcsmp', version: "${solaceJcsmpVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'com.solace', name: 'solace-serdes', version: "${solaceSerdesVersion}") {
+        transitive = false
+    }
+
+    /* Netty dependencies */
+    externalJars(group: 'io.netty', name: 'netty-common', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.netty', name: 'netty-transport', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.netty', name: 'netty-handler', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.netty', name: 'netty-resolver', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.netty', name: 'netty-buffer', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.netty', name: 'netty-codec', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.netty', name: 'netty-codec-http', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.netty', name: 'netty-codec-socks', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.netty', name: 'netty-handler-proxy', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.netty', name: 'netty-transport-native-epoll', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.netty', name: 'netty-transport-classes-epoll', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars "io.netty:netty-transport-native-epoll::linux-x86_64"
+    externalJars "io.netty:netty-transport-native-epoll::linux-aarch_64"
+    externalJars(group: 'io.netty', name: 'netty-transport-native-kqueue', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.netty', name: 'netty-transport-classes-kqueue', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars "io.netty:netty-transport-native-kqueue::osx-x86_64"
+    externalJars "io.netty:netty-transport-native-kqueue::osx-aarch_64"
+
+    /* Other dependencies */
+    externalJars(group: 'commons-logging', name: 'commons-logging', version: "${commonsLoggingVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'org.apache.servicemix.bundles', name: 'org.apache.servicemix.bundles.jzlib', version: "${servicemixJzlibVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'org.osgi', name: 'org.osgi.annotation', version: "${osgiAnnotationVersion}") {
+        transitive = false
+    }
+
+    externalJars(group: 'org.json', name: 'json', version: "${jsonVersion}") {
+        transitive = false
+    }
 }
 
 task updateTomlFiles {
     doLast {
         def newBallerinaToml = ballerinaTomlFilePlaceHolder.text.replace("@project.version@", project.version)
         newBallerinaToml = newBallerinaToml.replace("@toml.version@", tomlVersion)
+        newBallerinaToml = newBallerinaToml.replace("@sol.jcsmp.version@", project.solaceJcsmpVersion)
+        newBallerinaToml = newBallerinaToml.replace('@solace.serdes.version@', project.solaceSerdesVersion)
+        newBallerinaToml = newBallerinaToml.replace('@commons.logging.version@', project.commonsLoggingVersion)
+        newBallerinaToml = newBallerinaToml.replace('@servicemix.jzlib.version@', project.servicemixJzlibVersion)
+        newBallerinaToml = newBallerinaToml.replace('@osgi.annotation.version@', project.osgiAnnotationVersion)
+        newBallerinaToml = newBallerinaToml.replace('@netty.version@', project.nettyVersion)
+        newBallerinaToml = newBallerinaToml.replace('@json.version@', project.jsonVersion)
         ballerinaTomlFile.text = newBallerinaToml
     }
 }
@@ -69,6 +155,54 @@ task commitTomlFiles {
             } else {
                 commandLine 'sh', '-c', "git commit -m '[Automated] Update the toml files' Ballerina.toml Dependencies.toml"
             }
+        }
+    }
+}
+
+task generateTestCerts() {
+    doLast {
+        if (!Os.isFamily(Os.FAMILY_WINDOWS)) {
+            def certScript = "${project.projectDir}/tests/resources/certs/generate-certs.sh"
+            exec {
+                commandLine 'sh', '-c', "chmod +x $certScript && $certScript"
+            }
+        }
+    }
+}
+
+task startSolaceServer() {
+    dependsOn generateTestCerts
+    doLast {
+        if (!Os.isFamily(Os.FAMILY_WINDOWS)) {
+            def dockerComposeFile = "${project.projectDir}/tests/resources/docker-compose.yaml"
+            def initScript = "${project.projectDir}/tests/resources/init-solace.sh"
+            // Ensure a fresh broker: remove any container/volume left behind by an interrupted run so
+            // tests never bind to stale queue state (e.g. a leaked flow on an exclusive queue).
+            exec {
+                commandLine 'sh', '-c', "docker compose -f $dockerComposeFile down -v --remove-orphans"
+                ignoreExitValue true
+            }
+            exec {
+                commandLine 'sh', '-c', "docker compose -f $dockerComposeFile up -d"
+            }
+            sleep(20 * 1000)
+            // Initialize queues
+            exec {
+                commandLine 'sh', '-c', "chmod +x $initScript && $initScript"
+                ignoreExitValue false
+            }
+        }
+    }
+}
+
+task stopSolaceServer() {
+    doLast {
+        if (!Os.isFamily(Os.FAMILY_WINDOWS)) {
+            def dockerComposeFile = "${project.projectDir}/tests/resources/docker-compose.yaml"
+            exec {
+                commandLine 'sh', '-c', "docker compose -f $dockerComposeFile rm -svf"
+            }
+            sleep(5 * 1000)
         }
     }
 }
@@ -93,8 +227,16 @@ publishing {
 
 clean {
     delete 'build'
+    delete 'lib'
 }
 
-build.dependsOn "generatePomFileForMavenPublication"
+build.dependsOn copyToLib
+build.dependsOn ":${packageName}-native:build"
+build.dependsOn generatePomFileForMavenPublication
+
+test.dependsOn ":${packageName}-native:build"
+test.dependsOn startSolaceServer
+test.finalizedBy stopSolaceServer
+
 publishToMavenLocal.dependsOn build
 publish.dependsOn build

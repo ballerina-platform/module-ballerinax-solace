@@ -1,16 +1,154 @@
 [package]
-distribution = "2201.12.0"
 org = "ballerinax"
 name = "solace"
 version = "@toml.version@"
-license = ["Apache-2.0"]
 authors = ["Ballerina"]
-keywords = [] # TODO: Add keywords
-# icon = "icon.png" # TODO: Add icon
+keywords = ["solace", "messaging", "network", "pubsub", "Vendor/Solace", "Area/Messaging", "Type/Connector", "Type/Trigger"]
 repository = "https://github.com/ballerina-platform/module-ballerinax-solace"
+icon = "icon.png"
+license = ["Apache-2.0"]
+distribution = "2201.12.0"
+
+[platform.java21]
+graalvmCompatible = false
 
 [build-options]
 observabilityIncluded = true
 
-[platform.java21]
-graalvmCompatible = true
+[[platform.java21.dependency]]
+groupId = "io.ballerina.lib"
+artifactId = "solace-native"
+version = "@project.version@"
+path = "../native/build/libs/solace-native-@project.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "com.solacesystems"
+artifactId = "sol-jcsmp"
+version = "@sol.jcsmp.version@"
+path = "./lib/sol-jcsmp-@sol.jcsmp.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "com.solace"
+artifactId = "solace-serdes"
+version = "@solace.serdes.version@"
+path = "./lib/solace-serdes-@solace.serdes.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "commons-logging"
+artifactId = "commons-logging"
+version = "@commons.logging.version@"
+path = "./lib/commons-logging-@commons.logging.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "org.apache.servicemix.bundles"
+artifactId = "org.apache.servicemix.bundles.jzlib"
+version = "@servicemix.jzlib.version@"
+path = "./lib/org.apache.servicemix.bundles.jzlib-@servicemix.jzlib.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "org.osgi"
+artifactId = "org.osgi.annotation"
+version = "@osgi.annotation.version@"
+path = "./lib/org.osgi.annotation-@osgi.annotation.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-common"
+version = "@netty.version@"
+path = "./lib/netty-common-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport"
+version = "@netty.version@"
+path = "./lib/netty-transport-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-handler"
+version = "@netty.version@"
+path = "./lib/netty-handler-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-resolver"
+version = "@netty.version@"
+path = "./lib/netty-resolver-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-buffer"
+version = "@netty.version@"
+path = "./lib/netty-buffer-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-codec"
+version = "@netty.version@"
+path = "./lib/netty-codec-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-codec-http"
+version = "@netty.version@"
+path = "./lib/netty-codec-http-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-codec-socks"
+version = "@netty.version@"
+path = "./lib/netty-codec-socks-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-handler-proxy"
+version = "@netty.version@"
+path = "./lib/netty-handler-proxy-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport-native-epoll"
+version = "@netty.version@"
+path = "./lib/netty-transport-native-epoll-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport-classes-epoll"
+version = "@netty.version@"
+path = "./lib/netty-transport-classes-epoll-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/netty-transport-native-epoll-@netty.version@-linux-x86_64.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/netty-transport-native-epoll-@netty.version@-linux-aarch_64.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport-native-unix-common"
+version = "@netty.version@"
+path = "./lib/netty-transport-native-unix-common-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport-native-kqueue"
+version = "@netty.version@"
+path = "./lib/netty-transport-native-kqueue-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport-classes-kqueue"
+version = "@netty.version@"
+path = "./lib/netty-transport-classes-kqueue-@netty.version@.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/netty-transport-native-kqueue-@netty.version@-osx-x86_64.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/netty-transport-native-kqueue-@netty.version@-osx-aarch_64.jar"
+
+[[platform.java21.dependency]]
+groupId = "org.json"
+artifactId = "json"
+version = "@json.version@"
+path = "./lib/json-@json.version@.jar"
