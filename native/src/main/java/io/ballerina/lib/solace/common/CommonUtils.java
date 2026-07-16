@@ -21,11 +21,17 @@ package io.ballerina.lib.solace.common;
 import io.ballerina.lib.solace.ModuleUtils;
 import io.ballerina.runtime.api.creators.ErrorCreator;
 import io.ballerina.runtime.api.utils.StringUtils;
+import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BError;
+import io.ballerina.runtime.api.values.BMap;
+import io.ballerina.runtime.api.values.BString;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+
+import static io.ballerina.lib.solace.common.MessageFieldConstants.PAYLOAD_KEY;
 
 /**
  * Utility class for common operations like error creation and virtual thread execution.
@@ -110,6 +116,28 @@ public class CommonUtils {
         } catch (Exception e) {
             return e;
         }
+    }
+
+    /**
+     * Computes the best-effort byte size of a Ballerina Solace message's payload, for observability metrics.
+     *
+     * @param message the Ballerina message record
+     * @return the payload size in bytes, or 0 if it cannot be determined
+     */
+    @SuppressWarnings("unchecked")
+    public static int getPayloadSize(BMap<BString, Object> message) {
+        if (message == null) {
+            return 0;
+        }
+        Object payload = message.get(PAYLOAD_KEY);
+        if (payload instanceof BArray arr) {
+            return arr.size();
+        }
+        if (payload instanceof BString str) {
+            return str.getValue().getBytes(StandardCharsets.UTF_8).length;
+        }
+        // Best-effort only: exact byte-accounting for other payload shapes (record/map/etc.) is not attempted.
+        return 0;
     }
 
     /**
