@@ -1,0 +1,4 @@
+[package]
+org = "solace_test"
+name = "direct_service_object"
+version = "0.1.0"

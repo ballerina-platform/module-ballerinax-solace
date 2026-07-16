@@ -146,7 +146,7 @@ public record QueueConsumerConfig(
     public void validate() {
         ConsumerSubscriptionConfig.super.validate();
         if (!isTemporary() && (queueName == null || queueName.isEmpty())) {
-            throw new IllegalArgumentException("queueName is required when durability is not TEMPORARY");
+            throw new IllegalArgumentException("queueName is required when the queue is DURABLE");
         }
     }
 }

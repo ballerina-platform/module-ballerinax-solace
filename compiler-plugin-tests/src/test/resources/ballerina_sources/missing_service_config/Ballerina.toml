@@ -1,0 +1,4 @@
+[package]
+org = "solace_test"
+name = "missing_service_config"
+version = "0.1.0"
