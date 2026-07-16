@@ -24,6 +24,9 @@ import com.solacesystems.jcsmp.XMLMessageListener;
 import io.ballerina.lib.solace.common.BallerinaSolaceDatabindingException;
 import io.ballerina.lib.solace.common.CommonUtils;
 import io.ballerina.lib.solace.consumer.MessageConverter;
+import io.ballerina.lib.solace.observability.SolaceMetricsUtil;
+import io.ballerina.lib.solace.observability.SolaceObserverContext;
+import io.ballerina.lib.solace.observability.SolaceTracingUtil;
 import io.ballerina.runtime.api.Runtime;
 import io.ballerina.runtime.api.concurrent.StrandMetadata;
 import io.ballerina.runtime.api.creators.ValueCreator;
@@ -31,12 +34,19 @@ import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
+import io.ballerina.runtime.observability.ObservabilityConstants;
+import io.ballerina.runtime.observability.ObserveUtils;
 
 import java.io.PrintStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.CONTEXT_CONSUMER;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_RECEIVE;
 
 /**
  * JCSMP asynchronous message listener that bridges broker delivery to a Ballerina service.
@@ -58,13 +68,18 @@ final class SolaceMessageListener implements XMLMessageListener {
     private final Service nativeService;
     private final BObject caller;
     private final boolean autoAck;
+    private final String url;
+    private final String destination;
     private final ExecutorService dispatcher;
 
-    SolaceMessageListener(Runtime runtime, Service nativeService, BObject caller, boolean autoAck) {
+    SolaceMessageListener(Runtime runtime, Service nativeService, BObject caller, boolean autoAck, String url,
+                          String destination) {
         this.runtime = runtime;
         this.nativeService = nativeService;
         this.caller = caller;
         this.autoAck = autoAck;
+        this.url = url;
+        this.destination = destination;
         this.dispatcher = Executors.newSingleThreadExecutor(runnable -> {
             Thread thread = new Thread(runnable, "solace-listener-dispatch");
             thread.setDaemon(true);
@@ -88,15 +103,22 @@ final class SolaceMessageListener implements XMLMessageListener {
                     t instanceof Exception e ? e : new Exception(t))));
             return;
         }
-        submit(() -> deliver(message, ballerinaMessage));
+        // Reported on arrival, mirroring the pull-based consumer's receive(): counts messages delivered from the
+        // broker, independent of whether the service's onMessage call later succeeds or fails.
+        SolaceMetricsUtil.reportConsume(url, destination, CommonUtils.getPayloadSize(ballerinaMessage));
+        // Extracted here (arrival time) rather than inside tracingProperties(), since the latter is also used for
+        // conversion-failure / flow-error dispatches where no message (and so no trace-context) is available.
+        Map<String, String> traceContext = SolaceTracingUtil.extractTraceContextHeaders(ballerinaMessage);
+        submit(() -> deliver(message, ballerinaMessage, traceContext));
     }
 
-    private void deliver(BytesXMLMessage message, BMap<BString, Object> ballerinaMessage) {
+    private void deliver(BytesXMLMessage message, BMap<BString, Object> ballerinaMessage,
+                         Map<String, String> traceContext) {
         try {
-            Object result = invokeOnMessage(ballerinaMessage);
+            Object result = invokeOnMessage(ballerinaMessage, traceContext);
             if (result instanceof BError bError) {
                 // Processing failed: leave the message unsettled so guaranteed flows redeliver it.
-                dispatchError(bError);
+                dispatchError(bError, traceContext);
                 return;
             }
             // In AUTO_ACK mode the flow is created with client acknowledgement, so settle on success here.
@@ -104,10 +126,10 @@ final class SolaceMessageListener implements XMLMessageListener {
                 message.ackMessage();
             }
         } catch (BError bError) {
-            dispatchError(bError);
+            dispatchError(bError, traceContext);
         } catch (Throwable t) {
             dispatchError(CommonUtils.createError("Failed to dispatch message to service",
-                    t instanceof Exception e ? e : new Exception(t)));
+                    t instanceof Exception e ? e : new Exception(t)), traceContext);
         }
     }
 
@@ -116,8 +138,9 @@ final class SolaceMessageListener implements XMLMessageListener {
         submit(() -> dispatchError(CommonUtils.createError("Solace consumer flow error", exception)));
     }
 
-    private Object invokeOnMessage(BMap<BString, Object> ballerinaMessage) {
-        StrandMetadata metadata = new StrandMetadata(nativeService.isOnMessageMethodIsolated(), null);
+    private Object invokeOnMessage(BMap<BString, Object> ballerinaMessage, Map<String, String> traceContext) {
+        StrandMetadata metadata =
+                new StrandMetadata(nativeService.isOnMessageMethodIsolated(), tracingProperties(traceContext));
         if (nativeService.hasCaller()) {
             return runtime.callMethod(nativeService.getConsumerService(), ON_MESSAGE, metadata, ballerinaMessage,
                     caller);
@@ -126,13 +149,19 @@ final class SolaceMessageListener implements XMLMessageListener {
     }
 
     private void dispatchError(BError error) {
+        dispatchError(error, null);
+    }
+
+    private void dispatchError(BError error, Map<String, String> traceContext) {
+        SolaceMetricsUtil.reportConsumerError(url, destination, ERROR_TYPE_RECEIVE);
         if (nativeService.getOnError().isEmpty()) {
             ERR_OUT.println("Unexpected error occurred while message processing: " + error.getMessage());
             error.printStackTrace();
             return;
         }
         try {
-            StrandMetadata metadata = new StrandMetadata(nativeService.isOnErrorMethodIsolated(), null);
+            StrandMetadata metadata =
+                    new StrandMetadata(nativeService.isOnErrorMethodIsolated(), tracingProperties(traceContext));
             runtime.callMethod(nativeService.getConsumerService(), ON_ERROR, metadata, error);
         } catch (Throwable t) {
             // Surface secondary failures from the error handler instead of dropping them silently;
@@ -140,6 +169,30 @@ final class SolaceMessageListener implements XMLMessageListener {
             ERR_OUT.println("Unexpected error occurred while invoking the 'onError' method: "
                     + (t.getMessage() != null ? t.getMessage() : t));
         }
+    }
+
+    /**
+     * Seeds a fresh {@link SolaceObserverContext} into the strand properties so the runtime attaches it as the
+     * root span for the invoked {@code onMessage}/{@code onError} method - {@code runtime.callMethod} runs on a
+     * plain dispatch thread with no {@code Environment}, so the usual observer-context-of-current-frame attach
+     * point (used by the pull-based consumer actions) is unavailable here.
+     * <p>
+     * When the message carried a W3C traceparent (published by a Solace producer that had tracing enabled), it is
+     * seeded onto the context via {@code ObservabilityConstants.PROPERTY_TRACE_PROPERTIES} - the runtime's
+     * {@code TracingUtils.startObservation} reads this same property to extract a remote parent span, so the
+     * resulting span is linked as a child of the publisher's span instead of starting a new, disconnected trace.
+     */
+    private Map<String, Object> tracingProperties(Map<String, String> traceContext) {
+        if (!ObserveUtils.isTracingEnabled()) {
+            return null;
+        }
+        SolaceObserverContext ctx = new SolaceObserverContext(CONTEXT_CONSUMER, url, destination);
+        if (traceContext != null && !traceContext.isEmpty()) {
+            ctx.addProperty(ObservabilityConstants.PROPERTY_TRACE_PROPERTIES, traceContext);
+        }
+        Map<String, Object> properties = new HashMap<>();
+        properties.put(ObservabilityConstants.KEY_OBSERVER_CONTEXT, ctx);
+        return properties;
     }
 
     private void submit(Runnable task) {
