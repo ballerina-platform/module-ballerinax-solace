@@ -92,8 +92,18 @@ public class SolaceMetricsUtil {
         if (!ObserveUtils.isMetricsEnabled()) {
             return;
         }
-        SolaceObserverContext ctx = new SolaceObserverContext(CONTEXT_CONSUMER, getUrl(consumer),
-                getDestination(consumer));
+        reportConsume(getUrl(consumer), getDestination(consumer), size);
+    }
+
+    /**
+     * Reports a consumed message for the push-based listener path, which has no consumer {@link BObject} to read
+     * url/destination native data from - the caller (a {@code service}'s backing receiver) supplies them directly.
+     */
+    public static void reportConsume(String url, String destination, int size) {
+        if (!ObserveUtils.isMetricsEnabled()) {
+            return;
+        }
+        SolaceObserverContext ctx = new SolaceObserverContext(CONTEXT_CONSUMER, url, destination);
         incrementCounter(ctx, METRIC_CONSUMED[0], METRIC_CONSUMED[1], 1);
         incrementCounter(ctx, METRIC_CONSUMED_SIZE[0], METRIC_CONSUMED_SIZE[1], size);
     }
@@ -121,6 +131,18 @@ public class SolaceMetricsUtil {
             return;
         }
         SolaceObserverContext ctx = new SolaceObserverContext(CONTEXT_CONSUMER, getUrl(consumer));
+        ctx.addTag(TAG_KEY_ERROR_TYPE, errorType);
+        incrementCounter(ctx, METRIC_ERRORS[0], METRIC_ERRORS[1], 1);
+    }
+
+    /**
+     * Reports a consumer error for the push-based listener path (see {@link #reportConsume(String, String, int)}).
+     */
+    public static void reportConsumerError(String url, String destination, String errorType) {
+        if (!ObserveUtils.isMetricsEnabled()) {
+            return;
+        }
+        SolaceObserverContext ctx = new SolaceObserverContext(CONTEXT_CONSUMER, url, destination);
         ctx.addTag(TAG_KEY_ERROR_TYPE, errorType);
         incrementCounter(ctx, METRIC_ERRORS[0], METRIC_ERRORS[1], 1);
     }
