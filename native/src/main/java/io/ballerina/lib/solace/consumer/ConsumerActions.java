@@ -222,8 +222,9 @@ public class ConsumerActions {
                 return bError;
             }
             if (result != null) {
-                int size = getPayloadSize((BMap<BString, Object>) result);
-                SolaceMetricsUtil.reportConsume(consumer, size);
+                BMap<BString, Object> receivedMessage = (BMap<BString, Object>) result;
+                SolaceMetricsUtil.reportConsume(consumer, getPayloadSize(receivedMessage));
+                SolaceTracingUtil.tagUpstreamTraceContext(env, receivedMessage);
             }
             return result;
         } catch (Exception e) {
@@ -281,8 +282,9 @@ public class ConsumerActions {
                 return bError;
             }
             if (result != null) {
-                int size = getPayloadSize((BMap<BString, Object>) result);
-                SolaceMetricsUtil.reportConsume(consumer, size);
+                BMap<BString, Object> receivedMessage = (BMap<BString, Object>) result;
+                SolaceMetricsUtil.reportConsume(consumer, getPayloadSize(receivedMessage));
+                SolaceTracingUtil.tagUpstreamTraceContext(env, receivedMessage);
             }
             return result;
         } catch (Exception e) {
