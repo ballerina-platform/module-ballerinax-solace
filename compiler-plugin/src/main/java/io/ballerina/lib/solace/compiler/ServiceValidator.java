@@ -94,7 +94,7 @@ final class ServiceValidator {
 
     private void validateOnMessage(FunctionDefinitionNode function) {
         List<ParameterSymbol> parameters = parameters(function);
-        if (parameters.size() < 1 || parameters.size() > 2 || parameters.stream()
+        if (hasRestParameter(function) || parameters.size() < 1 || parameters.size() > 2 || parameters.stream()
                 .anyMatch(parameter -> parameter.paramKind() != ParameterKind.REQUIRED)) {
             report(DiagnosticCode.INVALID_ON_MESSAGE_PARAMETERS, function);
             return;
@@ -114,7 +114,8 @@ final class ServiceValidator {
 
     private void validateOnError(FunctionDefinitionNode function) {
         List<ParameterSymbol> parameters = parameters(function);
-        if (parameters.size() != 1 || parameters.get(0).paramKind() != ParameterKind.REQUIRED ||
+        if (hasRestParameter(function) || parameters.size() != 1 ||
+                parameters.get(0).paramKind() != ParameterKind.REQUIRED ||
                 !PluginUtils.isSolaceType(parameters.get(0).typeDescriptor(), "Error")) {
             report(DiagnosticCode.INVALID_ON_ERROR_PARAMETER, function);
         }
@@ -141,6 +142,11 @@ final class ServiceValidator {
     private List<ParameterSymbol> parameters(FunctionDefinitionNode function) {
         return methodSymbol(function).map(MethodSymbol::typeDescriptor)
                 .flatMap(FunctionTypeSymbol::params).orElse(List.of());
+    }
+
+    private boolean hasRestParameter(FunctionDefinitionNode function) {
+        return methodSymbol(function).map(MethodSymbol::typeDescriptor)
+                .flatMap(FunctionTypeSymbol::restParam).isPresent();
     }
 
     private Optional<MethodSymbol> methodSymbol(FunctionDefinitionNode function) {

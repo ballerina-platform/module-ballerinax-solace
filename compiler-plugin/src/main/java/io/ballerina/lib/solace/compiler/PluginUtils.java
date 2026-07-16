@@ -61,13 +61,16 @@ final class PluginUtils {
 
     static boolean isSolaceType(TypeSymbol type, String typeName) {
         if (type instanceof TypeReferenceTypeSymbol typeReference) {
-            return typeName.equals(typeReference.getName().orElse(typeReference.name())) &&
-                    isSolaceModule(typeReference.getModule());
+            if (typeName.equals(typeReference.getName().orElse(typeReference.name())) &&
+                    isSolaceModule(typeReference.getModule())) {
+                return true;
+            }
+            return isSolaceType(typeReference.typeDescriptor(), typeName);
         }
         if (type instanceof IntersectionTypeSymbol intersection) {
             return isSolaceType(intersection.effectiveTypeDescriptor(), typeName);
         }
-        return false;
+        return typeName.equals(type.getName().orElse("")) && isSolaceModule(type.getModule());
     }
 
     static boolean isMessageType(TypeSymbol type) {

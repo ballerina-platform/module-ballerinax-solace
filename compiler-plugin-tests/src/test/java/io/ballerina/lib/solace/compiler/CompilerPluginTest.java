@@ -75,6 +75,20 @@ public class CompilerPluginTest {
     }
 
     @Test
+    public void testRestParameterValidation() {
+        DiagnosticResult result = compile("rest_parameter_validation").diagnosticResult();
+        List<String> codes = result.errors().stream().map(diagnostic -> diagnostic.diagnosticInfo().code()).toList();
+        Assert.assertEquals(codes, List.of("SOLACE_105", "SOLACE_108"));
+    }
+
+    @Test
+    public void testAliasedServiceValidation() {
+        DiagnosticResult result = compile("aliased_service_validation").diagnosticResult();
+        List<String> codes = result.errors().stream().map(diagnostic -> diagnostic.diagnosticInfo().code()).toList();
+        Assert.assertEquals(codes, List.of("SOLACE_101", "SOLACE_101"));
+    }
+
+    @Test
     public void testConfigurationValidationDiagnostics() {
         DiagnosticResult result = compile("configuration_validation").diagnosticResult();
         List<String> codes = result.errors().stream().map(diagnostic -> diagnostic.diagnosticInfo().code()).toList();
