@@ -120,6 +120,12 @@ public class CommonUtils {
 
     /**
      * Computes the best-effort byte size of a Ballerina Solace message's payload, for observability metrics.
+     * <p>
+     * A message {@code payload} is {@code anydata}, which the connector serializes to one of the wire shapes
+     * {@code byte[] | string | map<Value>} (see the producer's {@code convertPayload}). Only the two raw
+     * byte-oriented shapes are measured exactly - a {@code byte[]} by its length and a {@code string} by its
+     * UTF-8 byte length. A structured payload ({@code map<Value>}/record, or a data-bound consumer type) has no
+     * well-defined serialized size at this layer, so it is reported as 0 rather than estimated.
      *
      * @param message the Ballerina message record
      * @return the payload size in bytes, or 0 if it cannot be determined
@@ -131,12 +137,14 @@ public class CommonUtils {
         }
         Object payload = message.get(PAYLOAD_KEY);
         if (payload instanceof BArray arr) {
+            // byte[] payload: the wire size is exactly the array length.
             return arr.size();
         }
         if (payload instanceof BString str) {
+            // string payload: sized as its UTF-8 encoding, matching how it is written to the broker.
             return str.getValue().getBytes(StandardCharsets.UTF_8).length;
         }
-        // Best-effort only: exact byte-accounting for other payload shapes (record/map/etc.) is not attempted.
+        // Structured payload (map<Value>/record or a data-bound type): no exact wire size here, so report 0.
         return 0;
     }
 
