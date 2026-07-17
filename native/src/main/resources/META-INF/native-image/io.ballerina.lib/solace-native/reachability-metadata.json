@@ -8251,13 +8251,6 @@
         "typeReached": "io.netty.handler.codec.socksx.v4.DefaultSocks4CommandRequest"
       },
       "module": "java.base",
-      "glob": "jdk/internal/icu/impl/data/icudt76b/uprops.icu"
-    },
-    {
-      "condition": {
-        "typeReached": "io.netty.handler.codec.socksx.v4.DefaultSocks4CommandRequest"
-      },
-      "module": "java.base",
       "glob": "sun/net/idn/uidna.spp"
     },
     {
@@ -8313,13 +8306,6 @@
         "typeReached": "io.netty.handler.proxy.ProxyHandler"
       },
       "glob": "META-INF/services/java.time.zone.ZoneRulesProvider"
-    },
-    {
-      "condition": {
-        "typeReached": "io.netty.handler.proxy.Socks4ProxyHandler"
-      },
-      "module": "java.base",
-      "glob": "jdk/internal/icu/impl/data/icudt76b/uprops.icu"
     },
     {
       "condition": {

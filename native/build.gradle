@@ -68,3 +68,60 @@ spotbugsTest {
 }
 
 compileJava {}
+
+def nativeImageMetadataDir = file('src/main/resources/META-INF/native-image/io.ballerina.lib/solace-native')
+
+tasks.register('verifyNativeImageMetadata') {
+    group = 'verification'
+    description = 'Verifies that production native-image metadata excludes test and JDK-version-specific entries.'
+
+    doLast {
+        def jsonSlurper = new groovy.json.JsonSlurper()
+        def violations = []
+        def forbiddenTypePrefixes = ['ballerinax.solace$test.', 'org.ballerinalang.test.']
+        def accessFilter = jsonSlurper.parse(file('../build-config/graalvm/access-filter.json'))
+        def excludedClasses = accessFilter.rules.collect { it.excludeClasses }
+
+        def requiredFilterRules = ['ballerinax.solace$test.**', 'org.ballerinalang.test.**']
+        requiredFilterRules.each { rule ->
+            if (!excludedClasses.contains(rule)) {
+                violations << "access-filter.json does not exclude ${rule}"
+            }
+        }
+
+        def reflectConfig = jsonSlurper.parse(new File(nativeImageMetadataDir, 'reflect-config.json'))
+        reflectConfig.each { entry ->
+            def name = entry.name ?: ''
+            if (forbiddenTypePrefixes.any { prefix -> name.startsWith(prefix) }) {
+                violations << "reflect-config.json contains test entry: ${name}"
+            }
+        }
+
+        def jniConfig = jsonSlurper.parse(new File(nativeImageMetadataDir, 'jni-config.json'))
+        jniConfig.each { entry ->
+            if (entry.name == 'org.ballerinalang.test.runtime.BTestMain') {
+                violations << 'jni-config.json contains BTestMain'
+            }
+        }
+
+        def resourceConfig = jsonSlurper.parse(new File(nativeImageMetadataDir, 'resource-config.json'))
+        resourceConfig.resources.includes.each { entry ->
+            if ((entry.pattern ?: '') =~ /icudt\d+b/) {
+                violations << "resource-config.json contains versioned ICU resource: ${entry.pattern}"
+            }
+        }
+
+        def reachabilityMetadata = jsonSlurper.parse(new File(nativeImageMetadataDir, 'reachability-metadata.json'))
+        reachabilityMetadata.resources.each { entry ->
+            if ((entry.glob ?: '') =~ /icudt\d+b/) {
+                violations << "reachability-metadata.json contains versioned ICU resource: ${entry.glob}"
+            }
+        }
+
+        if (!violations.isEmpty()) {
+            throw new GradleException("Native-image metadata hygiene violations:\n - ${violations.join('\n - ')}")
+        }
+    }
+}
+
+check.dependsOn verifyNativeImageMetadata

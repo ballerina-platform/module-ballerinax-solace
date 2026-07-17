@@ -1,0 +1,10 @@
+{
+  "rules": [
+    {
+      "excludeClasses": "ballerinax.solace$test.**"
+    },
+    {
+      "excludeClasses": "org.ballerinalang.test.**"
+    }
+  ]
+}
