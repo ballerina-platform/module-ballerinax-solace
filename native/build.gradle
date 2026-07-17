@@ -29,6 +29,10 @@ dependencies {
     checkstyle "com.puppycrawl.tools:checkstyle:${checkstylePluginVersion}"
 
     implementation group: 'org.ballerinalang', name: 'ballerina-runtime', version: "${ballerinaLangVersion}"
+    // OpenTelemetry context/propagation API - shaded into the Ballerina runtime at run time (declared 'runtime'
+    // scope by ballerina-runtime), so it is compileOnly here. Needed to read the active provider's propagator
+    // fields via TracersStore, keeping trace-context propagation provider-agnostic (not hardcoded to W3C).
+    compileOnly group: 'io.opentelemetry', name: 'opentelemetry-context', version: "${openTelemetryVersion}"
     implementation group: 'org.ballerinalang', name: 'ballerina-lang', version: "${ballerinaLangVersion}"
     implementation group: 'org.ballerinalang', name: 'value', version: "${ballerinaLangVersion}"
     implementation group: 'com.solacesystems', name: 'sol-jcsmp', version: "${solaceJcsmpVersion}"
