@@ -19,6 +19,10 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"ballerinax.solace$test.0.$_init",
+  "methods":[{"name":"$getTestExecutionState","parameterTypes":[] }, {"name":"main","parameterTypes":["java.lang.String[]"] }]
+},
+{
   "name":"com.aayushatharva.brotli4j.Brotli4jLoader"
 },
 {
@@ -471,6 +475,21 @@
 },
 {
   "name":"org.apache.commons.pool.impl.EvictionTimer"
+},
+{
+  "name":"org.ballerinalang.test.runtime.entity.Test",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.ballerinalang.test.runtime.entity.TestGroup",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.ballerinalang.test.runtime.entity.TestSuite",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
   "name":"sun.misc.Unsafe",

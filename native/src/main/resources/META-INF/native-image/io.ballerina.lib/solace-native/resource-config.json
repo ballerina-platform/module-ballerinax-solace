@@ -31,6 +31,12 @@
   }, {
     "pattern":"\\Qlogging.properties\\E"
   }, {
+    "pattern":"java.base:\\Qjdk/internal/icu/impl/data/icudt72b/nfc.nrm\\E"
+  }, {
+    "pattern":"java.base:\\Qjdk/internal/icu/impl/data/icudt72b/nfkc.nrm\\E"
+  }, {
+    "pattern":"java.base:\\Qjdk/internal/icu/impl/data/icudt72b/uprops.icu\\E"
+  }, {
     "pattern":"java.base:\\Qsun/net/idn/uidna.spp\\E"
   }]},
   "bundles":[{
