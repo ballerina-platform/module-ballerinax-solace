@@ -190,8 +190,7 @@ public class ProducerActions {
     }
 
     /**
-     * Injects the current span's W3C traceparent/tracestate into the outbound message's properties, so a consumer
-     * on the other side of the broker can correlate (or, for a service listener, link) its trace with this publish.
+     * Injects the current span's trace context into the outbound message's properties.
      */
     private static void injectTraceContext(Environment env, XMLMessage jcsmpMessage) throws Exception {
         Map<String, String> traceHeaders = SolaceTracingUtil.getTraceContextHeaders(env);

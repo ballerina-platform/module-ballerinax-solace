@@ -103,11 +103,7 @@ final class SolaceMessageListener implements XMLMessageListener {
                     t instanceof Exception e ? e : new Exception(t))));
             return;
         }
-        // Reported on arrival, mirroring the pull-based consumer's receive(): counts messages delivered from the
-        // broker, independent of whether the service's onMessage call later succeeds or fails.
         SolaceMetricsUtil.reportConsume(url, destination, CommonUtils.getPayloadSize(ballerinaMessage));
-        // Extracted here (arrival time) rather than inside tracingProperties(), since the latter is also used for
-        // conversion-failure / flow-error dispatches where no message (and so no trace-context) is available.
         Map<String, String> traceContext = SolaceTracingUtil.extractTraceContextHeaders(ballerinaMessage);
         submit(() -> deliver(message, ballerinaMessage, traceContext));
     }
@@ -171,17 +167,6 @@ final class SolaceMessageListener implements XMLMessageListener {
         }
     }
 
-    /**
-     * Seeds a fresh {@link SolaceObserverContext} into the strand properties so the runtime attaches it as the
-     * root span for the invoked {@code onMessage}/{@code onError} method - {@code runtime.callMethod} runs on a
-     * plain dispatch thread with no {@code Environment}, so the usual observer-context-of-current-frame attach
-     * point (used by the pull-based consumer actions) is unavailable here.
-     * <p>
-     * When the message carried a W3C traceparent (published by a Solace producer that had tracing enabled), it is
-     * seeded onto the context via {@code ObservabilityConstants.PROPERTY_TRACE_PROPERTIES} - the runtime's
-     * {@code TracingUtils.startObservation} reads this same property to extract a remote parent span, so the
-     * resulting span is linked as a child of the publisher's span instead of starting a new, disconnected trace.
-     */
     private Map<String, Object> tracingProperties(Map<String, String> traceContext) {
         if (!ObserveUtils.isTracingEnabled()) {
             return null;
