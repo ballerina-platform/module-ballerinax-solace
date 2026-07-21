@@ -1,0 +1,4 @@
+[package]
+org = "solace_test"
+name = "rest_parameter_validation"
+version = "0.1.0"

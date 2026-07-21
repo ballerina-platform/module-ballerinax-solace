@@ -251,38 +251,6 @@ function testListenerClientAckWithCaller() returns error? {
 }
 
 // ========================================
-// Negative: service without @ServiceConfig annotation
-// ========================================
-@test:Config {groups: ["listener", "negative"]}
-function testListenerAttachWithoutAnnotation() returns error? {
-    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
-    Service noAnnotationService = service object {
-        remote function onMessage(Message message) returns error? {
-        }
-    };
-    error? result = solaceListener.attach(noAnnotationService);
-    test:assertTrue(result is error, "Attaching a service without @ServiceConfig should fail");
-    check solaceListener.gracefulStop();
-}
-
-// ========================================
-// Negative: service missing the onMessage method
-// ========================================
-@test:Config {groups: ["listener", "negative"]}
-function testListenerAttachWithoutOnMessage() returns error? {
-    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
-    Service noOnMessageService = @ServiceConfig {
-        queueName: LISTENER_AUTOACK_QUEUE
-    } service object {
-        remote function onEvent(Message message) returns error? {
-        }
-    };
-    error? result = solaceListener.attach(noOnMessageService);
-    test:assertTrue(result is error, "Attaching a service without an 'onMessage' method should fail");
-    check solaceListener.gracefulStop();
-}
-
-// ========================================
 // Durable topic endpoint service
 // ========================================
 final Recorder durableTopicRecorder = new;

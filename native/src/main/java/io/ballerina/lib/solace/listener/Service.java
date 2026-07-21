@@ -19,20 +19,13 @@
 package io.ballerina.lib.solace.listener;
 
 import io.ballerina.lib.solace.ModuleUtils;
-import io.ballerina.lib.solace.common.CommonUtils;
 import io.ballerina.runtime.api.Module;
-import io.ballerina.runtime.api.Runtime;
-import io.ballerina.runtime.api.creators.TypeCreator;
-import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.types.AnnotatableType;
-import io.ballerina.runtime.api.types.Parameter;
 import io.ballerina.runtime.api.types.RemoteMethodType;
 import io.ballerina.runtime.api.types.ServiceType;
 import io.ballerina.runtime.api.types.Type;
-import io.ballerina.runtime.api.types.TypeTags;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.utils.TypeUtils;
-import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
@@ -41,21 +34,13 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
- * Native representation of the Ballerina Solace listener service object. Performs the service-shape
- * validation ({@code @solace:ServiceConfig} presence, {@code onMessage}/{@code onError} arity and
- * parameter types) that, absent a compiler plugin, must be done at runtime via reflection over
- * {@link RemoteMethodType}/{@link Parameter}.
+ * Native representation of a compiler-validated Ballerina Solace listener service object.
  */
 public class Service {
 
-    private static final String IS_SOLACE_MESSAGE_FUNCTION = "isSolaceMessage";
     private static final String SERVICE_CONFIG_ANNOTATION_NAME = "ServiceConfig";
     private static final String ON_MESSAGE = "onMessage";
     private static final String ON_ERROR = "onError";
-
-    private static final Type CALLER_TYPE = ValueCreator.createObjectValue(
-            ModuleUtils.getModule(), "Caller").getOriginalType();
-    private static final Type ERROR_TYPE = TypeCreator.createErrorType("Error", ModuleUtils.getModule());
 
     private final BObject consumerService;
     private final ServiceType serviceType;
@@ -74,109 +59,8 @@ public class Service {
                 .filter(m -> ON_ERROR.equals(m.getName()))
                 .findFirst();
 
-        boolean callerFound = false;
-        Type payloadType = null;
-        for (Parameter parameter : onMessage.getParameters()) {
-            Type referredType = TypeUtils.getReferredType(parameter.type);
-            if (referredType.getTag() == TypeTags.OBJECT_TYPE_TAG) {
-                callerFound = true;
-            } else {
-                payloadType = referredType;
-            }
-        }
-        this.hasCaller = callerFound;
-        this.messagePayloadType = payloadType;
-    }
-
-    /**
-     * Validates that a service attached to the listener has the expected shape: the
-     * {@code @solace:ServiceConfig} annotation, no resource methods, and one or two remote methods
-     * named {@code onMessage} (required) / {@code onError} (optional) with parameter types that are
-     * either a {@code solace:Message} subtype or {@code solace:Caller}.
-     *
-     * @throws BError if the service does not conform to the expected shape
-     */
-    public static void validateService(Runtime runtime, BObject consumerService) throws BError {
-        ServiceType serviceType = (ServiceType) TypeUtils.getImpliedType(TypeUtils.getType(consumerService));
-
-        if (getServiceConfigAnnotation(consumerService) == null) {
-            throw CommonUtils.createError(
-                    "The @solace:ServiceConfig annotation with a queue or topic subscription is required");
-        }
-
-        if (serviceType.getResourceMethods().length > 0) {
-            throw CommonUtils.createError("Solace service cannot have resource methods.");
-        }
-
-        RemoteMethodType[] remoteMethods = serviceType.getRemoteMethods();
-        if (remoteMethods.length < 1 || remoteMethods.length > 2) {
-            throw CommonUtils.createError("Solace service must have exactly one or two remote methods.");
-        }
-
-        boolean hasOnMessage = false;
-        for (RemoteMethodType remoteMethod : remoteMethods) {
-            String remoteMethodName = remoteMethod.getName();
-            if (ON_MESSAGE.equals(remoteMethodName)) {
-                hasOnMessage = true;
-                validateOnMessageMethod(runtime, remoteMethod);
-            } else if (ON_ERROR.equals(remoteMethodName)) {
-                validateOnErrorMethod(remoteMethod);
-            } else {
-                throw CommonUtils.createError(String.format("Invalid remote method name: %s.", remoteMethodName));
-            }
-        }
-
-        if (!hasOnMessage) {
-            throw CommonUtils.createError("The service must declare a remote 'onMessage' method");
-        }
-    }
-
-    private static void validateOnMessageMethod(Runtime runtime, RemoteMethodType onMessageMethod) {
-        Parameter[] parameters = onMessageMethod.getParameters();
-        if (parameters.length < 1 || parameters.length > 2) {
-            throw CommonUtils.createError("onMessage method can only have either one or two parameters.");
-        }
-
-        int messageCount = 0;
-        for (Parameter parameter : parameters) {
-            Type parameterType = TypeUtils.getReferredType(parameter.type);
-            if (isSolaceMessage(runtime, parameterType)) {
-                messageCount++;
-                continue;
-            }
-            if (TypeUtils.isSameType(CALLER_TYPE, parameterType)) {
-                continue;
-            }
-            throw CommonUtils.createError(
-                    "onMessage method parameters must be of type 'solace:Message' " +
-                            "(or its subtype) or 'solace:Caller'.");
-        }
-
-        if (messageCount == 0) {
-            throw CommonUtils.createError("Required parameter 'solace:Message' can not be found.");
-        }
-        if (messageCount > 1) {
-            throw CommonUtils.createError(
-                    "onMessage method must not declare more than one 'solace:Message' parameter.");
-        }
-    }
-
-    private static boolean isSolaceMessage(Runtime runtime, Type paramType) {
-        return (boolean) runtime.callFunction(ModuleUtils.getModule(), IS_SOLACE_MESSAGE_FUNCTION, null,
-                ValueCreator.createTypedescValue(paramType));
-    }
-
-    private static void validateOnErrorMethod(RemoteMethodType onErrorMethod) {
-        if (onErrorMethod.getParameters().length != 1) {
-            throw CommonUtils.createError(
-                    "onError method must have exactly one parameter of type 'solace:Error'.");
-        }
-
-        Parameter parameter = onErrorMethod.getParameters()[0];
-        Type parameterType = TypeUtils.getReferredType(parameter.type);
-        if (!TypeUtils.isSameType(ERROR_TYPE, parameterType)) {
-            throw CommonUtils.createError("onError method parameter must be of type 'solace:Error'.");
-        }
+        this.hasCaller = onMessage.getParameters().length == 2;
+        this.messagePayloadType = TypeUtils.getReferredType(onMessage.getParameters()[0].type);
     }
 
     /**

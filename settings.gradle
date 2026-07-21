@@ -47,10 +47,14 @@ rootProject.name = 'module-ballerinax-solace'
 include ":checkstyle"
 include ":${projectName}-native"
 include ":${projectName}-ballerina"
+include ":${projectName}-compiler-plugin"
+include ":${projectName}-compiler-plugin-tests"
 
 project(':checkstyle').projectDir = file("build-config${File.separator}checkstyle")
 project(":${projectName}-native").projectDir = file('native')
 project(":${projectName}-ballerina").projectDir = file('ballerina')
+project(":${projectName}-compiler-plugin").projectDir = file('compiler-plugin')
+project(":${projectName}-compiler-plugin-tests").projectDir = file('compiler-plugin-tests')
 
 gradleEnterprise {
     buildScan {
