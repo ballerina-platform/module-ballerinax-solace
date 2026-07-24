@@ -224,7 +224,7 @@ public class ConsumerActions {
             if (result != null) {
                 BMap<BString, Object> receivedMessage = (BMap<BString, Object>) result;
                 SolaceMetricsUtil.reportConsume(consumer, getPayloadSize(receivedMessage));
-                SolaceTracingUtil.tagUpstreamTraceContext(env, receivedMessage);
+                SolaceTracingUtil.startConsumerObservation(env, consumer, receivedMessage);;
             }
             return result;
         } catch (Exception e) {
@@ -284,7 +284,7 @@ public class ConsumerActions {
             if (result != null) {
                 BMap<BString, Object> receivedMessage = (BMap<BString, Object>) result;
                 SolaceMetricsUtil.reportConsume(consumer, getPayloadSize(receivedMessage));
-                SolaceTracingUtil.tagUpstreamTraceContext(env, receivedMessage);
+                SolaceTracingUtil.startConsumerObservation(env, consumer, receivedMessage);;
             }
             return result;
         } catch (Exception e) {
@@ -316,6 +316,7 @@ public class ConsumerActions {
             if (result instanceof BError) {
                 return (BError) result;
             }
+            SolaceTracingUtil.stopConsumerObservation(consumer);
             return null;
         } catch (Exception e) {
             SolaceMetricsUtil.reportConsumerError(consumer, ERROR_TYPE_ACKNOWLEDGE);
@@ -352,6 +353,7 @@ public class ConsumerActions {
             if (result instanceof BError) {
                 return (BError) result;
             }
+            SolaceTracingUtil.stopConsumerObservation(consumer);
             return null;
         } catch (Exception e) {
             SolaceMetricsUtil.reportConsumerError(consumer, ERROR_TYPE_NACK);

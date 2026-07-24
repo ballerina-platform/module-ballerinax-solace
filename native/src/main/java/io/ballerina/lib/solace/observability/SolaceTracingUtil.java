@@ -19,12 +19,15 @@
 package io.ballerina.lib.solace.observability;
 
 import io.ballerina.runtime.api.Environment;
+import io.ballerina.runtime.api.Module;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
+import io.ballerina.runtime.observability.ObservabilityConstants;
 import io.ballerina.runtime.observability.ObserveUtils;
 import io.ballerina.runtime.observability.ObserverContext;
+import io.ballerina.runtime.observability.metrics.Tag;
 import io.ballerina.runtime.observability.tracer.TracersStore;
 
 import java.util.Collection;
@@ -32,9 +35,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import static io.ballerina.lib.solace.common.Constants.NATIVE_INFLIGHT_OBS;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.PROPERTIES_KEY;
 import static io.ballerina.lib.solace.observability.SolaceMetricsUtil.getDestination;
 import static io.ballerina.lib.solace.observability.SolaceMetricsUtil.getUrl;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.CONTEXT_CONSUMER;
 import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.TAG_KEY_DESTINATION;
 import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.TAG_KEY_URL;
 
@@ -156,6 +161,73 @@ public class SolaceTracingUtil {
             return;
         }
         carrier.forEach((key, value) -> ctx.addTag(TAG_KEY_UPSTREAM_PREFIX + key, value));
+    }
+
+    /**
+     * Starts a CONSUMER span for a message just returned by a pull-based {@code receive} and keeps it open,
+     * bracketing the caller's processing of that message until {@link #stopConsumerObservation} is called
+     * (at {@code ack}/{@code nack}).
+     *
+     * @param env      the Ballerina environment of the receiving native call
+     * @param consumer the Ballerina consumer object (used to stash the in-flight context)
+     * @param message  the received Ballerina message record
+     */
+
+    public static void startConsumerObservation(Environment env, BObject consumer, BMap<BString, Object> message) {
+        if (!ObserveUtils.isTracingEnabled()) {
+            return;
+        }
+        String url = getUrl(consumer);
+        String destination = getDestination(consumer);
+        SolaceObserverContext ctx = new SolaceObserverContext(CONTEXT_CONSUMER, url, destination);
+        Map<String, String> upstream = extractTraceContextHeaders(message);
+        if (!upstream.isEmpty()) {
+            ctx.addProperty(ObservabilityConstants.PROPERTY_TRACE_PROPERTIES, upstream);
+        }
+        ObserverContext previous = ObserveUtils.getObserverContextOfCurrentFrame(env);
+        ObserveUtils.setObserverContextToCurrentFrame(env, ctx);
+        Module module = env.getCurrentModule();
+        ObserveUtils.startResourceObservation(env,
+                StringUtils.fromString(module.getOrg() + "/" + module.getName()),
+                StringUtils.fromString("MessageConsumer:receive"),
+                0L, 0L,
+                StringUtils.fromString("solace"),
+                StringUtils.fromString("receive"),
+                StringUtils.fromString("consume"),
+                true, false);
+        inheritTag(previous, ctx, ObservabilityConstants.TAG_KEY_SRC_POSITION);
+        inheritTag(previous, ctx, ObservabilityConstants.TAG_KEY_SRC_MODULE);
+        inheritTag(previous, ctx, ObservabilityConstants.TAG_KEY_SRC_OBJECT_NAME);
+        inheritTag(previous, ctx, ObservabilityConstants.TAG_KEY_SRC_FUNCTION_NAME);
+        consumer.addNativeData(NATIVE_INFLIGHT_OBS, ctx);
+    
+    }
+
+    private static void inheritTag(ObserverContext from, ObserverContext to, String key) {
+        if (from == null) {
+            return;
+        }
+        Tag tag = from.getTag(key);
+        if (tag != null) {
+            to.addTag(key, tag.getValue());
+        }
+    }
+
+
+    /**
+     * Finishes the in-flight consumer span started by {@link #startConsumerObservation}, if any.
+     *
+     * @param consumer the Ballerina consumer object holding the in-flight context
+     */
+    public static void stopConsumerObservation(BObject consumer) {
+        if (!ObserveUtils.isTracingEnabled()) {
+            return;
+        }
+        Object stored = consumer.getNativeData(NATIVE_INFLIGHT_OBS);
+        if (stored instanceof ObserverContext ctx) {
+            ObserveUtils.stopObservationWithContext(ctx);
+            consumer.addNativeData(NATIVE_INFLIGHT_OBS, null);
+        }
     }
 
     private static void putIfPresent(Map<String, String> carrier, BMap<BString, Object> props, String key) {
