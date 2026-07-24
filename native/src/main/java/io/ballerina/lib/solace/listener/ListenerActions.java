@@ -176,8 +176,10 @@ public class ListenerActions {
             caller.addNativeData(NATIVE_TX_SESSION, txSession);
             caller.addNativeData(NATIVE_CLOSED, false);
 
+            String url = (String) listener.getNativeData(NATIVE_URL);
+            String destinationName = ConsumerUtils.extractDestinationName(subscriptionConfig);
             SolaceMessageListener messageListener =
-                    new SolaceMessageListener(runtime, nativeService, caller, autoAck);
+                    new SolaceMessageListener(runtime, nativeService, caller, autoAck, url, destinationName);
 
             AttachedService attached = createReceiver(session, txSession, isTransacted, subscriptionConfig,
                     messageListener);

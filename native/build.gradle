@@ -29,6 +29,7 @@ dependencies {
     checkstyle "com.puppycrawl.tools:checkstyle:${checkstylePluginVersion}"
 
     implementation group: 'org.ballerinalang', name: 'ballerina-runtime', version: "${ballerinaLangVersion}"
+    compileOnly group: 'io.opentelemetry', name: 'opentelemetry-context', version: "${openTelemetryVersion}"
     implementation group: 'org.ballerinalang', name: 'ballerina-lang', version: "${ballerinaLangVersion}"
     implementation group: 'org.ballerinalang', name: 'value', version: "${ballerinaLangVersion}"
     implementation group: 'com.solacesystems', name: 'sol-jcsmp', version: "${solaceJcsmpVersion}"

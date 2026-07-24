@@ -39,6 +39,7 @@ import static io.ballerina.lib.solace.common.Constants.NATIVE_DESTINATION;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_FLOW;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_SESSION;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_SUBSCRIPTION_TYPE;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.UNKNOWN;
 
 /**
  * Utility class for consumer-related operations.
@@ -48,6 +49,23 @@ public class ConsumerUtils {
     public static final String SUBSCRIPTION_TYPE_QUEUE = "QUEUE";
     public static final String SUBSCRIPTION_TYPE_DIRECT_TOPIC = "DIRECT_TOPIC";
     public static final String SUBSCRIPTION_TYPE_DURABLE_TOPIC = "DURABLE_TOPIC";
+
+    /**
+     * Extracts the destination name (queue or topic) from a subscription config, for observability tags.
+     *
+     * @param subscriptionConfig the consumer subscription configuration
+     * @return the queue or topic name, or {@code UNKNOWN} if it cannot be determined
+     */
+    public static String extractDestinationName(ConsumerSubscriptionConfig subscriptionConfig) {
+        if (subscriptionConfig instanceof QueueConsumerConfig queueConfig) {
+            String name = queueConfig.queueName();
+            return name != null ? name : UNKNOWN;
+        } else if (subscriptionConfig instanceof TopicConsumerConfig topicConfig) {
+            String name = topicConfig.topicName();
+            return name != null ? name : UNKNOWN;
+        }
+        return UNKNOWN;
+    }
 
     /**
      * Configures common flow properties from a consumer subscription config. Applies to both queue and durable topic
