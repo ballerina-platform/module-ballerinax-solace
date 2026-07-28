@@ -233,7 +233,7 @@ function testListenerClientAckWithCaller() returns error? {
     check solaceListener.'start();
     // Let the flow/subscription become fully active before publishing, so the first message is not
     // missed under load (a topic subscription that is not yet active does not capture the message).
-    runtime:sleep(2);
+    runtime:sleep(5);
 
     string payload = "listener-clientack-payload";
     check publish({queueName: LISTENER_CLIENTACK_QUEUE}, payload, PERSISTENT);
