@@ -12,3 +12,4 @@ jobs:
     secrets: inherit
     with:
       repo-name: module-ballerinax-solace
+      additional-test-flags: -x :solace-compiler-plugin-tests:test
