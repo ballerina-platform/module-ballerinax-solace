@@ -46,7 +46,7 @@ public class CompilerPluginTest {
         Diagnostic diagnostic = result.errors().iterator().next();
         Assert.assertEquals(diagnostic.diagnosticInfo().code(), "SOLACE_101");
         Assert.assertEquals(diagnostic.message(), "service must have the 'solace:ServiceConfig' annotation");
-        Assert.assertEquals(diagnostic.location().lineRange().toString(), "(2:32,5:1)");
+        Assert.assertEquals(diagnostic.location().lineRange().toString(), "(18:32,21:1)");
     }
 
     @Test
