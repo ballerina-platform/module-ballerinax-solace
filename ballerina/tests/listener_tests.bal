@@ -233,7 +233,7 @@ function testListenerClientAckWithCaller() returns error? {
     check solaceListener.'start();
     // Let the flow/subscription become fully active before publishing, so the first message is not
     // missed under load (a topic subscription that is not yet active does not capture the message).
-    runtime:sleep(2);
+    runtime:sleep(5);
 
     string payload = "listener-clientack-payload";
     check publish({queueName: LISTENER_CLIENTACK_QUEUE}, payload, PERSISTENT);
@@ -248,38 +248,6 @@ function testListenerClientAckWithCaller() returns error? {
     boolean queueEmpty = check queueIsEmpty(LISTENER_CLIENTACK_QUEUE);
     test:assertTrue(received, "Client-ack service should have received the message");
     test:assertTrue(queueEmpty, "caller->ack should have acknowledged the message (queue must be empty)");
-}
-
-// ========================================
-// Negative: service without @ServiceConfig annotation
-// ========================================
-@test:Config {groups: ["listener", "negative"]}
-function testListenerAttachWithoutAnnotation() returns error? {
-    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
-    Service noAnnotationService = service object {
-        remote function onMessage(Message message) returns error? {
-        }
-    };
-    error? result = solaceListener.attach(noAnnotationService);
-    test:assertTrue(result is error, "Attaching a service without @ServiceConfig should fail");
-    check solaceListener.gracefulStop();
-}
-
-// ========================================
-// Negative: service missing the onMessage method
-// ========================================
-@test:Config {groups: ["listener", "negative"]}
-function testListenerAttachWithoutOnMessage() returns error? {
-    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
-    Service noOnMessageService = @ServiceConfig {
-        queueName: LISTENER_AUTOACK_QUEUE
-    } service object {
-        remote function onEvent(Message message) returns error? {
-        }
-    };
-    error? result = solaceListener.attach(noOnMessageService);
-    test:assertTrue(result is error, "Attaching a service without an 'onMessage' method should fail");
-    check solaceListener.gracefulStop();
 }
 
 // ========================================

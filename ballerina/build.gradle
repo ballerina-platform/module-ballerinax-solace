@@ -29,6 +29,8 @@ def packageOrg = "ballerinax"
 def tomlVersion = stripBallerinaExtensionVersion("${project.version}")
 def ballerinaTomlFilePlaceHolder = new File("${project.rootDir}/build-config/resources/Ballerina.toml")
 def ballerinaTomlFile = new File("$project.projectDir/Ballerina.toml")
+def compilerPluginTomlFilePlaceHolder = new File("${project.rootDir}/build-config/resources/CompilerPlugin.toml")
+def compilerPluginTomlFile = new File("$project.projectDir/CompilerPlugin.toml")
 
 def stripBallerinaExtensionVersion(String extVersion) {
     if (extVersion.matches(project.ext.timestampedVersionRegex)) {
@@ -47,12 +49,12 @@ def stripBallerinaExtensionVersion(String extVersion) {
 ballerina {
     packageOrganization = packageOrg
     module = packageName
+    langVersion = ballerinaLangVersion
     // Code coverage is disabled: the instrumented runtime intermittently hard-stalls the JCSMP
     // asynchronous message-delivery callback (onMessage dispatch) under load, making the listener
     // integration tests flaky. The tests pass reliably without instrumentation. Re-enable once the
     // coverage/async-callback interaction is resolved.
     testCoverageParam = ""
-    isConnector = true
     platform = "java21"
 }
 
@@ -143,8 +145,14 @@ task updateTomlFiles {
         newBallerinaToml = newBallerinaToml.replace('@netty.version@', project.nettyVersion)
         newBallerinaToml = newBallerinaToml.replace('@json.version@', project.jsonVersion)
         ballerinaTomlFile.text = newBallerinaToml
+
+        def newCompilerPluginToml = compilerPluginTomlFilePlaceHolder.text
+                .replace("@project.version@", project.version)
+        compilerPluginTomlFile.text = newCompilerPluginToml
     }
 }
+
+updateTomlFiles.dependsOn copyStdlibs
 
 task commitTomlFiles {
     doLast {
@@ -230,11 +238,16 @@ clean {
     delete 'lib'
 }
 
+build.dependsOn unpackJballerinaTools
 build.dependsOn copyToLib
 build.dependsOn ":${packageName}-native:build"
+build.dependsOn ":${packageName}-compiler-plugin:build"
 build.dependsOn generatePomFileForMavenPublication
 
 test.dependsOn ":${packageName}-native:build"
+test.dependsOn ":${packageName}-compiler-plugin:build"
+test.dependsOn unpackJballerinaTools
+test.dependsOn copyToLib
 test.dependsOn startSolaceServer
 test.finalizedBy stopSolaceServer
 

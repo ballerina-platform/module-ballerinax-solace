@@ -225,35 +225,42 @@ isolated function testConsumerInitWithAckTimerTooHigh() returns error? {
 
 @test:Config {groups: ["consumer", "init", "validation", "negative"]}
 isolated function testConsumerInitWithDurableQueueMissingName() returns error? {
+    QueueConfiguration subscriptionConfig = dynamicQueueConfiguration(DURABLE);
     MessageConsumer|error consumer = new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
         auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
-        subscriptionConfig: {durability: DURABLE}
+        subscriptionConfig
     });
 
     test:assertTrue(consumer is error, "A DURABLE queue with no queueName should fail validation");
     if consumer is error {
         test:assertEquals(consumer.message(),
-                "Failed to initialize consumer: queueName is required when durability is not TEMPORARY");
+                "Failed to initialize consumer: queueName is required when the queue is DURABLE");
     }
 }
 
 @test:Config {groups: ["consumer", "init", "validation", "negative"]}
 isolated function testConsumerInitWithDurableTopicMissingEndpointName() returns error? {
+    TopicConfiguration subscriptionConfig = dynamicTopicConfiguration(CONSUMER_DURABLE_TOPIC, DURABLE);
     MessageConsumer|error consumer = new (BROKER_URL, {
         messageVpn: MESSAGE_VPN,
         auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
-        subscriptionConfig: {
-            topicName: CONSUMER_DURABLE_TOPIC,
-            durability: DURABLE
-        }
+        subscriptionConfig
     });
 
     test:assertTrue(consumer is error, "A DURABLE topic with no endpointName should fail validation");
     if consumer is error {
         test:assertEquals(consumer.message(),
-                "Failed to initialize consumer: endpointName is required when durability is DURABLE");
+                "Failed to initialize consumer: endpointName is required when the topic is DURABLE");
     }
+}
+
+isolated function dynamicQueueConfiguration(Durability durability) returns QueueConfiguration {
+    return {durability};
+}
+
+isolated function dynamicTopicConfiguration(string topicName, Durability durability) returns TopicConfiguration {
+    return {topicName, durability};
 }
 
 @test:Config {groups: ["consumer", "init"]}

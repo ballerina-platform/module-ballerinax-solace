@@ -31,7 +31,7 @@ import ballerina/jballerina.java;
 # shared by every service attached to this listener. Calling `caller->commit()` or
 # `caller->rollback()` from one service's `onMessage` commits or rolls back that shared transaction
 # for all attached services, not just the one that made the call. `AUTO_ACK` is not supported on a
-# transacted listener (settlement must go through `commit()`/`rollback()`); use `CLIENT_ACK` instead.
+# transacted listener (settlement must go through `caller->commit()`/`caller->rollback()`); use `CLIENT_ACK` instead.
 # If independent transactions per service are required, attach each transacted service to its own
 # `Listener` instance.
 #

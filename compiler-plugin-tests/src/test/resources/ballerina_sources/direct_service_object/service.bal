@@ -14,12 +14,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
-// Called from native code to check whether a service's `onMessage` parameter type is a structural
-// subtype of `Message` (including narrowed `record {|*Message; T payload;|}` forms). Ballerina's
-// type system expresses this open-record subtyping far more directly than native reflection can.
-isolated function isSolaceMessage(typedesc<anydata> typeDesc) returns boolean {
-    if typeDesc is typedesc<Message> {
-        return true;
-    }
-    return false;
+import ballerinax/solace;
+
+function acceptService(solace:Service solaceService) {
+}
+
+function passService() {
+    acceptService(service object {
+        remote function onMessage(solace:Message message) returns error? {}
+    });
 }

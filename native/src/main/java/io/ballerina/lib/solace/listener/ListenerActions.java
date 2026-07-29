@@ -134,7 +134,6 @@ public class ListenerActions {
             }
 
             Runtime runtime = (Runtime) listener.getNativeData(NATIVE_RUNTIME);
-            Service.validateService(runtime, service);
             Service nativeService = new Service(service);
 
             BMap<BString, Object> serviceConfig = Service.getServiceConfigAnnotation(service);

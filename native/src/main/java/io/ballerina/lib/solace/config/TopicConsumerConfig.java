@@ -145,7 +145,7 @@ public record TopicConsumerConfig(
     public void validate() {
         ConsumerSubscriptionConfig.super.validate();
         if (isDurable() && (endpointName == null || endpointName.isEmpty())) {
-            throw new IllegalArgumentException("endpointName is required when durability is DURABLE");
+            throw new IllegalArgumentException("endpointName is required when the topic is DURABLE");
         }
     }
 
