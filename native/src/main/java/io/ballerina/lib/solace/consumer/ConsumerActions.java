@@ -224,7 +224,6 @@ public class ConsumerActions {
             if (result != null) {
                 BMap<BString, Object> receivedMessage = (BMap<BString, Object>) result;
                 SolaceMetricsUtil.reportConsume(consumer, getPayloadSize(receivedMessage));
-                SolaceTracingUtil.tagUpstreamTraceContext(env, receivedMessage);
             }
             return result;
         } catch (Exception e) {
@@ -284,7 +283,6 @@ public class ConsumerActions {
             if (result != null) {
                 BMap<BString, Object> receivedMessage = (BMap<BString, Object>) result;
                 SolaceMetricsUtil.reportConsume(consumer, getPayloadSize(receivedMessage));
-                SolaceTracingUtil.tagUpstreamTraceContext(env, receivedMessage);
             }
             return result;
         } catch (Exception e) {
