@@ -133,9 +133,6 @@ public class ProducerActions {
             producer.addNativeData(NATIVE_URL, url.getValue());
             producer.addNativeData(NATIVE_VPN, messageVpn);
             producer.addNativeData(NATIVE_EVENT_HANDLER, eventHandler);
-
-            SolaceMetricsUtil.reportNewProducer(producer);
-            return null;
         } catch (Exception e) {
             if (txSession != null) {
                 CommonUtils.closeQuietly(txSession::close);
@@ -146,6 +143,11 @@ public class ProducerActions {
             SolaceMetricsUtil.reportConnectionError(CONTEXT_PRODUCER, url.getValue(), messageVpn);
             return CommonUtils.createError("Failed to initialize producer", e);
         }
+
+        // Observability only, deliberately outside the block above: the producer is fully created by this point, so a
+        // failure here must not run the cleanup and report an init failure for an init that succeeded.
+        SolaceMetricsUtil.reportNewProducer(producer);
+        return null;
     }
 
     /**
