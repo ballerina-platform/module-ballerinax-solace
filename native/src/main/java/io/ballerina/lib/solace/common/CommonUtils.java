@@ -159,8 +159,7 @@ public class CommonUtils {
         if (message == null) {
             return false;
         }
-        Object redelivered = message.get(REDELIVERED_KEY);
-        return redelivered instanceof Boolean flag && flag;
+        return Boolean.TRUE.equals(message.get(REDELIVERED_KEY));
     }
 
     /**
