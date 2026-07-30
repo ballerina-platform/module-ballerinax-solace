@@ -138,8 +138,6 @@ public class CallerActions {
         try {
             Object result = CommonUtils.executeBlocking(txSession::commit);
             if (result instanceof BError bError) {
-                // executeBlocking returns a broker-side failure as a BError rather than throwing, so this - not the
-                // catch below - is the path a real commit failure takes.
                 SolaceMetricsUtil.reportConsumerError(caller, ERROR_TYPE_COMMIT);
                 return bError;
             }
@@ -166,7 +164,6 @@ public class CallerActions {
         try {
             Object result = CommonUtils.executeBlocking(txSession::rollback);
             if (result instanceof BError bError) {
-                // As with commit(), a broker-side failure arrives here as a BError, not as an exception.
                 SolaceMetricsUtil.reportConsumerError(caller, ERROR_TYPE_ROLLBACK);
                 return bError;
             }

@@ -43,9 +43,6 @@ import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants
  */
 public class SolaceTracingUtil {
 
-    // Prefix applied when surfacing an upstream message's trace-context as tags on a pull-based receive span.
-    private static final String TAG_KEY_UPSTREAM_PREFIX = "upstream.";
-
     public static void traceResourceInvocation(Environment env, BObject object, String destination) {
         if (!ObserveUtils.isTracingEnabled()) {
             return;

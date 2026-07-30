@@ -163,9 +163,6 @@ public class ConsumerActions {
             SolaceMetricsUtil.reportConnectionError(CONTEXT_CONSUMER, url.getValue(), messageVpn);
             return CommonUtils.createError("Failed to initialize consumer", e);
         }
-
-        // Observability only, deliberately outside the block above: the consumer is fully created by this point, so a
-        // failure here must not run cleanupOnInitFailure and report an init failure for an init that succeeded.
         SolaceMetricsUtil.reportNewConsumer(consumer);
         return null;
     }
@@ -551,7 +548,6 @@ public class ConsumerActions {
         if (payload instanceof BString str) {
             return str.getValue().getBytes(StandardCharsets.UTF_8).length;
         }
-        // Best-effort only: exact byte-accounting for other payload shapes (record/map/etc.) is not attempted.
         return 0;
     }
 }

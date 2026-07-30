@@ -402,11 +402,6 @@ public class ProducerActions {
         return UNKNOWN;
     }
 
-    /**
-     * A blank destination name (which the broker rejects) must not become an empty tag value - metrics backends
-     * generally drop or collapse empty tags, which would leave the resulting publish error unattributable to any
-     * destination.
-     */
     private static String nameOrUnknown(BString name) {
         String value = name.getValue();
         return value.isBlank() ? UNKNOWN : value;
