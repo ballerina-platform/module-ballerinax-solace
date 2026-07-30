@@ -98,7 +98,6 @@ public class CallerActions {
      */
     public static BError nack(BObject caller, BMap<BString, Object> message, boolean requeue) {
         if (isTransacted(caller)) {
-            // Unlike ack(), this returns an error rather than warning-and-ignoring, so it is a countable failure.
             return reportConsumerFailure(caller, ERROR_TYPE_NACK, TRANSACTED_NACK_ERROR);
         }
         try {
@@ -112,7 +111,6 @@ public class CallerActions {
                 return null;
             });
             if (result instanceof BError bError) {
-                // As with ack(), a broker-side settle failure arrives here as a BError, not as an exception.
                 SolaceMetricsUtil.reportConsumerError(caller, ERROR_TYPE_NACK);
                 return bError;
             }
