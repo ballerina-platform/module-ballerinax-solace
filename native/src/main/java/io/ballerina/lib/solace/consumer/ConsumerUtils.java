@@ -36,9 +36,12 @@ import io.ballerina.runtime.api.values.BObject;
 
 import static io.ballerina.lib.solace.common.Constants.NATIVE_CONSUMER;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_DESTINATION;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_DESTINATION_KIND;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_FLOW;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_SESSION;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_SUBSCRIPTION_TYPE;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.DESTINATION_KIND_QUEUE;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.DESTINATION_KIND_TOPIC;
 import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.UNKNOWN;
 
 /**
@@ -144,6 +147,7 @@ public class ConsumerUtils {
         consumer.addNativeData(NATIVE_FLOW, flowReceiver);
         consumer.addNativeData(NATIVE_SUBSCRIPTION_TYPE, SUBSCRIPTION_TYPE_QUEUE);
         consumer.addNativeData(NATIVE_DESTINATION, queue.getName());
+        consumer.addNativeData(NATIVE_DESTINATION_KIND, DESTINATION_KIND_QUEUE);
     }
 
     /**
@@ -187,6 +191,7 @@ public class ConsumerUtils {
         consumer.addNativeData(NATIVE_FLOW, flowReceiver);
         consumer.addNativeData(NATIVE_SUBSCRIPTION_TYPE, SUBSCRIPTION_TYPE_DURABLE_TOPIC);
         consumer.addNativeData(NATIVE_DESTINATION, config.topicName());
+        consumer.addNativeData(NATIVE_DESTINATION_KIND, DESTINATION_KIND_TOPIC);
     }
 
     /**
@@ -208,5 +213,6 @@ public class ConsumerUtils {
         consumer.addNativeData(NATIVE_CONSUMER, xmlConsumer);
         consumer.addNativeData(NATIVE_SUBSCRIPTION_TYPE, SUBSCRIPTION_TYPE_DIRECT_TOPIC);
         consumer.addNativeData(NATIVE_DESTINATION, config.topicName());
+        consumer.addNativeData(NATIVE_DESTINATION_KIND, DESTINATION_KIND_TOPIC);
     }
 }
