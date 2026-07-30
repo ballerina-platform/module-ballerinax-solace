@@ -32,6 +32,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import static io.ballerina.lib.solace.common.MessageFieldConstants.PAYLOAD_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.REDELIVERED_KEY;
 
 /**
  * Utility class for common operations like error creation and virtual thread execution.
@@ -146,6 +147,20 @@ public class CommonUtils {
         }
         // Structured payload (map<Value>/record or a data-bound type): no exact wire size here, so report 0.
         return 0;
+    }
+
+    /**
+     * Reports whether a received message is flagged by the broker as a redelivery.
+     *
+     * @param message the Ballerina message record
+     * @return true if the broker marked this message as redelivered
+     */
+    public static boolean isRedelivered(BMap<BString, Object> message) {
+        if (message == null) {
+            return false;
+        }
+        Object redelivered = message.get(REDELIVERED_KEY);
+        return redelivered instanceof Boolean flag && flag;
     }
 
     /**
