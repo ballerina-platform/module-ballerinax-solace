@@ -67,6 +67,7 @@ import static io.ballerina.lib.solace.consumer.ConsumerUtils.SUBSCRIPTION_TYPE_Q
 import static io.ballerina.lib.solace.consumer.ConsumerUtils.createDirectTopicConsumer;
 import static io.ballerina.lib.solace.consumer.ConsumerUtils.createDurableTopicConsumer;
 import static io.ballerina.lib.solace.consumer.ConsumerUtils.createQueueConsumer;
+import static io.ballerina.lib.solace.observability.SolaceMetricsUtil.reportConsumerFailure;
 import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.CONTEXT_CONSUMER;
 import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_ACKNOWLEDGE;
 import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_CLOSE;
@@ -311,14 +312,6 @@ public class ConsumerActions {
         BMap<BString, Object> receivedMessage = (BMap<BString, Object>) result;
         SolaceMetricsUtil.reportConsume(consumer, getPayloadSize(receivedMessage),
                 CommonUtils.isRedelivered(receivedMessage));
-    }
-
-    /**
-     * Counts a consumer-level failure and returns the error.
-     */
-    private static BError reportConsumerFailure(BObject consumer, String errorType, String errorMessage) {
-        SolaceMetricsUtil.reportConsumerError(consumer, errorType);
-        return CommonUtils.createError(errorMessage);
     }
 
     /**

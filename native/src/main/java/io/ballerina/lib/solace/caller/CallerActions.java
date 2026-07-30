@@ -31,6 +31,7 @@ import io.ballerina.runtime.api.values.BString;
 import java.util.logging.Logger;
 
 import static io.ballerina.lib.solace.common.Constants.NATIVE_TX_SESSION;
+import static io.ballerina.lib.solace.observability.SolaceMetricsUtil.reportConsumerFailure;
 import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_ACKNOWLEDGE;
 import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_COMMIT;
 import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_NACK;
@@ -71,7 +72,7 @@ public class CallerActions {
         try {
             XMLMessage nativeMessage = MessageConverter.extractNativeMessage(message);
             if (nativeMessage == null) {
-                return reportSettleFailure(caller, ERROR_TYPE_ACKNOWLEDGE,
+                return reportConsumerFailure(caller, ERROR_TYPE_ACKNOWLEDGE,
                         "Cannot acknowledge: native message not found");
             }
             Object result = CommonUtils.executeBlocking(nativeMessage::ackMessage);
@@ -98,12 +99,12 @@ public class CallerActions {
     public static BError nack(BObject caller, BMap<BString, Object> message, boolean requeue) {
         if (isTransacted(caller)) {
             // Unlike ack(), this returns an error rather than warning-and-ignoring, so it is a countable failure.
-            return reportSettleFailure(caller, ERROR_TYPE_NACK, TRANSACTED_NACK_ERROR);
+            return reportConsumerFailure(caller, ERROR_TYPE_NACK, TRANSACTED_NACK_ERROR);
         }
         try {
             XMLMessage nativeMessage = MessageConverter.extractNativeMessage(message);
             if (nativeMessage == null) {
-                return reportSettleFailure(caller, ERROR_TYPE_NACK, "Cannot NACK: native message not found");
+                return reportConsumerFailure(caller, ERROR_TYPE_NACK, "Cannot NACK: native message not found");
             }
             Object result = CommonUtils.executeBlocking(() -> {
                 XMLMessage.Outcome outcome = requeue ? XMLMessage.Outcome.FAILED : XMLMessage.Outcome.REJECTED;
@@ -124,14 +125,6 @@ public class CallerActions {
     }
 
     /**
-     * Counts a settlement or transaction-control call that failed before reaching the broker and returns the error.
-     */
-    private static BError reportSettleFailure(BObject caller, String errorType, String errorMessage) {
-        SolaceMetricsUtil.reportConsumerError(caller, errorType);
-        return CommonUtils.createError(errorMessage);
-    }
-
-    /**
      * Commit the current transaction. Only valid when the listener connection is transacted.
      *
      * @param caller the Ballerina caller object
@@ -140,7 +133,7 @@ public class CallerActions {
     public static BError commit(BObject caller) {
         TransactedSession txSession = (TransactedSession) caller.getNativeData(NATIVE_TX_SESSION);
         if (txSession == null) {
-            return reportSettleFailure(caller, ERROR_TYPE_COMMIT,
+            return reportConsumerFailure(caller, ERROR_TYPE_COMMIT,
                     "commit() can only be called when the listener connection is transacted. "
                             + "Set transacted = true on the listener configuration to enable transactions.");
         }
@@ -168,7 +161,7 @@ public class CallerActions {
     public static BError rollback(BObject caller) {
         TransactedSession txSession = (TransactedSession) caller.getNativeData(NATIVE_TX_SESSION);
         if (txSession == null) {
-            return reportSettleFailure(caller, ERROR_TYPE_ROLLBACK,
+            return reportConsumerFailure(caller, ERROR_TYPE_ROLLBACK,
                     "rollback() can only be called when the listener connection is transacted. "
                             + "Set transacted = true on the listener configuration to enable transactions.");
         }
