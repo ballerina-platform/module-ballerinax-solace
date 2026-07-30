@@ -71,7 +71,7 @@ public class CallerActions {
         try {
             XMLMessage nativeMessage = MessageConverter.extractNativeMessage(message);
             if (nativeMessage == null) {
-                return settleFailure(caller, ERROR_TYPE_ACKNOWLEDGE,
+                return reportSettleFailure(caller, ERROR_TYPE_ACKNOWLEDGE,
                         "Cannot acknowledge: native message not found");
             }
             Object result = CommonUtils.executeBlocking(nativeMessage::ackMessage);
@@ -98,12 +98,12 @@ public class CallerActions {
     public static BError nack(BObject caller, BMap<BString, Object> message, boolean requeue) {
         if (isTransacted(caller)) {
             // Unlike ack(), this returns an error rather than warning-and-ignoring, so it is a countable failure.
-            return settleFailure(caller, ERROR_TYPE_NACK, TRANSACTED_NACK_ERROR);
+            return reportSettleFailure(caller, ERROR_TYPE_NACK, TRANSACTED_NACK_ERROR);
         }
         try {
             XMLMessage nativeMessage = MessageConverter.extractNativeMessage(message);
             if (nativeMessage == null) {
-                return settleFailure(caller, ERROR_TYPE_NACK, "Cannot NACK: native message not found");
+                return reportSettleFailure(caller, ERROR_TYPE_NACK, "Cannot NACK: native message not found");
             }
             Object result = CommonUtils.executeBlocking(() -> {
                 XMLMessage.Outcome outcome = requeue ? XMLMessage.Outcome.FAILED : XMLMessage.Outcome.REJECTED;
@@ -126,7 +126,7 @@ public class CallerActions {
     /**
      * Counts a settlement or transaction-control call that failed before reaching the broker and returns the error.
      */
-    private static BError settleFailure(BObject caller, String errorType, String errorMessage) {
+    private static BError reportSettleFailure(BObject caller, String errorType, String errorMessage) {
         SolaceMetricsUtil.reportConsumerError(caller, errorType);
         return CommonUtils.createError(errorMessage);
     }
@@ -140,7 +140,7 @@ public class CallerActions {
     public static BError commit(BObject caller) {
         TransactedSession txSession = (TransactedSession) caller.getNativeData(NATIVE_TX_SESSION);
         if (txSession == null) {
-            return settleFailure(caller, ERROR_TYPE_COMMIT,
+            return reportSettleFailure(caller, ERROR_TYPE_COMMIT,
                     "commit() can only be called when the listener connection is transacted. "
                             + "Set transacted = true on the listener configuration to enable transactions.");
         }
@@ -168,7 +168,7 @@ public class CallerActions {
     public static BError rollback(BObject caller) {
         TransactedSession txSession = (TransactedSession) caller.getNativeData(NATIVE_TX_SESSION);
         if (txSession == null) {
-            return settleFailure(caller, ERROR_TYPE_ROLLBACK,
+            return reportSettleFailure(caller, ERROR_TYPE_ROLLBACK,
                     "rollback() can only be called when the listener connection is transacted. "
                             + "Set transacted = true on the listener configuration to enable transactions.");
         }

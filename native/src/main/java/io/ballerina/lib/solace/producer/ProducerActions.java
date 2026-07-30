@@ -167,19 +167,20 @@ public class ProducerActions {
         try {
             XMLMessageProducer xmlProducer = (XMLMessageProducer) producer.getNativeData(NATIVE_PRODUCER);
             if (xmlProducer == null) {
-                return publishFailure(producer, destinationName, destinationKind, "Producer not initialized");
+                return reportPublishFailure(producer, destinationName, destinationKind, "Producer not initialized");
             }
 
             Boolean closed = (Boolean) producer.getNativeData(NATIVE_CLOSED);
             if (closed != null && closed) {
-                return publishFailure(producer, destinationName, destinationKind, "Producer is closed");
+                return reportPublishFailure(producer, destinationName, destinationKind, "Producer is closed");
             }
 
             XMLMessage jcsmpMessage = MessageConverter.toJCSMPMessage(xmlProducer, message);
             injectTraceContext(env, jcsmpMessage);
 
             if (destinationMap == null || destinationMap.isEmpty()) {
-                return publishFailure(producer, destinationName, destinationKind, "Destination must be specified");
+                return reportPublishFailure(producer, destinationName, destinationKind,
+                        "Destination must be specified");
             }
 
             Destination destination = createDestinationFromMap(destinationMap);
@@ -212,7 +213,7 @@ public class ProducerActions {
     /**
      * Counts a publish that failed before reaching the broker and returns the error.
      */
-    private static BError publishFailure(BObject producer, String destinationName, String destinationKind,
+    private static BError reportPublishFailure(BObject producer, String destinationName, String destinationKind,
                                          String errorMessage) {
         SolaceMetricsUtil.reportProducerError(producer, destinationName, destinationKind, ERROR_TYPE_PUBLISH);
         return CommonUtils.createError(errorMessage);
@@ -246,7 +247,7 @@ public class ProducerActions {
         try {
             Boolean transacted = (Boolean) producer.getNativeData(NATIVE_TRANSACTED);
             if (transacted == null || !transacted) {
-                return producerFailure(producer, ERROR_TYPE_COMMIT,
+                return reportProducerFailure(producer, ERROR_TYPE_COMMIT,
                         "commit() can only be called on transacted producers. " +
                                 "Set connectionConfig.transacted = true to enable transactions."
                 );
@@ -254,12 +255,12 @@ public class ProducerActions {
 
             TransactedSession txSession = (TransactedSession) producer.getNativeData(NATIVE_TX_SESSION);
             if (txSession == null) {
-                return producerFailure(producer, ERROR_TYPE_COMMIT, "TransactedSession not initialized");
+                return reportProducerFailure(producer, ERROR_TYPE_COMMIT, "TransactedSession not initialized");
             }
 
             Boolean closed = (Boolean) producer.getNativeData(NATIVE_CLOSED);
             if (closed != null && closed) {
-                return producerFailure(producer, ERROR_TYPE_COMMIT, "Producer is closed");
+                return reportProducerFailure(producer, ERROR_TYPE_COMMIT, "Producer is closed");
             }
 
             // Commit transaction on TransactedSession (blocking operation)
@@ -287,7 +288,7 @@ public class ProducerActions {
         try {
             Boolean transacted = (Boolean) producer.getNativeData(NATIVE_TRANSACTED);
             if (transacted == null || !transacted) {
-                return producerFailure(producer, ERROR_TYPE_ROLLBACK,
+                return reportProducerFailure(producer, ERROR_TYPE_ROLLBACK,
                         "rollback() can only be called on transacted producers. " +
                                 "Set connectionConfig.transacted = true to enable transactions."
                 );
@@ -295,12 +296,12 @@ public class ProducerActions {
 
             TransactedSession txSession = (TransactedSession) producer.getNativeData(NATIVE_TX_SESSION);
             if (txSession == null) {
-                return producerFailure(producer, ERROR_TYPE_ROLLBACK, "TransactedSession not initialized");
+                return reportProducerFailure(producer, ERROR_TYPE_ROLLBACK, "TransactedSession not initialized");
             }
 
             Boolean closed = (Boolean) producer.getNativeData(NATIVE_CLOSED);
             if (closed != null && closed) {
-                return producerFailure(producer, ERROR_TYPE_ROLLBACK, "Producer is closed");
+                return reportProducerFailure(producer, ERROR_TYPE_ROLLBACK, "Producer is closed");
             }
 
             // Rollback transaction on TransactedSession (blocking operation)
@@ -381,7 +382,7 @@ public class ProducerActions {
     /**
      * Counts a producer-level failure and returns the error.
      */
-    private static BError producerFailure(BObject producer, String errorType, String errorMessage) {
+    private static BError reportProducerFailure(BObject producer, String errorType, String errorMessage) {
         SolaceMetricsUtil.reportProducerError(producer, errorType);
         return CommonUtils.createError(errorMessage);
     }
