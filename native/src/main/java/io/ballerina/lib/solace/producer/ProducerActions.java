@@ -349,12 +349,13 @@ public class ProducerActions {
         producer.addNativeData(NATIVE_TX_SESSION, null);
         producer.addNativeData(NATIVE_SESSION, null);
 
+        SolaceSessionEventHandler.markDisconnected(producer);
+
         if (firstError != null) {
             SolaceMetricsUtil.reportProducerError(producer, ERROR_TYPE_CLOSE);
             return CommonUtils.createError("Failed to close producer", firstError);
         }
 
-        SolaceSessionEventHandler.markDisconnected(producer);
         SolaceMetricsUtil.reportProducerClose(producer);
         return null;
     }

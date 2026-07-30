@@ -520,12 +520,13 @@ public class ConsumerActions {
         consumer.addNativeData(NATIVE_TRANSACTED, null);
         consumer.addNativeData(NATIVE_SESSION, null);
 
+        SolaceSessionEventHandler.markDisconnected(consumer);
+
         if (firstError != null) {
             SolaceMetricsUtil.reportConsumerError(consumer, ERROR_TYPE_CLOSE);
             return CommonUtils.createError("Failed to close consumer", firstError);
         }
 
-        SolaceSessionEventHandler.markDisconnected(consumer);
         SolaceMetricsUtil.reportConsumerClose(consumer);
         return null;
     }
