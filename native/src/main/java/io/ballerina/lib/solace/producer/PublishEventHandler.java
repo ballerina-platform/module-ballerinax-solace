@@ -20,6 +20,7 @@ package io.ballerina.lib.solace.producer;
 
 import com.solacesystems.jcsmp.JCSMPException;
 import com.solacesystems.jcsmp.JCSMPStreamingPublishCorrelatingEventHandler;
+import io.ballerina.lib.solace.observability.SolaceMetricsUtil;
 
 import java.util.logging.Logger;
 
@@ -31,6 +32,14 @@ public class PublishEventHandler implements JCSMPStreamingPublishCorrelatingEven
 
     private static final Logger LOGGER = Logger.getLogger(PublishEventHandler.class.getName());
 
+    private final String url;
+    private final String vpn;
+
+    PublishEventHandler(String url, String vpn) {
+        this.url = url;
+        this.vpn = vpn;
+    }
+
     /**
      * Called when a publisher acknowledgement is received for a guaranteed delivery message.
      *
@@ -38,7 +47,7 @@ public class PublishEventHandler implements JCSMPStreamingPublishCorrelatingEven
      */
     @Override
     public void responseReceivedEx(Object key) {
-        // No-op: successful guaranteed-delivery acknowledgements are not currently surfaced anywhere.
+        recordConfirm(true);
     }
 
     /**
@@ -52,5 +61,14 @@ public class PublishEventHandler implements JCSMPStreamingPublishCorrelatingEven
     public void handleErrorEx(Object key, JCSMPException cause, long timestamp) {
         LOGGER.warning(String.format(
                 "Guaranteed-delivery publish failed for correlation key '%s': %s", key, cause.getMessage()));
+        recordConfirm(false);
+    }
+
+    private void recordConfirm(boolean accepted) {
+        try {
+            SolaceMetricsUtil.reportPublishConfirm(url, vpn, accepted);
+        } catch (Throwable ignored) {
+            // A metrics failure must never disturb the JCSMP dispatch thread.
+        }
     }
 }

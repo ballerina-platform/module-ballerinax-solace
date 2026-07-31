@@ -22,6 +22,7 @@ import com.solacesystems.jcsmp.XMLMessage;
 import com.solacesystems.jcsmp.transaction.TransactedSession;
 import io.ballerina.lib.solace.common.CommonUtils;
 import io.ballerina.lib.solace.consumer.MessageConverter;
+import io.ballerina.lib.solace.observability.SolaceMetricsUtil;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
@@ -30,6 +31,11 @@ import io.ballerina.runtime.api.values.BString;
 import java.util.logging.Logger;
 
 import static io.ballerina.lib.solace.common.Constants.NATIVE_TX_SESSION;
+import static io.ballerina.lib.solace.observability.SolaceMetricsUtil.reportConsumerFailure;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_ACKNOWLEDGE;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_COMMIT;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_NACK;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_ROLLBACK;
 
 /**
  * Caller actions - interop for the Ballerina Solace {@code Caller} supplied to a service's {@code onMessage} method.
@@ -66,14 +72,18 @@ public class CallerActions {
         try {
             XMLMessage nativeMessage = MessageConverter.extractNativeMessage(message);
             if (nativeMessage == null) {
-                return CommonUtils.createError("Cannot acknowledge: native message not found");
+                return reportConsumerFailure(caller, ERROR_TYPE_ACKNOWLEDGE,
+                        "Cannot acknowledge: native message not found");
             }
             Object result = CommonUtils.executeBlocking(nativeMessage::ackMessage);
             if (result instanceof BError bError) {
+                SolaceMetricsUtil.reportConsumerError(caller, ERROR_TYPE_ACKNOWLEDGE);
                 return bError;
             }
+            SolaceMetricsUtil.reportAck(caller);
             return null;
         } catch (Exception e) {
+            SolaceMetricsUtil.reportConsumerError(caller, ERROR_TYPE_ACKNOWLEDGE);
             return CommonUtils.createError("Failed to acknowledge message", e);
         }
     }
@@ -88,12 +98,12 @@ public class CallerActions {
      */
     public static BError nack(BObject caller, BMap<BString, Object> message, boolean requeue) {
         if (isTransacted(caller)) {
-            return CommonUtils.createError(TRANSACTED_NACK_ERROR);
+            return reportConsumerFailure(caller, ERROR_TYPE_NACK, TRANSACTED_NACK_ERROR);
         }
         try {
             XMLMessage nativeMessage = MessageConverter.extractNativeMessage(message);
             if (nativeMessage == null) {
-                return CommonUtils.createError("Cannot NACK: native message not found");
+                return reportConsumerFailure(caller, ERROR_TYPE_NACK, "Cannot NACK: native message not found");
             }
             Object result = CommonUtils.executeBlocking(() -> {
                 XMLMessage.Outcome outcome = requeue ? XMLMessage.Outcome.FAILED : XMLMessage.Outcome.REJECTED;
@@ -101,10 +111,13 @@ public class CallerActions {
                 return null;
             });
             if (result instanceof BError bError) {
+                SolaceMetricsUtil.reportConsumerError(caller, ERROR_TYPE_NACK);
                 return bError;
             }
+            SolaceMetricsUtil.reportNack(caller, requeue);
             return null;
         } catch (Exception e) {
+            SolaceMetricsUtil.reportConsumerError(caller, ERROR_TYPE_NACK);
             return CommonUtils.createError("Failed to NACK message", e);
         }
     }
@@ -118,16 +131,19 @@ public class CallerActions {
     public static BError commit(BObject caller) {
         TransactedSession txSession = (TransactedSession) caller.getNativeData(NATIVE_TX_SESSION);
         if (txSession == null) {
-            return CommonUtils.createError("commit() can only be called when the listener connection is transacted. "
-                    + "Set transacted = true on the listener configuration to enable transactions.");
+            return reportConsumerFailure(caller, ERROR_TYPE_COMMIT,
+                    "commit() can only be called when the listener connection is transacted. "
+                            + "Set transacted = true on the listener configuration to enable transactions.");
         }
         try {
             Object result = CommonUtils.executeBlocking(txSession::commit);
             if (result instanceof BError bError) {
+                SolaceMetricsUtil.reportConsumerError(caller, ERROR_TYPE_COMMIT);
                 return bError;
             }
             return null;
         } catch (Exception e) {
+            SolaceMetricsUtil.reportConsumerError(caller, ERROR_TYPE_COMMIT);
             return CommonUtils.createError("Failed to commit transaction", e);
         }
     }
@@ -141,16 +157,19 @@ public class CallerActions {
     public static BError rollback(BObject caller) {
         TransactedSession txSession = (TransactedSession) caller.getNativeData(NATIVE_TX_SESSION);
         if (txSession == null) {
-            return CommonUtils.createError("rollback() can only be called when the listener connection is transacted. "
-                    + "Set transacted = true on the listener configuration to enable transactions.");
+            return reportConsumerFailure(caller, ERROR_TYPE_ROLLBACK,
+                    "rollback() can only be called when the listener connection is transacted. "
+                            + "Set transacted = true on the listener configuration to enable transactions.");
         }
         try {
             Object result = CommonUtils.executeBlocking(txSession::rollback);
             if (result instanceof BError bError) {
+                SolaceMetricsUtil.reportConsumerError(caller, ERROR_TYPE_ROLLBACK);
                 return bError;
             }
             return null;
         } catch (Exception e) {
+            SolaceMetricsUtil.reportConsumerError(caller, ERROR_TYPE_ROLLBACK);
             return CommonUtils.createError("Failed to rollback transaction", e);
         }
     }

@@ -22,6 +22,7 @@ import com.solacesystems.jcsmp.JCSMPFactory;
 import com.solacesystems.jcsmp.JCSMPProperties;
 import com.solacesystems.jcsmp.JCSMPSession;
 import com.solacesystems.jcsmp.ProducerFlowProperties;
+import com.solacesystems.jcsmp.SDTMap;
 import com.solacesystems.jcsmp.XMLMessage;
 import com.solacesystems.jcsmp.XMLMessageProducer;
 import com.solacesystems.jcsmp.transaction.TransactedSession;
@@ -30,6 +31,7 @@ import io.ballerina.lib.solace.common.DestinationConverter;
 import io.ballerina.lib.solace.config.ConfigurationUtils;
 import io.ballerina.lib.solace.config.ProducerConfiguration;
 import io.ballerina.lib.solace.observability.SolaceMetricsUtil;
+import io.ballerina.lib.solace.observability.SolaceSessionEventHandler;
 import io.ballerina.lib.solace.observability.SolaceTracingUtil;
 import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.utils.StringUtils;
@@ -40,15 +42,21 @@ import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 import static io.ballerina.lib.solace.common.Constants.NATIVE_CLOSED;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_EVENT_HANDLER;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_PRODUCER;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_SESSION;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_TRANSACTED;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_TX_SESSION;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_URL;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_VPN;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.DELIVERY_MODE_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.PAYLOAD_KEY;
 import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.CONTEXT_PRODUCER;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.DESTINATION_KIND_QUEUE;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.DESTINATION_KIND_TOPIC;
 import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_CLOSE;
 import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_COMMIT;
 import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_PUBLISH;
@@ -75,9 +83,11 @@ public class ProducerActions {
     public static BError init(BObject producer, BString url, BMap<BString, Object> config) {
         JCSMPSession session = null;
         TransactedSession txSession = null;
+        String messageVpn = UNKNOWN;
         try {
             // Create configuration objects from Ballerina map
             ProducerConfiguration producerConfig = new ProducerConfiguration(config);
+            messageVpn = producerConfig.connectionConfig().messageVpn();
 
             // Build JCSMP properties from configuration (URL passed separately)
             JCSMPProperties jcsmpProps = ConfigurationUtils.buildJCSMPProperties(
@@ -88,9 +98,12 @@ public class ProducerActions {
                     producerConfig.generateSendTimestamps(),
                     producerConfig.generateSequenceNumbers());
 
-            // Create and connect base JCSMP session
-            session = JCSMPFactory.onlyInstance().createSession(jcsmpProps);
+            // Create and connect base JCSMP session.
+            SolaceSessionEventHandler eventHandler =
+                    new SolaceSessionEventHandler(CONTEXT_PRODUCER, url.getValue(), messageVpn);
+            session = JCSMPFactory.onlyInstance().createSession(jcsmpProps, null, eventHandler);
             session.connect();
+            eventHandler.markConnected();
 
             boolean isTransacted = producerConfig.connectionConfig().transacted();
             XMLMessageProducer xmlProducer;
@@ -100,14 +113,15 @@ public class ProducerActions {
                 txSession = session.createTransactedSession();
 
                 // IMPORTANT: Must first call getMessageProducer on base session before creating transacted producer
-                session.getMessageProducer(new PublishEventHandler());
+                session.getMessageProducer(new PublishEventHandler(url.getValue(), messageVpn));
 
                 // Create producer within transacted session with streaming callback
                 ProducerFlowProperties flowProps = new ProducerFlowProperties();
-                xmlProducer = txSession.createProducer(flowProps, new PublishEventHandler());
+                xmlProducer = txSession.createProducer(flowProps,
+                        new PublishEventHandler(url.getValue(), messageVpn));
             } else {
                 // Non-transacted mode: Use regular session producer
-                xmlProducer = session.getMessageProducer(new PublishEventHandler());
+                xmlProducer = session.getMessageProducer(new PublishEventHandler(url.getValue(), messageVpn));
             }
 
             // Store session references in native data
@@ -117,9 +131,8 @@ public class ProducerActions {
             producer.addNativeData(NATIVE_PRODUCER, xmlProducer);
             producer.addNativeData(NATIVE_CLOSED, false);
             producer.addNativeData(NATIVE_URL, url.getValue());
-
-            SolaceMetricsUtil.reportNewProducer(producer);
-            return null;
+            producer.addNativeData(NATIVE_VPN, messageVpn);
+            producer.addNativeData(NATIVE_EVENT_HANDLER, eventHandler);
         } catch (Exception e) {
             if (txSession != null) {
                 CommonUtils.closeQuietly(txSession::close);
@@ -127,9 +140,14 @@ public class ProducerActions {
             if (session != null) {
                 CommonUtils.closeQuietly(session::closeSession);
             }
-            SolaceMetricsUtil.reportConnectionError(CONTEXT_PRODUCER);
+            SolaceMetricsUtil.reportConnectionError(CONTEXT_PRODUCER, url.getValue(), messageVpn);
             return CommonUtils.createError("Failed to initialize producer", e);
         }
+
+        // Observability only, deliberately outside the block above: the producer is fully created by this point, so a
+        // failure here must not run the cleanup and report an init failure for an init that succeeded.
+        SolaceMetricsUtil.reportNewProducer(producer);
+        return null;
     }
 
     /**
@@ -144,22 +162,25 @@ public class ProducerActions {
     public static BError send(Environment env, BObject producer, BMap<BString, Object> message,
                               BMap<BString, Object> destinationMap) {
         String destinationName = getDestinationName(destinationMap);
+        String destinationKind = getDestinationKind(destinationMap);
         SolaceTracingUtil.traceResourceInvocation(env, producer, destinationName);
         try {
             XMLMessageProducer xmlProducer = (XMLMessageProducer) producer.getNativeData(NATIVE_PRODUCER);
             if (xmlProducer == null) {
-                return CommonUtils.createError("Producer not initialized");
+                return reportPublishFailure(producer, destinationName, destinationKind, "Producer not initialized");
             }
 
             Boolean closed = (Boolean) producer.getNativeData(NATIVE_CLOSED);
             if (closed != null && closed) {
-                return CommonUtils.createError("Producer is closed");
+                return reportPublishFailure(producer, destinationName, destinationKind, "Producer is closed");
             }
 
             XMLMessage jcsmpMessage = MessageConverter.toJCSMPMessage(xmlProducer, message);
+            injectTraceContext(env, jcsmpMessage);
 
             if (destinationMap == null || destinationMap.isEmpty()) {
-                return CommonUtils.createError("Destination must be specified");
+                return reportPublishFailure(producer, destinationName, destinationKind,
+                        "Destination must be specified");
             }
 
             Destination destination = createDestinationFromMap(destinationMap);
@@ -168,22 +189,52 @@ public class ProducerActions {
 
             final XMLMessage finalMessage = jcsmpMessage;
             final com.solacesystems.jcsmp.Destination finalDestination = jcsmpDestination;
+            long startNanos = System.nanoTime();
             Object result = CommonUtils.executeBlocking(() -> {
                 xmlProducer.send(finalMessage, finalDestination);
             });
+            long elapsedNanos = System.nanoTime() - startNanos;
 
             if (result instanceof BError bError) {
-                SolaceMetricsUtil.reportProducerError(producer, destinationName, ERROR_TYPE_PUBLISH);
+                SolaceMetricsUtil.reportProducerError(producer, destinationName, destinationKind, ERROR_TYPE_PUBLISH);
                 return CommonUtils.createError(bError.getMessage());
             }
 
             int size = getPayloadSize(message);
-            SolaceMetricsUtil.reportPublish(producer, destinationName, size);
+            SolaceMetricsUtil.reportPublish(producer, destinationName, destinationKind, getDeliveryMode(message), size,
+                    elapsedNanos);
             return null;
         } catch (Exception e) {
-            SolaceMetricsUtil.reportProducerError(producer, destinationName, ERROR_TYPE_PUBLISH);
+            SolaceMetricsUtil.reportProducerError(producer, destinationName, destinationKind, ERROR_TYPE_PUBLISH);
             return CommonUtils.createError("Failed to send message", e);
         }
+    }
+
+    /**
+     * Counts a publish that failed before reaching the broker and returns the error.
+     */
+    private static BError reportPublishFailure(BObject producer, String destinationName, String destinationKind,
+                                         String errorMessage) {
+        SolaceMetricsUtil.reportProducerError(producer, destinationName, destinationKind, ERROR_TYPE_PUBLISH);
+        return CommonUtils.createError(errorMessage);
+    }
+
+    /**
+     * Injects the current span's trace context into the outbound message's properties.
+     */
+    private static void injectTraceContext(Environment env, XMLMessage jcsmpMessage) throws Exception {
+        Map<String, String> traceHeaders = SolaceTracingUtil.getTraceContextHeaders(env);
+        if (traceHeaders == null || traceHeaders.isEmpty()) {
+            return;
+        }
+        SDTMap properties = jcsmpMessage.getProperties();
+        if (properties == null) {
+            properties = JCSMPFactory.onlyInstance().createMap();
+        }
+        for (Map.Entry<String, String> entry : traceHeaders.entrySet()) {
+            properties.putString(entry.getKey(), entry.getValue());
+        }
+        jcsmpMessage.setProperties(properties);
     }
 
     /**
@@ -196,7 +247,7 @@ public class ProducerActions {
         try {
             Boolean transacted = (Boolean) producer.getNativeData(NATIVE_TRANSACTED);
             if (transacted == null || !transacted) {
-                return CommonUtils.createError(
+                return reportProducerFailure(producer, ERROR_TYPE_COMMIT,
                         "commit() can only be called on transacted producers. " +
                                 "Set connectionConfig.transacted = true to enable transactions."
                 );
@@ -204,12 +255,12 @@ public class ProducerActions {
 
             TransactedSession txSession = (TransactedSession) producer.getNativeData(NATIVE_TX_SESSION);
             if (txSession == null) {
-                return CommonUtils.createError("TransactedSession not initialized");
+                return reportProducerFailure(producer, ERROR_TYPE_COMMIT, "TransactedSession not initialized");
             }
 
             Boolean closed = (Boolean) producer.getNativeData(NATIVE_CLOSED);
             if (closed != null && closed) {
-                return CommonUtils.createError("Producer is closed");
+                return reportProducerFailure(producer, ERROR_TYPE_COMMIT, "Producer is closed");
             }
 
             // Commit transaction on TransactedSession (blocking operation)
@@ -237,7 +288,7 @@ public class ProducerActions {
         try {
             Boolean transacted = (Boolean) producer.getNativeData(NATIVE_TRANSACTED);
             if (transacted == null || !transacted) {
-                return CommonUtils.createError(
+                return reportProducerFailure(producer, ERROR_TYPE_ROLLBACK,
                         "rollback() can only be called on transacted producers. " +
                                 "Set connectionConfig.transacted = true to enable transactions."
                 );
@@ -245,12 +296,12 @@ public class ProducerActions {
 
             TransactedSession txSession = (TransactedSession) producer.getNativeData(NATIVE_TX_SESSION);
             if (txSession == null) {
-                return CommonUtils.createError("TransactedSession not initialized");
+                return reportProducerFailure(producer, ERROR_TYPE_ROLLBACK, "TransactedSession not initialized");
             }
 
             Boolean closed = (Boolean) producer.getNativeData(NATIVE_CLOSED);
             if (closed != null && closed) {
-                return CommonUtils.createError("Producer is closed");
+                return reportProducerFailure(producer, ERROR_TYPE_ROLLBACK, "Producer is closed");
             }
 
             // Rollback transaction on TransactedSession (blocking operation)
@@ -301,6 +352,8 @@ public class ProducerActions {
         producer.addNativeData(NATIVE_TX_SESSION, null);
         producer.addNativeData(NATIVE_SESSION, null);
 
+        SolaceSessionEventHandler.markDisconnected(producer);
+
         if (firstError != null) {
             SolaceMetricsUtil.reportProducerError(producer, ERROR_TYPE_CLOSE);
             return CommonUtils.createError("Failed to close producer", firstError);
@@ -326,19 +379,56 @@ public class ProducerActions {
         throw new IllegalArgumentException("Destination must have 'queueName' or 'topicName' field");
     }
 
+    /**
+     * Counts a producer-level failure and returns the error.
+     */
+    private static BError reportProducerFailure(BObject producer, String errorType, String errorMessage) {
+        SolaceMetricsUtil.reportProducerError(producer, errorType);
+        return CommonUtils.createError(errorMessage);
+    }
+
     private static String getDestinationName(BMap<BString, Object> destinationMap) {
         if (destinationMap == null || destinationMap.isEmpty()) {
             return UNKNOWN;
         }
         Object queueName = destinationMap.get(QUEUE_NAME_KEY);
         if (queueName instanceof BString bStr) {
-            return bStr.getValue();
+            return nameOrUnknown(bStr);
         }
         Object topicName = destinationMap.get(TOPIC_NAME_KEY);
         if (topicName instanceof BString bStr) {
-            return bStr.getValue();
+            return nameOrUnknown(bStr);
         }
         return UNKNOWN;
+    }
+
+    private static String nameOrUnknown(BString name) {
+        String value = name.getValue();
+        return value.isBlank() ? UNKNOWN : value;
+    }
+
+    private static String getDestinationKind(BMap<BString, Object> destinationMap) {
+        if (destinationMap == null || destinationMap.isEmpty()) {
+            return UNKNOWN;
+        }
+        if (destinationMap.containsKey(QUEUE_NAME_KEY)) {
+            return DESTINATION_KIND_QUEUE;
+        }
+        if (destinationMap.containsKey(TOPIC_NAME_KEY)) {
+            return DESTINATION_KIND_TOPIC;
+        }
+        return UNKNOWN;
+    }
+
+    /**
+     * Reads the message's delivery mode for tagging.
+     */
+    private static String getDeliveryMode(BMap<BString, Object> message) {
+        if (message == null) {
+            return UNKNOWN;
+        }
+        Object mode = message.get(DELIVERY_MODE_KEY);
+        return mode instanceof BString bStr ? nameOrUnknown(bStr) : UNKNOWN;
     }
 
     private static int getPayloadSize(BMap<BString, Object> message) {
