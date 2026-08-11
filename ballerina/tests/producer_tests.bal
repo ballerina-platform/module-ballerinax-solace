@@ -331,6 +331,56 @@ isolated function testProducerSendWithUserData() returns error? {
     check producer->close();
 }
 
+@test:Config {groups: ["producer", "send", "graceful-close"]}
+isolated function testProducerCloseDrainsLargePersistentMessages() returns error? {
+    byte[] payload = [];
+    foreach int _ in 0 ..< GRACEFUL_CLOSE_PAYLOAD_BYTES {
+        payload.push(65);
+    }
+
+    foreach int round in 0 ..< GRACEFUL_CLOSE_ROUND_COUNT {
+        MessageProducer producer = check new (BROKER_URL, {
+            messageVpn: MESSAGE_VPN,
+            auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD}
+        });
+
+        foreach int index in 0 ..< GRACEFUL_CLOSE_MESSAGES_PER_ROUND {
+            check producer->send(
+                {
+                    payload,
+                    deliveryMode: PERSISTENT,
+                    messageId: string `graceful-close-${round}-${index}`
+                },
+                {queueName: PRODUCER_GRACEFUL_CLOSE_QUEUE}
+            );
+        }
+
+        // Each round adds a shutdown boundary. A sleep here would invalidate the regression.
+        check producer->close();
+    }
+
+    MessageConsumer consumer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
+        subscriptionConfig: {queueName: PRODUCER_GRACEFUL_CLOSE_QUEUE}
+    });
+
+    int receivedCount = 0;
+    foreach int index in 0 ..< GRACEFUL_CLOSE_MESSAGE_COUNT {
+        BytesPayloadMessage? received = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+        if received is () {
+            break;
+        }
+        test:assertEquals(received.payload.length(), GRACEFUL_CLOSE_PAYLOAD_BYTES,
+            string `Message ${index + 1} payload size should be preserved`);
+        receivedCount += 1;
+    }
+
+    check consumer->close();
+    test:assertEquals(receivedCount, GRACEFUL_CLOSE_MESSAGE_COUNT,
+        string `${GRACEFUL_CLOSE_MESSAGE_COUNT - receivedCount} message(s) were lost after immediate producer close`);
+}
+
 // ========================================
 // Producer Transaction Tests
 // ========================================
@@ -527,4 +577,3 @@ isolated function testProducerWithGenerateSequenceNumbers() returns error? {
 
     check producer->close();
 }
-

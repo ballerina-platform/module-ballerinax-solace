@@ -128,6 +128,7 @@ create_queue "test/producer/ttl/queue"
 create_queue "test/producer/persistent/queue"
 create_queue "test/producer/userdata/queue"
 create_queue "test/producer/compression/queue"
+create_queue "test/producer/graceful-close/queue"
 
 # Producer transaction test queues
 echo "Creating producer transaction test queues..."

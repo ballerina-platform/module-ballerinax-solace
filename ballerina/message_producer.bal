@@ -107,11 +107,10 @@ public isolated client class MessageProducer {
         'class: "io.ballerina.lib.solace.producer.ProducerActions"
     } external;
 
-    # Close the producer and release all resources.
+    # Closes the producer, waiting for guaranteed non-transacted sends to be acknowledged.
+    # Commit or roll back transacted sends before closing.
     #
-    # After calling this method, the producer cannot be used.
-    #
-    # + return - Error if close fails
+    # + return - An error if acknowledgement draining or resource cleanup fails
     isolated remote function close() returns Error? = @java:Method {
         'class: "io.ballerina.lib.solace.producer.ProducerActions"
     } external;
@@ -146,4 +145,3 @@ isolated function prepareProperties(Message message) returns map<Property> {
     }
     return properties;
 }
-

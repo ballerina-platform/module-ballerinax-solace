@@ -58,6 +58,11 @@ const string PRODUCER_TTL_QUEUE = "test/producer/ttl/queue";
 const string PRODUCER_PERSISTENT_QUEUE = "test/producer/persistent/queue";
 const string PRODUCER_USERDATA_QUEUE = "test/producer/userdata/queue";
 const string PRODUCER_COMPRESSION_QUEUE = "test/producer/compression/queue";
+const string PRODUCER_GRACEFUL_CLOSE_QUEUE = "test/producer/graceful-close/queue";
+const int GRACEFUL_CLOSE_ROUND_COUNT = 10;
+const int GRACEFUL_CLOSE_MESSAGES_PER_ROUND = 5;
+const int GRACEFUL_CLOSE_MESSAGE_COUNT = 50;
+const int GRACEFUL_CLOSE_PAYLOAD_BYTES = 1048576;
 
 // Producer transaction test queues
 const string PRODUCER_TX_COMMIT_QUEUE = "test/producer/tx/commit/queue";
