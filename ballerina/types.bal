@@ -200,8 +200,8 @@ public type RetryConfiguration record {|
 type CommonConnectionConfiguration record {
     # The message VPN to connect to
     string messageVpn = "default";
-    # The authentication configuration (basic, Kerberos, or OAuth2)
-    AuthConfiguration auth?;
+    # The required authentication configuration (basic, Kerberos, or OAuth2)
+    AuthConfiguration auth;
     # The SSL/TLS configuration for secure connections
     SecureSocket secureSocket?;
     # A unique client name to use to register to the appliance (auto-generated if not specified)

@@ -144,12 +144,6 @@ public final class ConfigurationUtils {
      * Sets authentication based on the AuthConfiguration type using sealed interface pattern.
      */
     private static void setAuthentication(JCSMPProperties props, AuthConfiguration auth) throws Exception {
-        if (auth == null) {
-            // Default to basic authentication with empty credentials
-            props.setProperty(JCSMPProperties.AUTHENTICATION_SCHEME, JCSMPProperties.AUTHENTICATION_SCHEME_BASIC);
-            return;
-        }
-
         if (auth instanceof BasicAuthConfiguration(String username, String password)) {
             props.setProperty(JCSMPProperties.AUTHENTICATION_SCHEME, JCSMPProperties.AUTHENTICATION_SCHEME_BASIC);
             props.setProperty(JCSMPProperties.USERNAME, username);
