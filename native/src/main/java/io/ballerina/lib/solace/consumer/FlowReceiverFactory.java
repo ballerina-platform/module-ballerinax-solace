@@ -19,6 +19,7 @@
 package io.ballerina.lib.solace.consumer;
 
 import com.solacesystems.jcsmp.ConsumerFlowProperties;
+import com.solacesystems.jcsmp.FlowEventHandler;
 import com.solacesystems.jcsmp.FlowReceiver;
 import com.solacesystems.jcsmp.JCSMPException;
 
@@ -29,5 +30,5 @@ import com.solacesystems.jcsmp.JCSMPException;
 @FunctionalInterface
 public interface FlowReceiverFactory {
 
-    FlowReceiver createFlow(ConsumerFlowProperties flowProps) throws JCSMPException;
+    FlowReceiver createFlow(ConsumerFlowProperties flowProps, FlowEventHandler eventHandler) throws JCSMPException;
 }

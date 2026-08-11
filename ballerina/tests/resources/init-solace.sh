@@ -149,6 +149,7 @@ create_queue "test/consumer/nowait/queue"
 create_queue "test/consumer/selector/queue"
 create_queue "test/consumer/multiple/queue"
 create_queue "test/consumer/flow/queue"
+create_queue "test/consumer/standby/queue"
 
 # Consumer transaction test queues
 echo "Creating consumer transaction test queues..."
@@ -157,6 +158,7 @@ create_queue "test/consumer/tx/rollback/queue"
 create_queue "test/consumer/tx/multiple/queue"
 create_queue "test/consumer/tx/mixed/queue"
 create_queue "test/consumer/tx/coordinated/queue"
+create_queue "test/consumer/tx/standby/queue"
 
 # Client ACK test queues
 echo "Creating client ACK test queues..."

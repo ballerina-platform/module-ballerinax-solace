@@ -16,7 +16,7 @@
 
 import ballerinax/solace;
 
-listener solace:Listener solaceListener = check new ("tcp://localhost:55555");
+listener solace:Listener solaceListener = check new ("tcp://localhost:55555", auth = {username: "default"});
 
 service on solaceListener {
     remote function onMessage(solace:Message message) returns error? {}

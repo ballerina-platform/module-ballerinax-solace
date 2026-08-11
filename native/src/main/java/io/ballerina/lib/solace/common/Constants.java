@@ -38,6 +38,7 @@ public class Constants {
     public static final String NATIVE_DESTINATION_KIND = "native.destination.kind";
     public static final String NATIVE_EVENT_HANDLER = "native.session.event.handler";
     public static final String NATIVE_PUBLISH_ACK_TRACKER = "native.publish.ack.tracker";
+    public static final String NATIVE_CONSUMER_FLOW_STATE_TRACKER = "native.consumer.flow.state.tracker";
 
     // Listener-specific native data keys
     public static final String NATIVE_RUNTIME = "native.runtime";

@@ -16,3 +16,9 @@
 
 # Represents a Solace distinct error.
 public type Error distinct error;
+
+# Indicates that a guaranteed consumer flow is inactive and cannot receive messages.
+public type InactiveFlowError distinct Error;
+
+# Indicates that a previously established guaranteed consumer flow is down.
+public type FlowDownError distinct Error;

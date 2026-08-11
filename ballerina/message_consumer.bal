@@ -66,13 +66,13 @@ public isolated client class MessageConsumer {
 
     # Receive a message with a timeout.
     #
-    # Blocks up to the specified timeout waiting for a message. Returns nil if no message
-    # arrives within the timeout period.
+    # Blocks up to the specified timeout waiting for a message. Returns nil if an active flow is empty,
+    # `InactiveFlowError` if the flow is inactive, or `FlowDownError` if it is down.
     #
     # + timeout - Maximum time in seconds to wait for a message. A nil or zero timeout never expires
     # + T - Optional type description of the expected message type; declare a narrowed
     # `record {|*Message; T payload;|}` to have the payload data-bound into `T`
-    # + return - The received message, or nil if timeout occurs; Error if receive fails
+    # + return - The received message, nil on an active-flow timeout, or an Error
     isolated remote function receive(decimal? timeout = (), typedesc<Message> T = <>) returns T|Error? = @java:Method {
         'class: "io.ballerina.lib.solace.consumer.ConsumerActions"
     } external;

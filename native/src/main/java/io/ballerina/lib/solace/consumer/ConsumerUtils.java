@@ -18,6 +18,7 @@
 
 package io.ballerina.lib.solace.consumer;
 
+import com.solacesystems.jcsmp.CapabilityType;
 import com.solacesystems.jcsmp.ConsumerFlowProperties;
 import com.solacesystems.jcsmp.DurableTopicEndpoint;
 import com.solacesystems.jcsmp.EndpointProperties;
@@ -38,6 +39,7 @@ import static io.ballerina.lib.solace.common.Constants.NATIVE_CONSUMER;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_DESTINATION;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_DESTINATION_KIND;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_FLOW;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_CONSUMER_FLOW_STATE_TRACKER;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_SESSION;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_SUBSCRIPTION_TYPE;
 import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.DESTINATION_KIND_QUEUE;
@@ -100,6 +102,12 @@ public class ConsumerUtils {
         flowProps.setReconnectRetryIntervalInMsecs(config.reconnectRetryIntervalInMsecs());
     }
 
+    static void configureActiveFlowIndication(JCSMPSession session, ConsumerFlowProperties flowProps) {
+        if (session.isCapable(CapabilityType.ACTIVE_FLOW_INDICATION)) {
+            flowProps.setActiveFlowIndication(true);
+        }
+    }
+
     /**
      * Creates a queue for consumption (temporary or regular).
      *
@@ -134,6 +142,7 @@ public class ConsumerUtils {
         ConsumerFlowProperties flowProps = new ConsumerFlowProperties();
         flowProps.setEndpoint(queue);
         configureFlowProperties(flowProps, config);
+        configureActiveFlowIndication(baseSession, flowProps);
 
         // Add settlement outcomes only for non-transacted flows
         if (!isTransacted) {
@@ -141,10 +150,13 @@ public class ConsumerUtils {
         }
 
         // Create flow using the factory function
-        FlowReceiver flowReceiver = flowFactory.createFlow(flowProps);
+        ConsumerFlowStateTracker flowStateTracker = new ConsumerFlowStateTracker();
+        FlowReceiver flowReceiver = flowFactory.createFlow(flowProps, flowStateTracker);
         flowReceiver.start();
+        flowStateTracker.flowStarted(flowProps.isActiveFlowIndication());
 
         consumer.addNativeData(NATIVE_FLOW, flowReceiver);
+        consumer.addNativeData(NATIVE_CONSUMER_FLOW_STATE_TRACKER, flowStateTracker);
         consumer.addNativeData(NATIVE_SUBSCRIPTION_TYPE, SUBSCRIPTION_TYPE_QUEUE);
         consumer.addNativeData(NATIVE_DESTINATION, queue.getName());
         consumer.addNativeData(NATIVE_DESTINATION_KIND, DESTINATION_KIND_QUEUE);
@@ -178,6 +190,7 @@ public class ConsumerUtils {
         flowProps.setEndpoint(endpoint);
         flowProps.setNewSubscription(topic);
         configureFlowProperties(flowProps, config);
+        configureActiveFlowIndication(baseSession, flowProps);
 
         // Add settlement outcomes only for non-transacted flows
         if (!isTransacted) {
@@ -185,10 +198,13 @@ public class ConsumerUtils {
         }
 
         // Create flow using the factory function
-        FlowReceiver flowReceiver = flowFactory.createFlow(flowProps);
+        ConsumerFlowStateTracker flowStateTracker = new ConsumerFlowStateTracker();
+        FlowReceiver flowReceiver = flowFactory.createFlow(flowProps, flowStateTracker);
         flowReceiver.start();
+        flowStateTracker.flowStarted(flowProps.isActiveFlowIndication());
 
         consumer.addNativeData(NATIVE_FLOW, flowReceiver);
+        consumer.addNativeData(NATIVE_CONSUMER_FLOW_STATE_TRACKER, flowStateTracker);
         consumer.addNativeData(NATIVE_SUBSCRIPTION_TYPE, SUBSCRIPTION_TYPE_DURABLE_TOPIC);
         consumer.addNativeData(NATIVE_DESTINATION, config.topicName());
         consumer.addNativeData(NATIVE_DESTINATION_KIND, DESTINATION_KIND_TOPIC);
