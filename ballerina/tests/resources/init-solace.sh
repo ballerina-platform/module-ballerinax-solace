@@ -202,6 +202,10 @@ create_queue "test/listener/clientack/queue"
 create_queue "test/listener/nack/queue"
 create_queue "test/listener/tx/commit/queue"
 create_queue "test/listener/tx/rollback/queue"
+create_queue "test/listener/duplicate-attach/queue"
+create_queue "test/listener/duplicate-attach/svc1/queue"
+create_queue "test/listener/duplicate-attach/svc2/queue"
+create_queue "test/listener/duplicate-attach/reattach/queue"
 
 # Error test queues
 echo "Creating error test queues..."

@@ -149,6 +149,9 @@ public class ListenerActions {
             if (isClosed(listener)) {
                 return CommonUtils.createError("Listener is closed");
             }
+            if (servicesMap(listener).containsKey(service)) {
+                return CommonUtils.createError("Service is already attached to this listener");
+            }
 
             Runtime runtime = (Runtime) listener.getNativeData(NATIVE_RUNTIME);
             Service nativeService = new Service(service);

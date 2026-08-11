@@ -28,6 +28,10 @@ const string LISTENER_TX_COMMIT_QUEUE = "test/listener/tx/commit/queue";
 const string LISTENER_TX_ROLLBACK_QUEUE = "test/listener/tx/rollback/queue";
 const string LISTENER_DURABLE_TOPIC = "test/listener/durable/topic";
 const string LISTENER_DURABLE_ENDPOINT = "test-listener-durable-endpoint";
+const string LISTENER_DUPLICATE_ATTACH_QUEUE = "test/listener/duplicate-attach/queue";
+const string LISTENER_DUPLICATE_ATTACH_SVC1_QUEUE = "test/listener/duplicate-attach/svc1/queue";
+const string LISTENER_DUPLICATE_ATTACH_SVC2_QUEUE = "test/listener/duplicate-attach/svc2/queue";
+const string LISTENER_DUPLICATE_ATTACH_REATTACH_QUEUE = "test/listener/duplicate-attach/reattach/queue";
 
 // Polling step and max steps used to wait for asynchronous conditions (delivery, redelivery, etc.).
 // Redelivery after a FAILED settlement outcome is usually immediate but can occasionally take
@@ -408,4 +412,124 @@ function testListenerTransactedRollback() returns error? {
     boolean queueEmpty = check queueIsEmpty(LISTENER_TX_ROLLBACK_QUEUE);
     test:assertTrue(redelivered, "Rollback should cause the message to be redelivered");
     test:assertTrue(queueEmpty, "After the committed redelivery the queue must be empty");
+}
+
+// ========================================
+// Duplicate attach() rejection
+// ========================================
+final Recorder duplicateAttachRecorder = new;
+
+Service duplicateAttachService = @ServiceConfig {
+    queueName: LISTENER_DUPLICATE_ATTACH_QUEUE,
+    ackMode: AUTO_ACK
+} service object {
+    remote function onMessage(StringPayloadMessage message) returns error? {
+        duplicateAttachRecorder.add(message.payload);
+    }
+};
+
+// A duplicate attach() of the *same* service instance must be rejected, and the originally attached service
+// must keep working undisturbed. Mirrors the reproducer in
+// https://github.com/wso2/product-integrator/issues/2015.
+@test:Config {groups: ["listener"]}
+function testListenerRejectsDuplicateAttach() returns error? {
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
+    check solaceListener.attach(duplicateAttachService);
+
+    Error? duplicate = solaceListener.attach(duplicateAttachService);
+    test:assertTrue(duplicate is Error, "Attaching the same service instance twice must be rejected");
+
+    check solaceListener.'start();
+    runtime:sleep(2);
+
+    string payload = "listener-duplicate-attach-payload";
+    check publish({queueName: LISTENER_DUPLICATE_ATTACH_QUEUE}, payload, PERSISTENT);
+    waitForMessages(duplicateAttachRecorder, 1);
+    boolean received = duplicateAttachRecorder.contains(payload);
+    check solaceListener.gracefulStop();
+
+    test:assertTrue(received, "The originally attached service should still receive the message");
+    test:assertEquals(duplicateAttachRecorder.count(), 1, "The message must not be delivered twice");
+}
+
+// ========================================
+// Two different services on the same listener
+// ========================================
+final Recorder duplicateAttachSvc1Recorder = new;
+final Recorder duplicateAttachSvc2Recorder = new;
+
+Service duplicateAttachSvc1 = @ServiceConfig {
+    queueName: LISTENER_DUPLICATE_ATTACH_SVC1_QUEUE,
+    ackMode: AUTO_ACK
+} service object {
+    remote function onMessage(StringPayloadMessage message) returns error? {
+        duplicateAttachSvc1Recorder.add(message.payload);
+    }
+};
+
+Service duplicateAttachSvc2 = @ServiceConfig {
+    queueName: LISTENER_DUPLICATE_ATTACH_SVC2_QUEUE,
+    ackMode: AUTO_ACK
+} service object {
+    remote function onMessage(StringPayloadMessage message) returns error? {
+        duplicateAttachSvc2Recorder.add(message.payload);
+    }
+};
+
+// Attaching two *different* service instances to the same listener must always be allowed - the guard is
+// about rejecting the same object twice, not about limiting a listener to one service.
+@test:Config {groups: ["listener"]}
+function testListenerAllowsTwoDifferentServices() returns error? {
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
+    check solaceListener.attach(duplicateAttachSvc1);
+    check solaceListener.attach(duplicateAttachSvc2);
+    check solaceListener.'start();
+    runtime:sleep(2);
+
+    string payload1 = "listener-duplicate-attach-svc1-payload";
+    string payload2 = "listener-duplicate-attach-svc2-payload";
+    check publish({queueName: LISTENER_DUPLICATE_ATTACH_SVC1_QUEUE}, payload1, PERSISTENT);
+    check publish({queueName: LISTENER_DUPLICATE_ATTACH_SVC2_QUEUE}, payload2, PERSISTENT);
+    waitForMessages(duplicateAttachSvc1Recorder, 1);
+    waitForMessages(duplicateAttachSvc2Recorder, 1);
+    boolean received1 = duplicateAttachSvc1Recorder.contains(payload1);
+    boolean received2 = duplicateAttachSvc2Recorder.contains(payload2);
+    check solaceListener.gracefulStop();
+
+    test:assertTrue(received1, "Service 1 should have received its own message");
+    test:assertTrue(received2, "Service 2 should have received its own message");
+}
+
+// ========================================
+// detach() then re-attach() of the same service
+// ========================================
+final Recorder duplicateAttachReattachRecorder = new;
+
+Service duplicateAttachReattachService = @ServiceConfig {
+    queueName: LISTENER_DUPLICATE_ATTACH_REATTACH_QUEUE,
+    ackMode: AUTO_ACK
+} service object {
+    remote function onMessage(StringPayloadMessage message) returns error? {
+        duplicateAttachReattachRecorder.add(message.payload);
+    }
+};
+
+// detach() followed by a fresh attach() of the same service instance must succeed - the duplicate-attach
+// guard must not confuse "already attached" with "was attached once, then properly detached".
+@test:Config {groups: ["listener"]}
+function testListenerAllowsReattachAfterDetach() returns error? {
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
+    check solaceListener.attach(duplicateAttachReattachService);
+    check solaceListener.detach(duplicateAttachReattachService);
+    check solaceListener.attach(duplicateAttachReattachService);
+    check solaceListener.'start();
+    runtime:sleep(2);
+
+    string payload = "listener-duplicate-attach-reattach-payload";
+    check publish({queueName: LISTENER_DUPLICATE_ATTACH_REATTACH_QUEUE}, payload, PERSISTENT);
+    waitForMessages(duplicateAttachReattachRecorder, 1);
+    boolean received = duplicateAttachReattachRecorder.contains(payload);
+    check solaceListener.gracefulStop();
+
+    test:assertTrue(received, "The re-attached service should receive the message after being detached and re-attached");
 }
