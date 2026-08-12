@@ -62,6 +62,14 @@ public class CommonUtils {
     }
 
     /**
+     * Creates a named Ballerina Solace error subtype.
+     */
+    public static BError createError(String errorType, String message) {
+        return ErrorCreator.createError(ModuleUtils.getModule(), errorType,
+                StringUtils.fromString(message), null, null);
+    }
+
+    /**
      * Executes a blocking operation on a virtual thread and waits for completion.
      */
     public static Object executeBlocking(RunnableWithException task) throws Exception {

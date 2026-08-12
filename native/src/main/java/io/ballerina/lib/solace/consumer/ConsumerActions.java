@@ -50,6 +50,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 
 import static io.ballerina.lib.solace.common.Constants.NATIVE_CLOSED;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_CONSUMER_FLOW_STATE_TRACKER;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_CONSUMER;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_DESTINATION;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_FLOW;
@@ -81,6 +82,9 @@ import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants
  * Consumer actions - main entry point for Ballerina MessageConsumer interop.
  */
 public class ConsumerActions {
+
+    private static final String INACTIVE_FLOW_ERROR = "InactiveFlowError";
+    private static final String FLOW_DOWN_ERROR = "FlowDownError";
 
     /**
      * Initialize the consumer with connection URL and configuration. Creates either a transacted or non-transacted
@@ -140,15 +144,15 @@ public class ConsumerActions {
             // Create appropriate consumer based on subscription type
             if (subscriptionConfig instanceof QueueConsumerConfig queueConfig) {
                 FlowReceiverFactory factory = isTransacted
-                        ? props -> finalTxSession.createFlow(null, props, null)
-                        : props -> finalSession.createFlow(null, props);
+                        ? (props, handler) -> finalTxSession.createFlow(null, props, null, handler)
+                        : (props, handler) -> finalSession.createFlow(null, props, null, handler);
                 createQueueConsumer(consumer, factory, queueConfig, isTransacted);
             } else if (subscriptionConfig instanceof TopicConsumerConfig topicConfig) {
                 topicConfig.validate();
                 if (topicConfig.isDurable()) {
                     FlowReceiverFactory factory = isTransacted
-                            ? props -> finalTxSession.createFlow(null, props, null)
-                            : props -> finalSession.createFlow(null, props);
+                            ? (props, handler) -> finalTxSession.createFlow(null, props, null, handler)
+                            : (props, handler) -> finalSession.createFlow(null, props, null, handler);
                     createDurableTopicConsumer(consumer, factory, topicConfig, isTransacted);
                 } else {
                     createDirectTopicConsumer(consumer, session, topicConfig);
@@ -209,7 +213,11 @@ public class ConsumerActions {
                     if (flowReceiver == null) {
                         return CommonUtils.createError("Consumer flow not initialized");
                     }
-                    message = flowReceiver.receive((int) timeoutMs);
+                    try {
+                        message = flowReceiver.receive((int) timeoutMs);
+                    } catch (Exception e) {
+                        return new FlowReceiveFailure(e);
+                    }
                 } else if (SUBSCRIPTION_TYPE_DIRECT_TOPIC.equals(subscriptionType)) {
                     XMLMessageConsumer xmlConsumer = (XMLMessageConsumer) consumer.getNativeData(NATIVE_CONSUMER);
                     if (xmlConsumer == null) {
@@ -218,7 +226,7 @@ public class ConsumerActions {
                     message = xmlConsumer.receive((int) timeoutMs);
                 }
                 if (message == null) {
-                    return null; // Timeout - no message available
+                    return emptyReceiveResult(consumer);
                 }
                 try {
                     return MessageConverter.toBallerinaMessage(message, bTypedesc);
@@ -229,6 +237,13 @@ public class ConsumerActions {
                 }
             });
 
+            if (result instanceof FlowReceiveFailure failure) {
+                SolaceMetricsUtil.reportConsumerError(consumer, ERROR_TYPE_RECEIVE);
+                if (shouldMapToFlowDownError(true, flowState(consumer))) {
+                    return flowDownError();
+                }
+                return CommonUtils.createError("Failed to receive message", failure.cause());
+            }
             if (result instanceof BError bError) {
                 SolaceMetricsUtil.reportConsumerError(consumer, ERROR_TYPE_RECEIVE);
                 return bError;
@@ -239,6 +254,39 @@ public class ConsumerActions {
             SolaceMetricsUtil.reportConsumerError(consumer, ERROR_TYPE_RECEIVE);
             return CommonUtils.createError("Failed to receive message", e);
         }
+    }
+
+    private static Object emptyReceiveResult(BObject consumer) {
+        String errorType = flowStateErrorType(flowState(consumer));
+        if (INACTIVE_FLOW_ERROR.equals(errorType)) {
+            return CommonUtils.createError(errorType, "Consumer flow is inactive and cannot receive messages");
+        }
+        return FLOW_DOWN_ERROR.equals(errorType) ? flowDownError() : null;
+    }
+
+    static String flowStateErrorType(ConsumerFlowStateTracker.State state) {
+        return switch (state) {
+            case INACTIVE -> INACTIVE_FLOW_ERROR;
+            case DOWN -> FLOW_DOWN_ERROR;
+            default -> null;
+        };
+    }
+
+    static boolean shouldMapToFlowDownError(boolean flowReceiveFailed, ConsumerFlowStateTracker.State state) {
+        return flowReceiveFailed && state == ConsumerFlowStateTracker.State.DOWN;
+    }
+
+    private static BError flowDownError() {
+        return CommonUtils.createError(FLOW_DOWN_ERROR, "Consumer flow is down");
+    }
+
+    private static ConsumerFlowStateTracker.State flowState(BObject consumer) {
+        ConsumerFlowStateTracker tracker = (ConsumerFlowStateTracker) consumer.getNativeData(
+                NATIVE_CONSUMER_FLOW_STATE_TRACKER);
+        return tracker == null ? ConsumerFlowStateTracker.State.UNKNOWN : tracker.state();
+    }
+
+    private record FlowReceiveFailure(Exception cause) {
     }
 
     /**

@@ -25,7 +25,7 @@ isolated function validateConfigurations(CommonConnectionConfiguration config) r
     }
 
     // Validate auth configurations
-    AuthConfiguration? authConfig = config.auth;
+    AuthConfiguration authConfig = config.auth;
     if authConfig is BasicAuthConfiguration {
         string username = authConfig.username;
         if username.length() > 189 {

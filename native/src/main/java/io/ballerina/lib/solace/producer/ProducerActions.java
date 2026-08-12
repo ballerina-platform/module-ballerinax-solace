@@ -42,10 +42,12 @@ import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Map;
 
 import static io.ballerina.lib.solace.common.Constants.NATIVE_CLOSED;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_EVENT_HANDLER;
+import static io.ballerina.lib.solace.common.Constants.NATIVE_PUBLISH_ACK_TRACKER;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_PRODUCER;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_SESSION;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_TRANSACTED;
@@ -70,6 +72,7 @@ public class ProducerActions {
 
     private static final BString QUEUE_NAME_KEY = StringUtils.fromString("queueName");
     private static final BString TOPIC_NAME_KEY = StringUtils.fromString("topicName");
+    private static final Duration PUBLISH_ACK_DRAIN_TIMEOUT = Duration.ofSeconds(30);
 
     /**
      * Initialize the producer with connection URL and configuration. Creates either a transacted or non-transacted
@@ -106,22 +109,26 @@ public class ProducerActions {
             eventHandler.markConnected();
 
             boolean isTransacted = producerConfig.connectionConfig().transacted();
+            PublishAcknowledgementTracker acknowledgementTracker =
+                    isTransacted ? null : new PublishAcknowledgementTracker();
             XMLMessageProducer xmlProducer;
 
             if (isTransacted) {
                 // Transacted mode: Create TransactedSession and producer within it
                 txSession = session.createTransactedSession();
+                PublishEventHandler publishEventHandler =
+                        new PublishEventHandler(url.getValue(), messageVpn);
 
                 // IMPORTANT: Must first call getMessageProducer on base session before creating transacted producer
-                session.getMessageProducer(new PublishEventHandler(url.getValue(), messageVpn));
+                session.getMessageProducer(publishEventHandler);
 
                 // Create producer within transacted session with streaming callback
                 ProducerFlowProperties flowProps = new ProducerFlowProperties();
-                xmlProducer = txSession.createProducer(flowProps,
-                        new PublishEventHandler(url.getValue(), messageVpn));
+                xmlProducer = txSession.createProducer(flowProps, publishEventHandler);
             } else {
                 // Non-transacted mode: Use regular session producer
-                xmlProducer = session.getMessageProducer(new PublishEventHandler(url.getValue(), messageVpn));
+                xmlProducer = session.getMessageProducer(
+                        new PublishEventHandler(url.getValue(), messageVpn, acknowledgementTracker));
             }
 
             // Store session references in native data
@@ -133,6 +140,7 @@ public class ProducerActions {
             producer.addNativeData(NATIVE_URL, url.getValue());
             producer.addNativeData(NATIVE_VPN, messageVpn);
             producer.addNativeData(NATIVE_EVENT_HANDLER, eventHandler);
+            producer.addNativeData(NATIVE_PUBLISH_ACK_TRACKER, acknowledgementTracker);
         } catch (Exception e) {
             if (txSession != null) {
                 CommonUtils.closeQuietly(txSession::close);
@@ -164,6 +172,8 @@ public class ProducerActions {
         String destinationName = getDestinationName(destinationMap);
         String destinationKind = getDestinationKind(destinationMap);
         SolaceTracingUtil.traceResourceInvocation(env, producer, destinationName);
+        PublishAcknowledgementTracker tracker = null;
+        Long correlationKey = null;
         try {
             XMLMessageProducer xmlProducer = (XMLMessageProducer) producer.getNativeData(NATIVE_PRODUCER);
             if (xmlProducer == null) {
@@ -187,8 +197,19 @@ public class ProducerActions {
             com.solacesystems.jcsmp.Destination jcsmpDestination =
                     DestinationConverter.fromDestinationInterface(destination);
 
+            tracker = (PublishAcknowledgementTracker) producer.getNativeData(NATIVE_PUBLISH_ACK_TRACKER);
+            if (tracker != null && jcsmpMessage.getDeliveryMode() != com.solacesystems.jcsmp.DeliveryMode.DIRECT) {
+                try {
+                    correlationKey = tracker.register();
+                    jcsmpMessage.setCorrelationKey(correlationKey);
+                } catch (IllegalStateException e) {
+                    return reportPublishFailure(producer, destinationName, destinationKind, "Producer is closing");
+                }
+            }
+
             final XMLMessage finalMessage = jcsmpMessage;
             final com.solacesystems.jcsmp.Destination finalDestination = jcsmpDestination;
+            final Long finalCorrelationKey = correlationKey;
             long startNanos = System.nanoTime();
             Object result = CommonUtils.executeBlocking(() -> {
                 xmlProducer.send(finalMessage, finalDestination);
@@ -196,6 +217,9 @@ public class ProducerActions {
             long elapsedNanos = System.nanoTime() - startNanos;
 
             if (result instanceof BError bError) {
+                if (tracker != null && finalCorrelationKey != null) {
+                    tracker.cancel(finalCorrelationKey);
+                }
                 SolaceMetricsUtil.reportProducerError(producer, destinationName, destinationKind, ERROR_TYPE_PUBLISH);
                 return CommonUtils.createError(bError.getMessage());
             }
@@ -205,6 +229,9 @@ public class ProducerActions {
                     elapsedNanos);
             return null;
         } catch (Exception e) {
+            if (tracker != null && correlationKey != null) {
+                tracker.cancel(correlationKey);
+            }
             SolaceMetricsUtil.reportProducerError(producer, destinationName, destinationKind, ERROR_TYPE_PUBLISH);
             return CommonUtils.createError("Failed to send message", e);
         }
@@ -331,11 +358,25 @@ public class ProducerActions {
         XMLMessageProducer xmlProducer = (XMLMessageProducer) producer.getNativeData(NATIVE_PRODUCER);
         TransactedSession txSession = (TransactedSession) producer.getNativeData(NATIVE_TX_SESSION);
         JCSMPSession session = (JCSMPSession) producer.getNativeData(NATIVE_SESSION);
+        PublishAcknowledgementTracker tracker =
+                (PublishAcknowledgementTracker) producer.getNativeData(NATIVE_PUBLISH_ACK_TRACKER);
+
+        Exception firstError = null;
+        PublishAcknowledgementTracker.DrainResult drainResult = null;
+        if (tracker != null) {
+            tracker.beginClose();
+            try {
+                drainResult = tracker.awaitSettlement(PUBLISH_ACK_DRAIN_TIMEOUT);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                firstError = e;
+            }
+        }
 
         // Attempt to close every resource independently so one failure doesn't block the rest.
-        Exception firstError = null;
         if (xmlProducer != null) {
-            firstError = CommonUtils.attemptClose(xmlProducer::close);
+            Exception e = CommonUtils.attemptClose(xmlProducer::close);
+            firstError = firstError == null ? e : firstError;
         }
         if (txSession != null) {
             Exception e = CommonUtils.attemptClose(txSession::close);
@@ -351,12 +392,29 @@ public class ProducerActions {
         producer.addNativeData(NATIVE_PRODUCER, null);
         producer.addNativeData(NATIVE_TX_SESSION, null);
         producer.addNativeData(NATIVE_SESSION, null);
+        producer.addNativeData(NATIVE_PUBLISH_ACK_TRACKER, null);
+
+        if (tracker != null) {
+            tracker.markClosed();
+        }
 
         SolaceSessionEventHandler.markDisconnected(producer);
 
         if (firstError != null) {
             SolaceMetricsUtil.reportProducerError(producer, ERROR_TYPE_CLOSE);
             return CommonUtils.createError("Failed to close producer", firstError);
+        }
+        if (drainResult != null && drainResult.unconfirmedCount() > 0) {
+            SolaceMetricsUtil.reportProducerError(producer, ERROR_TYPE_CLOSE);
+            return CommonUtils.createError(String.format(
+                    "Timed out waiting for publish acknowledgements; %d message(s) remain unconfirmed",
+                    drainResult.unconfirmedCount()));
+        }
+        if (drainResult != null && drainResult.rejectedCount() > 0) {
+            SolaceMetricsUtil.reportProducerError(producer, ERROR_TYPE_CLOSE);
+            return CommonUtils.createError(String.format(
+                    "%d guaranteed publish(es) were rejected before close: %s",
+                    drainResult.rejectedCount(), drainResult.firstRejection()));
         }
 
         SolaceMetricsUtil.reportProducerClose(producer);

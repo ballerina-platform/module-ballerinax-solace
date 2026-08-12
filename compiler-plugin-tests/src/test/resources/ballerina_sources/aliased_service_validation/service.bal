@@ -24,7 +24,7 @@ AliasedService missingObjectServiceConfig = service object {
 
 type AliasedListener solace:Listener;
 
-listener AliasedListener aliasedListener = check new ("tcp://localhost:55555");
+listener AliasedListener aliasedListener = check new ("tcp://localhost:55555", auth = {username: "default"});
 
 service on aliasedListener {
     remote function onMessage(solace:Message message) returns error? {}

@@ -34,10 +34,16 @@ public class PublishEventHandler implements JCSMPStreamingPublishCorrelatingEven
 
     private final String url;
     private final String vpn;
+    private final PublishAcknowledgementTracker acknowledgementTracker;
 
     PublishEventHandler(String url, String vpn) {
+        this(url, vpn, null);
+    }
+
+    PublishEventHandler(String url, String vpn, PublishAcknowledgementTracker acknowledgementTracker) {
         this.url = url;
         this.vpn = vpn;
+        this.acknowledgementTracker = acknowledgementTracker;
     }
 
     /**
@@ -47,6 +53,9 @@ public class PublishEventHandler implements JCSMPStreamingPublishCorrelatingEven
      */
     @Override
     public void responseReceivedEx(Object key) {
+        if (acknowledgementTracker != null) {
+            acknowledgementTracker.acknowledge(key);
+        }
         recordConfirm(true);
     }
 
@@ -59,6 +68,9 @@ public class PublishEventHandler implements JCSMPStreamingPublishCorrelatingEven
      */
     @Override
     public void handleErrorEx(Object key, JCSMPException cause, long timestamp) {
+        if (acknowledgementTracker != null) {
+            acknowledgementTracker.reject(key, cause);
+        }
         LOGGER.warning(String.format(
                 "Guaranteed-delivery publish failed for correlation key '%s': %s", key, cause.getMessage()));
         recordConfirm(false);

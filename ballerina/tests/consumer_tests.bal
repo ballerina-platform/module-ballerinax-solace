@@ -372,6 +372,98 @@ isolated function testConsumerReceiveTimeout() returns error? {
     check consumer->close();
 }
 
+@test:Config {groups: ["consumer", "receive", "flow-state"]}
+isolated function testInactiveExclusiveQueueConsumerReturnsError() returns error? {
+    MessageConsumer activeConsumer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        subscriptionConfig: {queueName: CONSUMER_STANDBY_QUEUE}
+    });
+    MessageConsumer standbyConsumer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        subscriptionConfig: {queueName: CONSUMER_STANDBY_QUEUE}
+    });
+
+    Message|Error? noWaitResult = standbyConsumer->receiveNoWait();
+    test:assertTrue(noWaitResult is (), "receiveNoWait must retain its existing empty-result behavior");
+
+    Message|Error? result = standbyConsumer->receive(SHORT_RECEIVE_TIMEOUT);
+    test:assertTrue(result is InactiveFlowError,
+        "An inactive flow must return InactiveFlowError instead of nil");
+
+    check activeConsumer->close();
+
+    check sendMessageToQueue(CONSUMER_STANDBY_QUEUE, "Promoted standby");
+    BytesPayloadMessage? promotedResult = check standbyConsumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    test:assertTrue(promotedResult is BytesPayloadMessage, "The standby consumer must receive after promotion");
+
+    check standbyConsumer->close();
+}
+
+@test:Config {groups: ["consumer", "receive", "flow-state"]}
+isolated function testInactiveTransactedQueueConsumerReturnsTypedError() returns error? {
+    MessageConsumer activeConsumer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
+        transacted: true,
+        subscriptionConfig: {queueName: CONSUMER_TX_STANDBY_QUEUE}
+    });
+    MessageConsumer standbyConsumer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
+        transacted: true,
+        subscriptionConfig: {queueName: CONSUMER_TX_STANDBY_QUEUE}
+    });
+
+    Message|Error? result = standbyConsumer->receive(SHORT_RECEIVE_TIMEOUT);
+    test:assertTrue(result is InactiveFlowError,
+        "An inactive transacted flow must return InactiveFlowError");
+
+    check standbyConsumer->close();
+    check activeConsumer->close();
+}
+
+@test:Config {groups: ["consumer", "receive", "flow-state"]}
+isolated function testActiveDurableTopicConsumerTimeoutReturnsNil() returns error? {
+    MessageConsumer consumer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
+        subscriptionConfig: {
+            topicName: CONSUMER_STANDBY_DURABLE_TOPIC,
+            durability: DURABLE,
+            endpointName: CONSUMER_STANDBY_DURABLE_ENDPOINT
+        }
+    });
+    Message|Error? result = consumer->receive(SHORT_RECEIVE_TIMEOUT);
+    test:assertTrue(result is (), "An active durable-topic flow timeout must return nil");
+
+    check consumer->close();
+}
+
+@test:Config {groups: ["consumer", "receive", "flow-state"]}
+isolated function testDirectTopicTimeoutRemainsNil() returns error? {
+    MessageConsumer consumer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
+        subscriptionConfig: {
+            topicName: CONSUMER_EMPTY_DIRECT_TOPIC,
+            durability: TEMPORARY
+        }
+    });
+
+    Message|Error? result = consumer->receive(SHORT_RECEIVE_TIMEOUT);
+    test:assertTrue(result is (), "A direct-topic timeout must continue to return nil");
+
+    check consumer->close();
+}
+
 @test:Config {groups: ["consumer", "receive"]}
 isolated function testConsumerReceiveNoWait() returns error? {
     // Send message first

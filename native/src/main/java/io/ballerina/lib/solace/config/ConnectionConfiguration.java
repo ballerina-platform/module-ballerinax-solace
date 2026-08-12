@@ -42,7 +42,7 @@ import java.math.BigDecimal;
  * @param readTimeout                maximum time in milliseconds for reading replies
  * @param compressionLevel           ZLIB compression level (0-9, 0 = disabled)
  * @param transacted                 true to enable transacted messaging
- * @param auth                       authentication configuration, or null
+ * @param auth                       authentication configuration
  * @param retryConfig                retry configuration, or null
  * @param secureSocket               SSL/TLS configuration, or null
  */
@@ -110,13 +110,7 @@ public record ConnectionConfiguration(
      */
     @SuppressWarnings("unchecked")
     private static AuthConfiguration getAuthConfig(BMap<BString, Object> config) {
-        if (!config.containsKey(AUTH_KEY)) {
-            return null;
-        }
         Object authObj = config.get(AUTH_KEY);
-        if (authObj == null) {
-            return null;
-        }
         BMap<BString, Object> authMap = (BMap<BString, Object>) authObj;
         return createAuthConfig(authMap);
     }

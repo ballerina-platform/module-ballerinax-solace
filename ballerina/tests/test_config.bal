@@ -58,6 +58,11 @@ const string PRODUCER_TTL_QUEUE = "test/producer/ttl/queue";
 const string PRODUCER_PERSISTENT_QUEUE = "test/producer/persistent/queue";
 const string PRODUCER_USERDATA_QUEUE = "test/producer/userdata/queue";
 const string PRODUCER_COMPRESSION_QUEUE = "test/producer/compression/queue";
+const string PRODUCER_GRACEFUL_CLOSE_QUEUE = "test/producer/graceful-close/queue";
+const int GRACEFUL_CLOSE_ROUND_COUNT = 10;
+const int GRACEFUL_CLOSE_MESSAGES_PER_ROUND = 5;
+const int GRACEFUL_CLOSE_MESSAGE_COUNT = 50;
+const int GRACEFUL_CLOSE_PAYLOAD_BYTES = 1048576;
 
 // Producer transaction test queues
 const string PRODUCER_TX_COMMIT_QUEUE = "test/producer/tx/commit/queue";
@@ -79,6 +84,10 @@ const string CONSUMER_NOWAIT_QUEUE = "test/consumer/nowait/queue";
 const string CONSUMER_SELECTOR_QUEUE = "test/consumer/selector/queue";
 const string CONSUMER_MULTIPLE_QUEUE = "test/consumer/multiple/queue";
 const string CONSUMER_FLOW_QUEUE = "test/consumer/flow/queue";
+const string CONSUMER_STANDBY_QUEUE = "test/consumer/standby/queue";
+const string CONSUMER_TX_STANDBY_QUEUE = "test/consumer/tx/standby/queue";
+const string CONSUMER_STANDBY_DURABLE_TOPIC = "test/consumer/standby/durable/topic";
+const string CONSUMER_STANDBY_DURABLE_ENDPOINT = "test-consumer-standby-durable-endpoint";
 
 // Consumer transaction test queues
 const string CONSUMER_TX_COMMIT_QUEUE = "test/consumer/tx/commit/queue";
@@ -89,6 +98,7 @@ const string CONSUMER_TX_COORDINATED_QUEUE = "test/consumer/tx/coordinated/queue
 
 // Consumer test topics
 const string CONSUMER_DIRECT_TOPIC = "test/consumer/direct/topic";
+const string CONSUMER_EMPTY_DIRECT_TOPIC = "test/consumer/direct/empty/topic";
 const string CONSUMER_DURABLE_TOPIC = "test/consumer/durable/topic";
 const string CONSUMER_DURABLE_ENDPOINT = "test-consumer-durable-endpoint";
 

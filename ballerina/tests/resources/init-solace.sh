@@ -128,6 +128,7 @@ create_queue "test/producer/ttl/queue"
 create_queue "test/producer/persistent/queue"
 create_queue "test/producer/userdata/queue"
 create_queue "test/producer/compression/queue"
+create_queue "test/producer/graceful-close/queue"
 
 # Producer transaction test queues
 echo "Creating producer transaction test queues..."
@@ -148,6 +149,7 @@ create_queue "test/consumer/nowait/queue"
 create_queue "test/consumer/selector/queue"
 create_queue "test/consumer/multiple/queue"
 create_queue "test/consumer/flow/queue"
+create_queue "test/consumer/standby/queue"
 
 # Consumer transaction test queues
 echo "Creating consumer transaction test queues..."
@@ -156,6 +158,7 @@ create_queue "test/consumer/tx/rollback/queue"
 create_queue "test/consumer/tx/multiple/queue"
 create_queue "test/consumer/tx/mixed/queue"
 create_queue "test/consumer/tx/coordinated/queue"
+create_queue "test/consumer/tx/standby/queue"
 
 # Client ACK test queues
 echo "Creating client ACK test queues..."
@@ -199,6 +202,10 @@ create_queue "test/listener/clientack/queue"
 create_queue "test/listener/nack/queue"
 create_queue "test/listener/tx/commit/queue"
 create_queue "test/listener/tx/rollback/queue"
+create_queue "test/listener/duplicate-attach/queue"
+create_queue "test/listener/duplicate-attach/svc1/queue"
+create_queue "test/listener/duplicate-attach/svc2/queue"
+create_queue "test/listener/duplicate-attach/reattach/queue"
 
 # Error test queues
 echo "Creating error test queues..."
