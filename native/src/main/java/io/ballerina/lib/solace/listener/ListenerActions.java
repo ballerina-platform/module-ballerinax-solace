@@ -52,6 +52,7 @@ import io.ballerina.runtime.api.values.BString;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static io.ballerina.lib.solace.common.Constants.NATIVE_ATTACH_LOCK;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_CLOSED;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_DESTINATION;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_DESTINATION_KIND;
@@ -121,6 +122,9 @@ public class ListenerActions {
             // iterating this map (dynamic attach after start is supported), so a plain HashMap/LinkedHashMap
             // would risk a ConcurrentModificationException or corrupting the map.
             listener.addNativeData(NATIVE_SERVICES, new ConcurrentHashMap<BObject, AttachedService>());
+            // Serializes attach()/detach() so the duplicate-attach check, receiver creation, and map update
+            // happen atomically.
+            listener.addNativeData(NATIVE_ATTACH_LOCK, new Object());
             return null;
         } catch (Exception e) {
             if (txSession != null) {
@@ -146,80 +150,87 @@ public class ListenerActions {
      */
     public static Object attach(BObject listener, BObject service, Object name) {
         try {
-            if (isClosed(listener)) {
-                return CommonUtils.createError("Listener is closed");
-            }
-            if (servicesMap(listener).containsKey(service)) {
-                return CommonUtils.createError("Service is already attached to this listener");
-            }
-
-            Runtime runtime = (Runtime) listener.getNativeData(NATIVE_RUNTIME);
-            Service nativeService = new Service(service);
-
-            BMap<BString, Object> serviceConfig = Service.getServiceConfigAnnotation(service);
-            ConsumerSubscriptionConfig subscriptionConfig = ConsumerSubscriptionConfig.fromBMap(serviceConfig);
-            subscriptionConfig.validate();
-            boolean isTransacted = (Boolean) listener.getNativeData(NATIVE_TRANSACTED);
-
-            // On a transacted listener, settlement only happens via caller->commit()/rollback() on the shared
-            // transacted session; AUTO_ACK would call message.ackMessage(), which is a no-op on a transacted
-            // flow, so messages would never actually be committed and would redeliver indefinitely.
-            if (isTransacted && subscriptionConfig.ackMode() == AcknowledgementMode.AUTO_ACK) {
-                return CommonUtils.createError(
-                        "AUTO_ACK is not supported on a transacted listener; message settlement must be driven "
-                                + "explicitly via caller->commit()/caller->rollback(). Set ackMode: "
-                                + "solace:CLIENT_ACK on the service configuration.");
-            }
-
-            if (subscriptionConfig instanceof TopicConsumerConfig topicConfig) {
-                if (isTransacted && !topicConfig.isDurable()) {
-                    return CommonUtils.createError("Transacted mode is not supported for direct topic subscriptions. "
-                            + "Use DURABLE endpoint type for guaranteed delivery with transactions.");
+            synchronized (attachLock(listener)) {
+                if (isClosed(listener)) {
+                    return CommonUtils.createError("Listener is closed");
                 }
-                if (!topicConfig.isDurable() && hasDirectTopicService(listener)) {
-                    return CommonUtils.createError("Only one direct topic service can be attached per listener. "
-                            + "Use a separate listener or a durable topic endpoint.");
+                if (servicesMap(listener).containsKey(service)) {
+                    return CommonUtils.createError("Service is already attached to this listener");
                 }
+
+                Runtime runtime = (Runtime) listener.getNativeData(NATIVE_RUNTIME);
+                Service nativeService = new Service(service);
+
+                BMap<BString, Object> serviceConfig = Service.getServiceConfigAnnotation(service);
+                ConsumerSubscriptionConfig subscriptionConfig = ConsumerSubscriptionConfig.fromBMap(serviceConfig);
+                subscriptionConfig.validate();
+                boolean isTransacted = (Boolean) listener.getNativeData(NATIVE_TRANSACTED);
+
+                // On a transacted listener, settlement only happens via caller->commit()/rollback() on the shared
+                // transacted session; AUTO_ACK would call message.ackMessage(), which is a no-op on a transacted
+                // flow, so messages would never actually be committed and would redeliver indefinitely.
+                if (isTransacted && subscriptionConfig.ackMode() == AcknowledgementMode.AUTO_ACK) {
+                    return CommonUtils.createError(
+                            "AUTO_ACK is not supported on a transacted listener; message settlement must be driven "
+                                    + "explicitly via caller->commit()/caller->rollback(). Set ackMode: "
+                                    + "solace:CLIENT_ACK on the service configuration.");
+                }
+
+                if (subscriptionConfig instanceof TopicConsumerConfig topicConfig) {
+                    if (isTransacted && !topicConfig.isDurable()) {
+                        return CommonUtils.createError(
+                                "Transacted mode is not supported for direct topic subscriptions. "
+                                + "Use DURABLE endpoint type for guaranteed delivery with transactions.");
+                    }
+                    if (!topicConfig.isDurable() && hasDirectTopicService(listener)) {
+                        return CommonUtils.createError("Only one direct topic service can be attached per listener. "
+                                + "Use a separate listener or a durable topic endpoint.");
+                    }
+                }
+
+                // Direct topic messages are not guaranteed and carry no acknowledgement, so auto-settle only
+                // applies to flow-based subscriptions (queues and durable topic endpoints).
+                boolean directTopic = subscriptionConfig instanceof TopicConsumerConfig topicConfig
+                        && !topicConfig.isDurable();
+                boolean autoAck = subscriptionConfig.ackMode() == AcknowledgementMode.AUTO_ACK && !directTopic;
+
+                JCSMPSession session = (JCSMPSession) listener.getNativeData(NATIVE_SESSION);
+                TransactedSession txSession = (TransactedSession) listener.getNativeData(NATIVE_TX_SESSION);
+
+                String url = (String) listener.getNativeData(NATIVE_URL);
+                String vpn = (String) listener.getNativeData(NATIVE_VPN);
+                String destinationName = ConsumerUtils.extractDestinationName(subscriptionConfig);
+                String destinationKind = subscriptionConfig instanceof TopicConsumerConfig
+                        ? DESTINATION_KIND_TOPIC : DESTINATION_KIND_QUEUE;
+
+                // Create the Caller supplied to onMessage for explicit ack/nack and transaction control.
+                BObject caller = ValueCreator.createObjectValue(ModuleUtils.getModule(), "Caller");
+                caller.addNativeData(NATIVE_TX_SESSION, txSession);
+                caller.addNativeData(NATIVE_CLOSED, false);
+                caller.addNativeData(NATIVE_URL, url);
+                caller.addNativeData(NATIVE_VPN, vpn);
+                caller.addNativeData(NATIVE_DESTINATION, destinationName);
+                caller.addNativeData(NATIVE_DESTINATION_KIND, destinationKind);
+
+                SolaceMessageListener messageListener = new SolaceMessageListener(runtime, nativeService, caller,
+                        autoAck, url, vpn, destinationName, destinationKind);
+
+                AttachedService attached = createReceiver(session, txSession, isTransacted, subscriptionConfig,
+                        messageListener);
+
+                // Start before registering, so a failed start() closes the receiver instead of leaking it.
+                boolean started = (Boolean) listener.getNativeData(NATIVE_STARTED);
+                if (started) {
+                    try {
+                        attached.start();
+                    } catch (Exception e) {
+                        CommonUtils.closeQuietly(attached::close);
+                        throw e;
+                    }
+                }
+                servicesMap(listener).put(service, attached);
+                return null;
             }
-
-            // Direct topic messages are not guaranteed and carry no acknowledgement, so auto-settle only
-            // applies to flow-based subscriptions (queues and durable topic endpoints).
-            boolean directTopic = subscriptionConfig instanceof TopicConsumerConfig topicConfig
-                    && !topicConfig.isDurable();
-            boolean autoAck = subscriptionConfig.ackMode() == AcknowledgementMode.AUTO_ACK && !directTopic;
-
-            JCSMPSession session = (JCSMPSession) listener.getNativeData(NATIVE_SESSION);
-            TransactedSession txSession = (TransactedSession) listener.getNativeData(NATIVE_TX_SESSION);
-
-            String url = (String) listener.getNativeData(NATIVE_URL);
-            String vpn = (String) listener.getNativeData(NATIVE_VPN);
-            String destinationName = ConsumerUtils.extractDestinationName(subscriptionConfig);
-            String destinationKind = subscriptionConfig instanceof TopicConsumerConfig
-                    ? DESTINATION_KIND_TOPIC : DESTINATION_KIND_QUEUE;
-
-            // Create the Caller supplied to onMessage for explicit ack/nack and transaction control.
-            BObject caller = ValueCreator.createObjectValue(ModuleUtils.getModule(), "Caller");
-            caller.addNativeData(NATIVE_TX_SESSION, txSession);
-            caller.addNativeData(NATIVE_CLOSED, false);
-            caller.addNativeData(NATIVE_URL, url);
-            caller.addNativeData(NATIVE_VPN, vpn);
-            caller.addNativeData(NATIVE_DESTINATION, destinationName);
-            caller.addNativeData(NATIVE_DESTINATION_KIND, destinationKind);
-
-            SolaceMessageListener messageListener = new SolaceMessageListener(runtime, nativeService, caller, autoAck,
-                    url, vpn, destinationName, destinationKind);
-
-            AttachedService attached = createReceiver(session, txSession, isTransacted, subscriptionConfig,
-                    messageListener);
-
-            servicesMap(listener).put(service, attached);
-
-            // If the listener is already running, begin delivering to the newly attached service immediately.
-            boolean started = (Boolean) listener.getNativeData(NATIVE_STARTED);
-            if (started) {
-                attached.start();
-            }
-            return null;
         } catch (BError e) {
             return e;
         } catch (Exception e) {
@@ -236,11 +247,13 @@ public class ListenerActions {
      */
     public static Object detach(BObject listener, BObject service) {
         try {
-            AttachedService attached = servicesMap(listener).remove(service);
-            if (attached != null) {
-                attached.close();
+            synchronized (attachLock(listener)) {
+                AttachedService attached = servicesMap(listener).remove(service);
+                if (attached != null) {
+                    attached.close();
+                }
+                return null;
             }
-            return null;
         } catch (Exception e) {
             return CommonUtils.createError("Failed to detach service", e);
         }
@@ -383,6 +396,10 @@ public class ListenerActions {
     @SuppressWarnings("unchecked")
     private static Map<BObject, AttachedService> servicesMap(BObject listener) {
         return (Map<BObject, AttachedService>) listener.getNativeData(NATIVE_SERVICES);
+    }
+
+    private static Object attachLock(BObject listener) {
+        return listener.getNativeData(NATIVE_ATTACH_LOCK);
     }
 
     private static boolean isClosed(BObject listener) {
