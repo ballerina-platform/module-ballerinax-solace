@@ -267,14 +267,16 @@ public class ListenerActions {
      */
     public static Object start(BObject listener) {
         try {
-            if (isClosed(listener)) {
-                return CommonUtils.createError("Listener is closed");
+            synchronized (attachLock(listener)) {
+                if (isClosed(listener)) {
+                    return CommonUtils.createError("Listener is closed");
+                }
+                for (AttachedService attached : servicesMap(listener).values()) {
+                    attached.start();
+                }
+                listener.addNativeData(NATIVE_STARTED, true);
+                return null;
             }
-            for (AttachedService attached : servicesMap(listener).values()) {
-                attached.start();
-            }
-            listener.addNativeData(NATIVE_STARTED, true);
-            return null;
         } catch (Exception e) {
             return CommonUtils.createError("Failed to start listener", e);
         }
@@ -301,37 +303,39 @@ public class ListenerActions {
     }
 
     private static Object stop(BObject listener, boolean graceful) {
-        Map<BObject, AttachedService> services = servicesMap(listener);
-        Exception firstError = null;
-        for (AttachedService attached : services.values()) {
-            if (graceful) {
-                Exception e = CommonUtils.attemptClose(attached::stop);
+        synchronized (attachLock(listener)) {
+            Map<BObject, AttachedService> services = servicesMap(listener);
+            Exception firstError = null;
+            for (AttachedService attached : services.values()) {
+                if (graceful) {
+                    Exception e = CommonUtils.attemptClose(attached::stop);
+                    firstError = firstError == null ? e : firstError;
+                }
+                Exception e = CommonUtils.attemptClose(attached::close);
                 firstError = firstError == null ? e : firstError;
             }
-            Exception e = CommonUtils.attemptClose(attached::close);
-            firstError = firstError == null ? e : firstError;
-        }
-        services.clear();
+            services.clear();
 
-        TransactedSession txSession = (TransactedSession) listener.getNativeData(NATIVE_TX_SESSION);
-        if (txSession != null) {
-            Exception e = CommonUtils.attemptClose(txSession::close);
-            firstError = firstError == null ? e : firstError;
-        }
-        JCSMPSession session = (JCSMPSession) listener.getNativeData(NATIVE_SESSION);
-        if (session != null) {
-            Exception e = CommonUtils.attemptClose(session::closeSession);
-            firstError = firstError == null ? e : firstError;
-        }
+            TransactedSession txSession = (TransactedSession) listener.getNativeData(NATIVE_TX_SESSION);
+            if (txSession != null) {
+                Exception e = CommonUtils.attemptClose(txSession::close);
+                firstError = firstError == null ? e : firstError;
+            }
+            JCSMPSession session = (JCSMPSession) listener.getNativeData(NATIVE_SESSION);
+            if (session != null) {
+                Exception e = CommonUtils.attemptClose(session::closeSession);
+                firstError = firstError == null ? e : firstError;
+            }
 
-        listener.addNativeData(NATIVE_STARTED, false);
-        listener.addNativeData(NATIVE_CLOSED, true);
-        SolaceSessionEventHandler.markDisconnected(listener);
+            listener.addNativeData(NATIVE_STARTED, false);
+            listener.addNativeData(NATIVE_CLOSED, true);
+            SolaceSessionEventHandler.markDisconnected(listener);
 
-        if (firstError != null) {
-            return CommonUtils.createError("Failed to stop listener", firstError);
+            if (firstError != null) {
+                return CommonUtils.createError("Failed to stop listener", firstError);
+            }
+            return null;
         }
-        return null;
     }
 
     private static AttachedService createReceiver(JCSMPSession session, TransactedSession txSession,
