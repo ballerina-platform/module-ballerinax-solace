@@ -18,8 +18,8 @@ observabilityIncluded = true
 [[platform.java21.dependency]]
 groupId = "io.ballerina.lib"
 artifactId = "solace-native"
-version = "1.0.0-SNAPSHOT"
-path = "../native/build/libs/solace-native-1.0.0-SNAPSHOT.jar"
+version = "1.0.0"
+path = "../native/build/libs/solace-native-1.0.0.jar"
 
 [[platform.java21.dependency]]
 groupId = "com.solacesystems"
