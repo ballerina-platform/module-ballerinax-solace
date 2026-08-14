@@ -38,6 +38,7 @@ groupId = "commons-logging"
 artifactId = "commons-logging"
 version = "1.3.5"
 path = "./lib/commons-logging-1.3.5.jar"
+scope = "testOnly"
 
 [[platform.java21.dependency]]
 groupId = "org.apache.servicemix.bundles"
