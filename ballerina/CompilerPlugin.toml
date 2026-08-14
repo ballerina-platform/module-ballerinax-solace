@@ -3,4 +3,4 @@ id = "solace-compiler-plugin"
 class = "io.ballerina.lib.solace.compiler.SolaceCompilerPlugin"
 
 [[dependency]]
-path = "../compiler-plugin/build/libs/solace-compiler-plugin-1.0.1.jar"
+path = "../compiler-plugin/build/libs/solace-compiler-plugin-1.0.1-SNAPSHOT.jar"

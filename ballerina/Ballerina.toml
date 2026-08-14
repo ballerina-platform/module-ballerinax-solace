@@ -1,7 +1,7 @@
 [package]
 org = "ballerinax"
 name = "solace"
-version = "1.0.0"
+version = "1.0.1"
 authors = ["Ballerina"]
 keywords = ["solace", "messaging", "network", "pubsub", "Vendor/Solace", "Area/Messaging", "Type/Connector", "Type/Trigger"]
 repository = "https://github.com/ballerina-platform/module-ballerinax-solace"
@@ -18,8 +18,8 @@ observabilityIncluded = true
 [[platform.java21.dependency]]
 groupId = "io.ballerina.lib"
 artifactId = "solace-native"
-version = "1.0.0"
-path = "../native/build/libs/solace-native-1.0.0.jar"
+version = "1.0.1-SNAPSHOT"
+path = "../native/build/libs/solace-native-1.0.1-SNAPSHOT.jar"
 
 [[platform.java21.dependency]]
 groupId = "com.solacesystems"
