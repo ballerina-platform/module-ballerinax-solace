@@ -36,6 +36,9 @@ final class SolaceServiceAnalysisTask implements AnalysisTask<SyntaxNodeAnalysis
 
     @Override
     public void perform(SyntaxNodeAnalysisContext context) {
+        if (!PluginUtils.isSolaceImported(context)) {
+            return;
+        }
         if (context.node().kind() == SyntaxKind.OBJECT_CONSTRUCTOR) {
             validateObjectConstructor(context, (ObjectConstructorExpressionNode) context.node());
             return;
