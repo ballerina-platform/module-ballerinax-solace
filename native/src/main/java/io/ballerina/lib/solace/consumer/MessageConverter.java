@@ -27,6 +27,7 @@ import com.solacesystems.jcsmp.XMLMessage;
 import io.ballerina.lib.solace.common.BallerinaSolaceDatabindingException;
 import io.ballerina.lib.solace.common.DestinationConverter;
 import io.ballerina.lib.solace.common.PropertyConverter;
+import io.ballerina.lib.solace.observability.SolaceTracingUtil;
 import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.types.ArrayType;
 import io.ballerina.runtime.api.types.IntersectionType;
@@ -183,16 +184,16 @@ public class MessageConverter {
             }
         }
 
-        // Set properties if present
+        // Set properties, including any trace-context the broker attached natively.
         SDTMap sdtProperties = xmlMessage.getProperties();
-        if (sdtProperties != null) {
-            Type propertiesType = TypeUtils.getReferredType(messageType.getFields()
-                    .get(PROPERTIES_KEY.getValue()).getFieldType());
-            BMap<BString, Object> properties = PropertyConverter.sdtMapToBallerina(sdtProperties,
-                    (MapType) propertiesType);
-            if (!properties.isEmpty()) {
-                message.put(PROPERTIES_KEY, properties);
-            }
+        MapType propertiesType = (MapType) TypeUtils.getReferredType(messageType.getFields()
+                .get(PROPERTIES_KEY.getValue()).getFieldType());
+        BMap<BString, Object> properties = sdtProperties != null
+                ? PropertyConverter.sdtMapToBallerina(sdtProperties, propertiesType)
+                : ValueCreator.createMapValue(propertiesType);
+        SolaceTracingUtil.surfaceNativeTraceContext(xmlMessage, properties);
+        if (!properties.isEmpty()) {
+            message.put(PROPERTIES_KEY, properties);
         }
 
         // Set user data if present

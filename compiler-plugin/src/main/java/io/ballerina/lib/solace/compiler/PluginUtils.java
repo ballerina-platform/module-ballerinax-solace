@@ -30,7 +30,9 @@ import io.ballerina.compiler.api.symbols.VariableSymbol;
 import io.ballerina.compiler.syntax.tree.AnnotationNode;
 import io.ballerina.compiler.syntax.tree.FunctionArgumentNode;
 import io.ballerina.compiler.syntax.tree.FunctionCallExpressionNode;
+import io.ballerina.compiler.syntax.tree.ImportDeclarationNode;
 import io.ballerina.compiler.syntax.tree.MethodCallExpressionNode;
+import io.ballerina.compiler.syntax.tree.ModulePartNode;
 import io.ballerina.compiler.syntax.tree.NamedArgumentNode;
 import io.ballerina.compiler.syntax.tree.Node;
 import io.ballerina.projects.plugins.SyntaxNodeAnalysisContext;
@@ -42,6 +44,7 @@ import io.ballerina.tools.diagnostics.Location;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Shared compiler plugin utilities.
@@ -109,6 +112,20 @@ final class PluginUtils {
     static boolean isSolaceModule(Optional<ModuleSymbol> module) {
         return module.map(moduleSymbol -> PACKAGE_ORG.equals(moduleSymbol.id().orgName()) &&
                 PACKAGE_NAME.equals(moduleSymbol.id().moduleName())).orElse(false);
+    }
+
+    static boolean isSolaceImported(SyntaxNodeAnalysisContext context) {
+        ModulePartNode modulePart = context.syntaxTree().rootNode();
+        for (ImportDeclarationNode importDeclaration : modulePart.imports()) {
+            String orgName = importDeclaration.orgName()
+                    .map(importOrgName -> importOrgName.orgName().text()).orElse("");
+            String moduleName = importDeclaration.moduleName().stream()
+                    .map(identifier -> identifier.text()).collect(Collectors.joining("."));
+            if (PACKAGE_ORG.equals(orgName) && PACKAGE_NAME.equals(moduleName)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     static Optional<TypeSymbol> typeOfParentVariable(SyntaxNodeAnalysisContext context, Node node) {

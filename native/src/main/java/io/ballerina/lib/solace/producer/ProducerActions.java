@@ -22,7 +22,6 @@ import com.solacesystems.jcsmp.JCSMPFactory;
 import com.solacesystems.jcsmp.JCSMPProperties;
 import com.solacesystems.jcsmp.JCSMPSession;
 import com.solacesystems.jcsmp.ProducerFlowProperties;
-import com.solacesystems.jcsmp.SDTMap;
 import com.solacesystems.jcsmp.XMLMessage;
 import com.solacesystems.jcsmp.XMLMessageProducer;
 import com.solacesystems.jcsmp.transaction.TransactedSession;
@@ -43,7 +42,8 @@ import io.ballerina.runtime.api.values.BString;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static io.ballerina.lib.solace.common.Constants.NATIVE_CLOSED;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_EVENT_HANDLER;
@@ -69,6 +69,8 @@ import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants
  * Producer actions - main entry point for Ballerina MessageProducer interop.
  */
 public class ProducerActions {
+
+    private static final Logger LOGGER = Logger.getLogger(ProducerActions.class.getName());
 
     private static final BString QUEUE_NAME_KEY = StringUtils.fromString("queueName");
     private static final BString TOPIC_NAME_KEY = StringUtils.fromString("topicName");
@@ -247,21 +249,16 @@ public class ProducerActions {
     }
 
     /**
-     * Injects the current span's trace context into the outbound message's properties.
+     * Puts the publishing span's trace context on the outbound message, both in the user properties and in the
+     * message's native trace-context field.
      */
-    private static void injectTraceContext(Environment env, XMLMessage jcsmpMessage) throws Exception {
-        Map<String, String> traceHeaders = SolaceTracingUtil.getTraceContextHeaders(env);
-        if (traceHeaders == null || traceHeaders.isEmpty()) {
-            return;
+    private static void injectTraceContext(Environment env, XMLMessage jcsmpMessage) {
+        try {
+            SolaceTracingUtil.applyTraceContext(env, jcsmpMessage);
+        } catch (Throwable t) {
+            LOGGER.log(Level.WARNING,
+                    "Failed to attach the trace context to the outbound message; publishing it untraced", t);
         }
-        SDTMap properties = jcsmpMessage.getProperties();
-        if (properties == null) {
-            properties = JCSMPFactory.onlyInstance().createMap();
-        }
-        for (Map.Entry<String, String> entry : traceHeaders.entrySet()) {
-            properties.putString(entry.getKey(), entry.getValue());
-        }
-        jcsmpMessage.setProperties(properties);
     }
 
     /**

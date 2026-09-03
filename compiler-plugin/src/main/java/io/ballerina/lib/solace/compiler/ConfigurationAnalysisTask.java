@@ -16,15 +16,16 @@
 
 package io.ballerina.lib.solace.compiler;
 
+import io.ballerina.compiler.api.symbols.AnnotationSymbol;
 import io.ballerina.compiler.api.symbols.ConstantSymbol;
 import io.ballerina.compiler.api.symbols.Symbol;
 import io.ballerina.compiler.api.symbols.TypeSymbol;
+import io.ballerina.compiler.syntax.tree.AnnotationNode;
 import io.ballerina.compiler.syntax.tree.ExpressionNode;
 import io.ballerina.compiler.syntax.tree.MappingConstructorExpressionNode;
 import io.ballerina.compiler.syntax.tree.MappingFieldNode;
 import io.ballerina.compiler.syntax.tree.SpecificFieldNode;
 import io.ballerina.compiler.syntax.tree.SyntaxKind;
-import io.ballerina.projects.Document;
 import io.ballerina.projects.plugins.AnalysisTask;
 import io.ballerina.projects.plugins.SyntaxNodeAnalysisContext;
 
@@ -39,6 +40,9 @@ final class ConfigurationAnalysisTask implements AnalysisTask<SyntaxNodeAnalysis
 
     @Override
     public void perform(SyntaxNodeAnalysisContext context) {
+        if (!PluginUtils.isSolaceImported(context)) {
+            return;
+        }
         MappingConstructorExpressionNode mapping = (MappingConstructorExpressionNode) context.node();
         Optional<TypeSymbol> expectedType = expectedType(context, mapping);
         Optional<TypeSymbol> actualType = context.semanticModel().typeOf(mapping);
@@ -116,8 +120,12 @@ final class ConfigurationAnalysisTask implements AnalysisTask<SyntaxNodeAnalysis
 
     private Optional<TypeSymbol> expectedType(SyntaxNodeAnalysisContext context,
                                               MappingConstructorExpressionNode mapping) {
-        Document document = context.currentPackage().module(context.moduleId()).document(context.documentId());
-        return context.semanticModel().expectedType(document, mapping.location().lineRange().startLine());
+        if (!(mapping.parent() instanceof AnnotationNode annotation)) {
+            return Optional.empty();
+        }
+        return context.semanticModel().symbol(annotation.annotReference())
+                .filter(symbol -> symbol instanceof AnnotationSymbol)
+                .flatMap(symbol -> ((AnnotationSymbol) symbol).typeDescriptor());
     }
 
     private Optional<String> value(SyntaxNodeAnalysisContext context, ExpressionNode expression) {
