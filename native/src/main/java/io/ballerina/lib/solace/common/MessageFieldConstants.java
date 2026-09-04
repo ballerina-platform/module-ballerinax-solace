@@ -55,4 +55,9 @@ public class MessageFieldConstants {
     // Ballerina-level `solace:SOLACE_ISXML_PROP` constant declared in `ballerina/types.bal`.
     public static final String SOLACE_ISXML_PROP = "solace_isXML";
 
+    // Synthetic message-property keys surfacing the SMF HTTP Content Type and Content Encoding
+    // fields.
+    public static final String HTTP_CONTENT_TYPE_PROP = "solace_httpContentType";
+    public static final String HTTP_CONTENT_ENCODING_PROP = "solace_httpContentEncoding";
+
 }

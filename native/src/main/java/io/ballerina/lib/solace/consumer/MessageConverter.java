@@ -55,6 +55,8 @@ import static io.ballerina.lib.solace.common.MessageFieldConstants.DELIVERY_COUN
 import static io.ballerina.lib.solace.common.MessageFieldConstants.DELIVERY_MODE_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.DESTINATION_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.EXPIRATION_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.HTTP_CONTENT_ENCODING_PROP;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.HTTP_CONTENT_TYPE_PROP;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.MESSAGE_ID_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.MESSAGE_TYPE_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.PAYLOAD_KEY;
@@ -192,6 +194,7 @@ public class MessageConverter {
                 ? PropertyConverter.sdtMapToBallerina(sdtProperties, propertiesType)
                 : ValueCreator.createMapValue(propertiesType);
         SolaceTracingUtil.surfaceNativeTraceContext(xmlMessage, properties);
+        surfaceHttpContentHeaders(xmlMessage, properties);
         if (!properties.isEmpty()) {
             message.put(PROPERTIES_KEY, properties);
         }
@@ -222,6 +225,31 @@ public class MessageConverter {
      * @param message the Ballerina Message record
      * @return the native XMLMessage, or null if not found
      */
+    /**
+     * Surfaces the SMF HTTP Content Type and Content Encoding fields as message properties.
+     *
+     * @param xmlMessage the received message
+     * @param properties the properties map being built for the Ballerina message
+     */
+    private static void surfaceHttpContentHeaders(XMLMessage xmlMessage, BMap<BString, Object> properties) {
+        if (xmlMessage == null || properties == null) {
+            return;
+        }
+        putIfAbsent(properties, HTTP_CONTENT_TYPE_PROP, xmlMessage.getHTTPContentType());
+        putIfAbsent(properties, HTTP_CONTENT_ENCODING_PROP, xmlMessage.getHTTPContentEncoding());
+    }
+
+    private static void putIfAbsent(BMap<BString, Object> properties, String key, String value) {
+        if (value == null || value.isEmpty()) {
+            return;
+        }
+        BString propertyKey = StringUtils.fromString(key);
+        if (properties.containsKey(propertyKey)) {
+            return;
+        }
+        properties.put(propertyKey, StringUtils.fromString(value));
+    }
+
     public static XMLMessage extractNativeMessage(BMap<BString, Object> message) {
         Object nativeMsg = message.getNativeData(NATIVE_MESSAGE);
         if (nativeMsg instanceof XMLMessage) {

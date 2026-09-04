@@ -402,6 +402,12 @@ public type Value boolean|int|byte|float|string|byte[]|map<Value>;
 # A property key used internally to mark that a message's text payload is XML.
 public const SOLACE_ISXML_PROP = "solace_isXML";
 
+# The `Message.properties` key carrying the content type of the payload.
+public const HTTP_CONTENT_TYPE_PROP = "solace_httpContentType";
+
+# The `Message.properties` key carrying the content encoding of the payload.
+public const HTTP_CONTENT_ENCODING_PROP = "solace_httpContentEncoding";
+
 # Internal representation of a Solace message crossing into native code for `send`. The payload is
 # narrowed to the concrete wire shapes native code understands; everything else mirrors `Message`.
 type InternalMessage record {|
