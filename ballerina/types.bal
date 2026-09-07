@@ -399,13 +399,21 @@ public type Property boolean|int|byte|float|string|byte[]|map<Property>;
 # Represents the allowed value types for entries in a Solace MapMessage payload.
 public type Value boolean|int|byte|float|string|byte[]|map<Value>;
 
-# A property key used internally to mark that a message's text payload is XML.
+# Marks a text payload as XML so that a receiver can bind it to `xml`.
+#
+# Set automatically for `xml` payloads; set it to `true` explicitly when publishing XML that is already a `string`.
 public const SOLACE_ISXML_PROP = "solace_isXML";
 
 # The `Message.properties` key carrying the content type of the payload.
+#
+# Maps to the SMF HTTP Content Type field: set it to control the `Content-Type` used for REST delivery, or read it
+# for the `Content-Type` declared by a REST publisher.
 public const HTTP_CONTENT_TYPE_PROP = "solace_httpContentType";
 
 # The `Message.properties` key carrying the content encoding of the payload.
+#
+# Maps to the SMF HTTP Content Encoding field. A label only (for example `gzip`); the module does not compress or
+# decompress the payload.
 public const HTTP_CONTENT_ENCODING_PROP = "solace_httpContentEncoding";
 
 # Internal representation of a Solace message crossing into native code for `send`. The payload is
