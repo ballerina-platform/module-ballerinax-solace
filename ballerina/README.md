@@ -137,7 +137,17 @@ solace:Message? receivedMessage = check consumer->receive(5.0);
 
 A `solace:Listener` does not need to be explicitly invoked - once attached, the `onMessage` remote method is called automatically for every message on the queue as soon as the listener starts.
 
-#### Read the content type and encoding of a message published over REST
+### Step 4: Run the Ballerina application
+
+Save the changes and run the Ballerina application using the following command.
+
+```bash
+bal run
+```
+
+## Advanced usage
+
+### Read the content type and encoding of a message published over REST
 
 Messages published through the Solace REST interface carry their HTTP `Content-Type` and `Content-Encoding` headers, which the connector surfaces as message properties. Use them to decide how to interpret the payload.
 
@@ -148,14 +158,6 @@ solace:Property? contentEncoding = properties[solace:HTTP_CONTENT_ENCODING_PROP]
 ```
 
 Both are absent when the publisher does not set the corresponding header, and the content type includes any charset parameter (for example, `application/xml; charset=utf-8`). A compressed payload arrives as a `byte[]` that the connector does not decompress. Setting either property on an outgoing message controls the header the broker uses when delivering it over REST.
-
-### Step 4: Run the Ballerina application
-
-Save the changes and run the Ballerina application using the following command.
-
-```bash
-bal run
-```
 
 ## Examples
 
