@@ -28,7 +28,8 @@
         "target": {
           "kind": "serviceAnnotationField",
           "serviceType": "$service",
-          "annotation": "$serviceConfig"
+          "annotation": "$serviceConfig",
+          "path": "destination"
         },
         "source": {
           "construct": {
