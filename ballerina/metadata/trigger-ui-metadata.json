@@ -934,6 +934,7 @@
                           "modifiers": {
                             "type": "ballerinax/solace:1.0.0:Message",
                             "field": "payload",
+                            "typeIdentifier": "SolaceMessage",
                             "template": "{{type}}"
                           }
                         },
