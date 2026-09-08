@@ -30,6 +30,7 @@ import com.solacesystems.jcsmp.XMLMessage;
 import com.solacesystems.jcsmp.XMLMessageProducer;
 import io.ballerina.lib.solace.common.DestinationConverter;
 import io.ballerina.lib.solace.common.PropertyConverter;
+import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BDecimal;
 import io.ballerina.runtime.api.values.BMap;
@@ -39,6 +40,8 @@ import java.math.BigDecimal;
 
 import static io.ballerina.lib.solace.common.MessageFieldConstants.CORRELATION_ID_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.DELIVERY_MODE_KEY;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.HTTP_CONTENT_ENCODING_PROP;
+import static io.ballerina.lib.solace.common.MessageFieldConstants.HTTP_CONTENT_TYPE_PROP;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.MESSAGE_ID_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.MESSAGE_TYPE_KEY;
 import static io.ballerina.lib.solace.common.MessageFieldConstants.PAYLOAD_KEY;
@@ -190,10 +193,33 @@ public class MessageConverter {
         Object properties = message.get(PROPERTIES_KEY);
         if (properties instanceof BMap) {
             BMap<BString, Object> propsMap = (BMap<BString, Object>) properties;
+            applyHttpContentHeaders(jcsmpMessage, propsMap);
             SDTMap sdtMap = PropertyConverter.ballerinaToSDTMap(propsMap);
-            if (sdtMap != null && !sdtMap.isEmpty()) {
-                jcsmpMessage.setProperties(sdtMap);
+            if (sdtMap != null) {
+                sdtMap.remove(HTTP_CONTENT_TYPE_PROP);
+                sdtMap.remove(HTTP_CONTENT_ENCODING_PROP);
+                if (!sdtMap.isEmpty()) {
+                    jcsmpMessage.setProperties(sdtMap);
+                }
             }
+        }
+    }
+
+    /**
+     * Routes the HTTP content-type properties onto the SMF HTTP Content Type and Content Encoding
+     * fields of the outgoing message.
+     *
+     * @param jcsmpMessage the outgoing message
+     * @param propsMap     the Ballerina properties map of the message being sent
+     */
+    private static void applyHttpContentHeaders(XMLMessage jcsmpMessage, BMap<BString, Object> propsMap) {
+        Object contentType = propsMap.get(StringUtils.fromString(HTTP_CONTENT_TYPE_PROP));
+        if (contentType instanceof BString) {
+            jcsmpMessage.setHTTPContentType(contentType.toString());
+        }
+        Object contentEncoding = propsMap.get(StringUtils.fromString(HTTP_CONTENT_ENCODING_PROP));
+        if (contentEncoding instanceof BString) {
+            jcsmpMessage.setHTTPContentEncoding(contentEncoding.toString());
         }
     }
 
