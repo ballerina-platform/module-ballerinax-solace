@@ -115,13 +115,13 @@ dependencies {
     externalJars(group: 'io.netty', name: 'netty-transport-classes-epoll', version: "${nettyVersion}") {
         transitive = false
     }
-    externalJars "io.netty:netty-transport-native-epoll::linux-x86_64"
-    externalJars "io.netty:netty-transport-native-epoll::linux-aarch_64"
+    externalJars "io.netty:netty-transport-native-epoll:${nettyVersion}:linux-x86_64"
+    externalJars "io.netty:netty-transport-native-epoll:${nettyVersion}:linux-aarch_64"
     externalJars(group: 'io.netty', name: 'netty-transport-classes-kqueue', version: "${nettyVersion}") {
         transitive = false
     }
-    externalJars "io.netty:netty-transport-native-kqueue::osx-x86_64"
-    externalJars "io.netty:netty-transport-native-kqueue::osx-aarch_64"
+    externalJars "io.netty:netty-transport-native-kqueue:${nettyVersion}:osx-x86_64"
+    externalJars "io.netty:netty-transport-native-kqueue:${nettyVersion}:osx-aarch_64"
 
     /* Other dependencies */
     externalJars(group: 'commons-logging', name: 'commons-logging', version: "${commonsLoggingVersion}") {
