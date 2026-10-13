@@ -22,4 +22,20 @@
         <Class name="io.ballerina.lib.solace.listener.Service"/>
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
+
+    <!--
+        SpotBugs 6.5.1 (bumped from 6.0.18 as part of the Gradle 9.5.1 migration) activated the
+        THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION detector. It fires on every method here that
+        declares "throws Exception" instead of a specific checked-exception type, a long-standing,
+        deliberate convention in this module for propagating the many distinct checked exceptions
+        raised by the underlying Solace JCSMP/JMS SDK (JCSMPException, JMSException, IOException,
+        etc.) without binding every call site to that SDK's exact exception hierarchy. Confirmed via
+        a fresh spotbugsMain run: 15 occurrences across 8 classes (CommonUtils, DestinationConverter,
+        ConfigurationUtils, ConsumerUtils, MessageConverter in both consumer/producer packages,
+        ListenerActions, SolaceTracingUtil), a pre-existing, module-wide style choice, not
+        individual bugs, so excluded by pattern rather than listed 15 times over.
+    -->
+    <Match>
+        <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+    </Match>
 </FindBugsFilter>

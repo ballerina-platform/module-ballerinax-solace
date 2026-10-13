@@ -17,10 +17,19 @@
  */
 
 import org.apache.tools.ant.taskdefs.condition.Os
+import org.gradle.process.ExecOperations
+import javax.inject.Inject
 
 plugins {
     id 'io.ballerina.plugin'
 }
+
+abstract class ExecHelper {
+    @Inject
+    abstract ExecOperations getExecOperations()
+}
+
+def execHelper = project.objects.newInstance(ExecHelper)
 
 description = 'Ballerina - Solace Connector'
 
@@ -55,7 +64,7 @@ ballerina {
     // integration tests flaky. The tests pass reliably without instrumentation. Re-enable once the
     // coverage/async-callback interaction is resolved.
     testCoverageParam = ""
-    platform = "java21"
+    platform = "java25"
 }
 
 configurations {
@@ -88,7 +97,10 @@ dependencies {
     externalJars(group: 'io.netty', name: 'netty-buffer', version: "${nettyVersion}") {
         transitive = false
     }
-    externalJars(group: 'io.netty', name: 'netty-codec', version: "${nettyVersion}") {
+    externalJars(group: 'io.netty', name: 'netty-codec-base', version: "${nettyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.netty', name: 'netty-codec-compression', version: "${nettyVersion}") {
         transitive = false
     }
     externalJars(group: 'io.netty', name: 'netty-codec-http', version: "${nettyVersion}") {
@@ -100,22 +112,16 @@ dependencies {
     externalJars(group: 'io.netty', name: 'netty-handler-proxy', version: "${nettyVersion}") {
         transitive = false
     }
-    externalJars(group: 'io.netty', name: 'netty-transport-native-epoll', version: "${nettyVersion}") {
-        transitive = false
-    }
     externalJars(group: 'io.netty', name: 'netty-transport-classes-epoll', version: "${nettyVersion}") {
         transitive = false
     }
-    externalJars "io.netty:netty-transport-native-epoll::linux-x86_64"
-    externalJars "io.netty:netty-transport-native-epoll::linux-aarch_64"
-    externalJars(group: 'io.netty', name: 'netty-transport-native-kqueue', version: "${nettyVersion}") {
-        transitive = false
-    }
+    externalJars "io.netty:netty-transport-native-epoll:${nettyVersion}:linux-x86_64"
+    externalJars "io.netty:netty-transport-native-epoll:${nettyVersion}:linux-aarch_64"
     externalJars(group: 'io.netty', name: 'netty-transport-classes-kqueue', version: "${nettyVersion}") {
         transitive = false
     }
-    externalJars "io.netty:netty-transport-native-kqueue::osx-x86_64"
-    externalJars "io.netty:netty-transport-native-kqueue::osx-aarch_64"
+    externalJars "io.netty:netty-transport-native-kqueue:${nettyVersion}:osx-x86_64"
+    externalJars "io.netty:netty-transport-native-kqueue:${nettyVersion}:osx-aarch_64"
 
     /* Other dependencies */
     externalJars(group: 'commons-logging', name: 'commons-logging', version: "${commonsLoggingVersion}") {
@@ -156,7 +162,7 @@ updateTomlFiles.dependsOn copyStdlibs
 
 task commitTomlFiles {
     doLast {
-        project.exec {
+        execHelper.execOperations.exec {
             ignoreExitValue true
             if (Os.isFamily(Os.FAMILY_WINDOWS)) {
                 commandLine 'cmd', '/c', "git commit -m \"[Automated] Update the toml files\" Ballerina.toml CompilerPlugin.toml Dependencies.toml"
@@ -171,7 +177,7 @@ task generateTestCerts() {
     doLast {
         if (!Os.isFamily(Os.FAMILY_WINDOWS)) {
             def certScript = "${project.projectDir}/tests/resources/certs/generate-certs.sh"
-            exec {
+            execHelper.execOperations.exec {
                 commandLine 'sh', '-c', "chmod +x $certScript && $certScript"
             }
         }
@@ -186,16 +192,16 @@ task startSolaceServer() {
             def initScript = "${project.projectDir}/tests/resources/init-solace.sh"
             // Ensure a fresh broker: remove any container/volume left behind by an interrupted run so
             // tests never bind to stale queue state (e.g. a leaked flow on an exclusive queue).
-            exec {
+            execHelper.execOperations.exec {
                 commandLine 'sh', '-c', "docker compose -f $dockerComposeFile down -v --remove-orphans"
                 ignoreExitValue true
             }
-            exec {
+            execHelper.execOperations.exec {
                 commandLine 'sh', '-c', "docker compose -f $dockerComposeFile up -d"
             }
             sleep(20 * 1000)
             // Initialize queues
-            exec {
+            execHelper.execOperations.exec {
                 commandLine 'sh', '-c', "chmod +x $initScript && $initScript"
                 ignoreExitValue false
             }
@@ -207,7 +213,7 @@ task stopSolaceServer() {
     doLast {
         if (!Os.isFamily(Os.FAMILY_WINDOWS)) {
             def dockerComposeFile = "${project.projectDir}/tests/resources/docker-compose.yaml"
-            exec {
+            execHelper.execOperations.exec {
                 commandLine 'sh', '-c', "docker compose -f $dockerComposeFile rm -svf"
             }
             sleep(5 * 1000)

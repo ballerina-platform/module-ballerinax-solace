@@ -18,7 +18,7 @@
 
 plugins {
     id "com.github.spotbugs-base"
-    id "com.github.johnrengelman.shadow"
+    id "com.gradleup.shadow"
     id "de.undercouch.download"
     id "net.researchgate.release"
 }
@@ -96,11 +96,20 @@ subprojects {
     }
 }
 
-task build {
-    dependsOn(":solace-native:build")
-    dependsOn(":solace-compiler-plugin:build")
-    dependsOn(":solace-ballerina:build")
-    dependsOn(":solace-compiler-plugin-tests:test")
+if (!tasks.names.contains('build')) {
+    tasks.register('build') {
+        dependsOn(":solace-native:build")
+        dependsOn(":solace-compiler-plugin:build")
+        dependsOn(":solace-ballerina:build")
+        dependsOn(":solace-compiler-plugin-tests:test")
+    }
+} else {
+    tasks.named('build') {
+        dependsOn(":solace-native:build")
+        dependsOn(":solace-compiler-plugin:build")
+        dependsOn(":solace-ballerina:build")
+        dependsOn(":solace-compiler-plugin-tests:test")
+    }
 }
 
 def moduleVersion = project.version.replace("-SNAPSHOT", "")
