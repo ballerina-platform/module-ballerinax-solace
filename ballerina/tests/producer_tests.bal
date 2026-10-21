@@ -577,3 +577,130 @@ isolated function testProducerWithGenerateSequenceNumbers() returns error? {
 
     check producer->close();
 }
+
+// ========================================
+// Producer Send Await Acknowledgement Tests
+// ========================================
+
+@test:Config {groups: ["producer", "send", "await-acknowledgement"]}
+isolated function testProducerSendAwaitAcknowledgement() returns error? {
+    MessageProducer producer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD}
+    });
+
+    check producer->sendAwaitAcknowledgement(
+        {payload: TEXT_MESSAGE_CONTENT, deliveryMode: PERSISTENT},
+        {topicName: PRODUCER_CONFIRMATION_QUEUE},
+        timeout = 10
+    );
+    check producer->close();
+
+    MessageConsumer consumer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
+        subscriptionConfig: {queueName: PRODUCER_CONFIRMATION_QUEUE}
+    });
+    StringPayloadMessage? received = check consumer->receive(DEFAULT_RECEIVE_TIMEOUT);
+    check consumer->close();
+    test:assertTrue(received is StringPayloadMessage, "Acknowledged message should be stored in the queue");
+    if received is StringPayloadMessage {
+        test:assertEquals(received.payload, TEXT_MESSAGE_CONTENT);
+    }
+}
+
+@test:Config {groups: ["producer", "send", "await-acknowledgement", "negative"]}
+isolated function testProducerSendAwaitAcknowledgementRejected() returns error? {
+    MessageProducer producer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD}
+    });
+
+    error? result = producer->sendAwaitAcknowledgement(
+        {payload: TEXT_MESSAGE_CONTENT, deliveryMode: PERSISTENT},
+        {topicName: PRODUCER_CONFIRMATION_SHUTDOWN_QUEUE},
+        timeout = 10
+    );
+    test:assertTrue(result is PublishRejectedError, "Broker rejection should be returned from the send");
+    if result is PublishRejectedError {
+        test:assertTrue(result.message().includes("503"),
+            string `Rejection should carry the broker response, found: ${result.message()}`);
+    }
+
+    // The rejection was returned from the send, hence it is not reported again on close
+    check producer->close();
+}
+
+@test:Config {groups: ["producer", "send", "await-acknowledgement", "negative"]}
+isolated function testProducerSendRemainsAsynchronous() returns error? {
+    MessageProducer producer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD}
+    });
+
+    // `send` does not wait for the broker acknowledgement, hence the rejection is reported on close
+    check producer->send(
+        {payload: TEXT_MESSAGE_CONTENT, deliveryMode: PERSISTENT},
+        {topicName: PRODUCER_CONFIRMATION_SHUTDOWN_QUEUE}
+    );
+    error? closeResult = producer->close();
+    test:assertTrue(closeResult is Error, "Broker rejection of an asynchronous send should be reported on close");
+}
+
+@test:Config {groups: ["producer", "send", "await-acknowledgement", "validation", "negative"]}
+isolated function testProducerSendAwaitAcknowledgementWithDirectMessage() returns error? {
+    MessageProducer producer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD}
+    });
+
+    error? result = producer->sendAwaitAcknowledgement(
+        {payload: TEXT_MESSAGE_CONTENT, deliveryMode: DIRECT},
+        {topicName: PRODUCER_TOPIC}
+    );
+    check producer->close();
+    test:assertTrue(result is Error, "Awaiting acknowledgement of a DIRECT message should fail");
+    if result is Error {
+        test:assertEquals(result.message(), "Awaiting acknowledgement requires the PERSISTENT delivery mode, " +
+                "as the broker does not acknowledge DIRECT messages");
+    }
+}
+
+@test:Config {groups: ["producer", "send", "await-acknowledgement", "validation", "negative"]}
+isolated function testProducerSendAwaitAcknowledgementWithInvalidTimeout() returns error? {
+    MessageProducer producer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD}
+    });
+
+    error? result = producer->sendAwaitAcknowledgement(
+        {payload: TEXT_MESSAGE_CONTENT, deliveryMode: PERSISTENT},
+        {topicName: PRODUCER_CONFIRMATION_QUEUE},
+        timeout = 0
+    );
+    check producer->close();
+    test:assertTrue(result is Error, "An acknowledgement timeout of 0 should fail validation");
+    if result is Error {
+        test:assertEquals(result.message(), "Acknowledgement timeout must be greater than 0");
+    }
+}
+
+@test:Config {groups: ["producer", "send", "await-acknowledgement", "transaction", "negative"]}
+isolated function testProducerSendAwaitAcknowledgementWithTransactedProducer() returns error? {
+    MessageProducer producer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
+        transacted: true
+    });
+
+    error? result = producer->sendAwaitAcknowledgement(
+        {payload: TEXT_MESSAGE_CONTENT, deliveryMode: PERSISTENT},
+        {topicName: PRODUCER_CONFIRMATION_QUEUE}
+    );
+    check producer->close();
+    test:assertTrue(result is Error, "Awaiting acknowledgement should not be supported for a transacted producer");
+    if result is Error {
+        test:assertEquals(result.message(), "Awaiting acknowledgement is not supported for transacted producers, " +
+                "use commit() to confirm the published messages");
+    }
+}
