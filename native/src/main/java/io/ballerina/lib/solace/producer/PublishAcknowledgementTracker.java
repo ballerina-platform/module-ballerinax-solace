@@ -21,8 +21,11 @@ package io.ballerina.lib.solace.producer;
 import com.solacesystems.jcsmp.JCSMPException;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -40,6 +43,7 @@ final class PublishAcknowledgementTracker {
     private final ReentrantLock lock = new ReentrantLock();
     private final Condition settlementChanged = lock.newCondition();
     private final Set<Long> pending = new HashSet<>();
+    private final Map<Long, CompletableFuture<Void>> confirmations = new HashMap<>();
     private long nextCorrelationKey;
     private int rejectedCount;
     private String firstRejection;
@@ -76,6 +80,34 @@ final class PublishAcknowledgementTracker {
         } finally {
             lock.unlock();
         }
+    }
+
+    /**
+     * Registers a guaranteed send whose sender waits for the broker confirmation before it is submitted to JCSMP.
+     *
+     * @return the correlation key and the confirmation, which completes when the broker acknowledges the message
+     * and completes exceptionally with the broker rejection
+     */
+    AwaitedPublish registerAwaited() {
+        lock.lock();
+        try {
+            long key = register();
+            CompletableFuture<Void> confirmation = new CompletableFuture<>();
+            confirmations.put(key, confirmation);
+            return new AwaitedPublish(key, confirmation);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * A guaranteed send whose sender waits for the broker confirmation.
+     *
+     * @param key          correlation key used by the JCSMP publish callback
+     * @param confirmation completes when the broker acknowledges the message and completes exceptionally with the
+     *                     broker rejection
+     */
+    record AwaitedPublish(long key, CompletableFuture<Void> confirmation) {
     }
 
     /**
@@ -144,25 +176,33 @@ final class PublishAcknowledgementTracker {
      * Marks the tracker closed and wakes any waiter.
      */
     void markClosed() {
+        Map<Long, CompletableFuture<Void>> unsettled;
         lock.lock();
         try {
             state = State.CLOSED;
+            unsettled = new HashMap<>(confirmations);
+            confirmations.clear();
             settlementChanged.signalAll();
         } finally {
             lock.unlock();
         }
+        // Release the senders still waiting, as no confirmation arrives once the producer is closed
+        unsettled.values().forEach(confirmation -> confirmation.completeExceptionally(
+                new IllegalStateException("Producer was closed before the broker acknowledged the message")));
     }
 
     private void settle(Object key, JCSMPException rejection) {
         if (!(key instanceof Long correlationKey)) {
             return;
         }
+        CompletableFuture<Void> confirmation;
         lock.lock();
         try {
             if (!pending.remove(correlationKey)) {
                 return;
             }
-            if (rejection != null) {
+            confirmation = confirmations.remove(correlationKey);
+            if (rejection != null && confirmation == null) {
                 rejectedCount++;
                 if (firstRejection == null) {
                     firstRejection = rejection.getMessage();
@@ -171,6 +211,14 @@ final class PublishAcknowledgementTracker {
             settlementChanged.signalAll();
         } finally {
             lock.unlock();
+        }
+        // Completed outside the lock, as completing a future runs the actions dependent on it
+        if (confirmation != null) {
+            if (rejection != null) {
+                confirmation.completeExceptionally(rejection);
+            } else {
+                confirmation.complete(null);
+            }
         }
     }
 }

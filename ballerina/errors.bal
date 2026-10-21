@@ -22,3 +22,6 @@ public type InactiveFlowError distinct Error;
 
 # Indicates that a previously established guaranteed consumer flow is down.
 public type FlowDownError distinct Error;
+
+# Indicates that the broker rejected a guaranteed message sent while awaiting its acknowledgement.
+public type PublishRejectedError distinct Error;
