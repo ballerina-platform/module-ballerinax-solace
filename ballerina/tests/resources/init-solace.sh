@@ -129,6 +129,15 @@ create_queue "test/producer/persistent/queue"
 create_queue "test/producer/userdata/queue"
 create_queue "test/producer/compression/queue"
 create_queue "test/producer/graceful-close/queue"
+create_queue "test/producer/confirmation/queue"
+create_queue "test/producer/confirmation/shutdown/queue"
+# Shut down ingress on the queue and reject the guaranteed messages it discards, so that the broker rejects messages
+# published to it
+curl -X PATCH "$SEMP_URL/msgVpns/$VPN/queues/test%2Fproducer%2Fconfirmation%2Fshutdown%2Fqueue" \
+    -u "$AUTH" \
+    -H "Content-Type: application/json" \
+    -d '{"ingressEnabled": false, "rejectMsgToSenderOnDiscardBehavior": "always"}' \
+    2>/dev/null
 
 # Producer transaction test queues
 echo "Creating producer transaction test queues..."

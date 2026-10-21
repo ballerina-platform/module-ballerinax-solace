@@ -63,6 +63,9 @@ const int GRACEFUL_CLOSE_ROUND_COUNT = 10;
 const int GRACEFUL_CLOSE_MESSAGES_PER_ROUND = 5;
 const int GRACEFUL_CLOSE_MESSAGE_COUNT = 50;
 const int GRACEFUL_CLOSE_PAYLOAD_BYTES = 1048576;
+const string PRODUCER_CONFIRMATION_QUEUE = "test/producer/confirmation/queue";
+// Ingress is shut down on this queue, and it rejects the guaranteed messages it discards (see init-solace.sh)
+const string PRODUCER_CONFIRMATION_SHUTDOWN_QUEUE = "test/producer/confirmation/shutdown/queue";
 
 // Producer transaction test queues
 const string PRODUCER_TX_COMMIT_QUEUE = "test/producer/tx/commit/queue";
