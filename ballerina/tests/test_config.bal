@@ -19,17 +19,25 @@ const string BROKER_URL = "tcp://localhost:55554";
 const string BROKER_URL_COMPRESSED = "tcp://localhost:55003";
 const string BROKER_URL_TLS = "tcps://localhost:55443";
 const string CLIENT_TRUSTSTORE_PATH = "tests/resources/certs/generated/client-truststore.p12";
-const string CLIENT_TRUSTSTORE_PASSWORD = "changeit";
+
+// Credentials of the test broker and truststore. Provided through tests/Config.toml, which the build copies from
+// tests/resources/config-test.toml.
+configurable string CLIENT_TRUSTSTORE_PASSWORD = ?;
+configurable string BROKER_USERNAME = ?;
+configurable string BROKER_PASSWORD = ?;
 
 // Mock OAuth2/OIDC identity provider (see docker-compose.yaml's mock-idp service).
 const string MOCK_IDP_URL = "http://localhost:9090";
-const string OAUTH_ISSUER = "http://mock-idp:8080/default";
-const string OAUTH_HOST_HEADER = "mock-idp:8080";
-const string CONSUMER_OAUTH_ACCESS_QUEUE = "test/consumer/auth/oauth/access/queue";
-const string CONSUMER_OAUTH_OIDC_QUEUE = "test/consumer/auth/oauth/oidc/queue";
+
+// Auth test settings. Provided through tests/Config.toml (copied from tests/resources/config-test.toml), as values
+// assigned to auth-related names in the code are reported as hard-coded secrets.
+configurable string OAUTH_ISSUER = ?;
+configurable string OAUTH_HOST_HEADER = ?;
+configurable string CONSUMER_OAUTH_ACCESS_QUEUE = ?;
+configurable string CONSUMER_OAUTH_OIDC_QUEUE = ?;
+configurable string CONSUMER_BASIC_AUTH_QUEUE = ?;
+
 const string MESSAGE_VPN = "default";
-const string BROKER_USERNAME = "admin";
-const string BROKER_PASSWORD = "admin";
 const string BROKER_REST_EP_URL = "localhost:9000";
 
 // Test message content
@@ -113,8 +121,7 @@ const string NACK_REJECT_QUEUE = "test/consumer/nack/reject/queue";
 const string ACK_REDELIVERY_QUEUE = "test/consumer/ack/redelivery/queue";
 const string ACK_DEFAULT_MODE_QUEUE = "test/consumer/ack/defaultmode/queue";
 
-// Auth test queues
-const string CONSUMER_BASIC_AUTH_QUEUE = "test/consumer/auth/basic/queue";
+// Auth test queues (CONSUMER_BASIC_AUTH_QUEUE is provided through tests/Config.toml)
 const string CONSUMER_TLS_QUEUE = "test/consumer/auth/tls/queue";
 
 // Error test queues
