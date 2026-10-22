@@ -32,5 +32,7 @@ public class SolaceCodeAnalyzer extends CodeAnalyzer {
         context.addSyntaxNodeAnalysisTask(new SolaceServiceAnalysisTask(),
                 List.of(SyntaxKind.SERVICE_DECLARATION, SyntaxKind.OBJECT_CONSTRUCTOR));
         context.addSyntaxNodeAnalysisTask(new ConfigurationAnalysisTask(), SyntaxKind.MAPPING_CONSTRUCTOR);
+        context.addSyntaxNodeAnalysisTask(new SendAwaitAcknowledgementAnalysisTask(),
+                SyntaxKind.REMOTE_METHOD_CALL_ACTION);
     }
 }

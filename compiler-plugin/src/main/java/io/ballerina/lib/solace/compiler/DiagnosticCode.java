@@ -33,7 +33,9 @@ enum DiagnosticCode {
     INVALID_ON_ERROR_PARAMETER("SOLACE_108", "''onError'' must declare exactly one ''solace:Error'' parameter"),
     INVALID_RETURN_TYPE("SOLACE_109", "remote method ''{0}'' must return a value assignable to ''error?''"),
     MISSING_QUEUE_NAME("SOLACE_201", "queueName is required when the queue is DURABLE"),
-    MISSING_ENDPOINT_NAME("SOLACE_202", "endpointName is required when the topic is DURABLE");
+    MISSING_ENDPOINT_NAME("SOLACE_202", "endpointName is required when the topic is DURABLE"),
+    NON_PERSISTENT_AWAITED_MESSAGE("SOLACE_301", "''sendAwaitAcknowledgement'' requires the ''PERSISTENT'' delivery " +
+            "mode, as the broker does not acknowledge ''DIRECT'' messages");
 
     private final String code;
     private final String message;
