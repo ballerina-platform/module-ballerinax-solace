@@ -1,0 +1,16 @@
+# Configuration of the tests. The build copies this file to tests/Config.toml before running the tests.
+# The credentials are those of the test broker and truststore (see docker-compose.yaml and certs/generate-certs.sh).
+
+[ballerinax.solace]
+BROKER_USERNAME = "admin"
+BROKER_PASSWORD = "admin"
+CLIENT_TRUSTSTORE_PASSWORD = "changeit"
+
+# Mock OAuth2/OIDC identity provider (see docker-compose.yaml's mock-idp service)
+OAUTH_ISSUER = "http://mock-idp:8080/default"
+OAUTH_HOST_HEADER = "mock-idp:8080"
+
+# Auth test queues (see init-solace.sh)
+CONSUMER_OAUTH_ACCESS_QUEUE = "test/consumer/auth/oauth/access/queue"
+CONSUMER_OAUTH_OIDC_QUEUE = "test/consumer/auth/oauth/oidc/queue"
+CONSUMER_BASIC_AUTH_QUEUE = "test/consumer/auth/basic/queue"
