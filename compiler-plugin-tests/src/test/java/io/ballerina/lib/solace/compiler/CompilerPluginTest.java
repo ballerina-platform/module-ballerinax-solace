@@ -105,6 +105,19 @@ public class CompilerPluginTest {
                         "endpointName is required when the topic is DURABLE"));
     }
 
+    @Test
+    public void testSendAwaitAcknowledgementDeliveryModeValidation() {
+        DiagnosticResult result = compile("send_await_acknowledgement_validation").diagnosticResult();
+        List<Diagnostic> errors = result.errors().stream().toList();
+        Assert.assertEquals(errors.stream().map(diagnostic -> diagnostic.diagnosticInfo().code()).toList(),
+                List.of("SOLACE_301", "SOLACE_301", "SOLACE_301"), errors.toString());
+        Assert.assertEquals(errors.stream()
+                        .map(diagnostic -> diagnostic.location().lineRange().startLine().line() + 1).toList(),
+                List.of(22, 26, 30));
+        Assert.assertEquals(errors.get(0).message(), "'sendAwaitAcknowledgement' requires the 'PERSISTENT' " +
+                "delivery mode, as the broker does not acknowledge 'DIRECT' messages");
+    }
+
     private PackageCompilation compile(String fixture) {
         Environment environment = EnvironmentBuilder.getBuilder().setBallerinaHome(DISTRIBUTION_PATH).build();
         ProjectEnvironmentBuilder environmentBuilder = ProjectEnvironmentBuilder.getBuilder(environment);

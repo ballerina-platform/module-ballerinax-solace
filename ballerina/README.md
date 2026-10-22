@@ -129,6 +129,22 @@ check producer->send({
 }, {queueName});
 ```
 
+#### Produce a guaranteed message and wait for the broker acknowledgement
+
+`send` publishes `PERSISTENT` messages asynchronously, and reports a message rejected by the broker when the producer is closed. To know whether the broker stored a specific message, use `sendAwaitAcknowledgement`, which waits until the broker acknowledges the message. The message must use the `PERSISTENT` delivery mode, as the broker does not acknowledge `DIRECT` messages, hence a `DIRECT` message is rejected (including one that leaves the delivery mode unset, as it defaults to `DIRECT`).
+
+```ballerina
+solace:Error? result = producer->sendAwaitAcknowledgement({
+    payload: "This is a sample message",
+    deliveryMode: solace:PERSISTENT
+}, {queueName}, timeout = 10);
+if result is solace:PublishRejectedError {
+    // The broker rejected the message (e.g. a publish ACL denial or a shut-down queue), hence it was not stored
+} else if result is solace:Error {
+    // The send failed, or the broker did not acknowledge the message within the timeout
+}
+```
+
 #### Retrieve a message from a queue
 
 ```ballerina
