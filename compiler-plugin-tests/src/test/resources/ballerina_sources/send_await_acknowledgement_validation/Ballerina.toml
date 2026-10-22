@@ -1,0 +1,4 @@
+[package]
+org = "solace_test"
+name = "send_await_acknowledgement_validation"
+version = "0.1.0"
