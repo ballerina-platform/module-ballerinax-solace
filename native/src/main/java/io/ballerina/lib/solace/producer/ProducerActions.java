@@ -18,6 +18,7 @@
 
 package io.ballerina.lib.solace.producer;
 
+import com.solacesystems.jcsmp.JCSMPException;
 import com.solacesystems.jcsmp.JCSMPFactory;
 import com.solacesystems.jcsmp.JCSMPProperties;
 import com.solacesystems.jcsmp.JCSMPSession;
@@ -35,13 +36,18 @@ import io.ballerina.lib.solace.observability.SolaceTracingUtil;
 import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BArray;
+import io.ballerina.runtime.api.values.BDecimal;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
 
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -75,6 +81,7 @@ public class ProducerActions {
     private static final BString QUEUE_NAME_KEY = StringUtils.fromString("queueName");
     private static final BString TOPIC_NAME_KEY = StringUtils.fromString("topicName");
     private static final Duration PUBLISH_ACK_DRAIN_TIMEOUT = Duration.ofSeconds(30);
+    private static final String PUBLISH_REJECTED_ERROR = "PublishRejectedError";
 
     /**
      * Initialize the producer with connection URL and configuration. Creates either a transacted or non-transacted
@@ -171,6 +178,38 @@ public class ProducerActions {
      */
     public static BError send(Environment env, BObject producer, BMap<BString, Object> message,
                               BMap<BString, Object> destinationMap) {
+        return publish(env, producer, message, destinationMap, null);
+    }
+
+    /**
+     * Send a guaranteed message to the specified destination and wait until the broker acknowledges it.
+     *
+     * @param env            the Ballerina environment (injected for tracing)
+     * @param producer       the Ballerina producer object
+     * @param message        the message to send
+     * @param destinationMap the destination (Topic or Queue)
+     * @param timeout        the maximum time in seconds to wait for the broker acknowledgement
+     * @return null if the broker acknowledged the message, otherwise a BError
+     */
+    public static BError sendAwaitAcknowledgement(Environment env, BObject producer, BMap<BString, Object> message,
+                                                  BMap<BString, Object> destinationMap, BDecimal timeout) {
+        Boolean transacted = (Boolean) producer.getNativeData(NATIVE_TRANSACTED);
+        if (transacted != null && transacted) {
+            return reportPublishFailure(producer, getDestinationName(destinationMap),
+                    getDestinationKind(destinationMap), "Awaiting acknowledgement is not supported for transacted " +
+                            "producers, use commit() to confirm the published messages");
+        }
+        Duration acknowledgementTimeout =
+                Duration.ofMillis(timeout.decimalValue().multiply(BigDecimal.valueOf(1000)).longValue());
+        return publish(env, producer, message, destinationMap, acknowledgementTimeout);
+    }
+
+    /**
+     * Publishes a message, and when an acknowledgement timeout is given, waits for the broker to acknowledge a
+     * guaranteed message.
+     */
+    private static BError publish(Environment env, BObject producer, BMap<BString, Object> message,
+                                  BMap<BString, Object> destinationMap, Duration acknowledgementTimeout) {
         String destinationName = getDestinationName(destinationMap);
         String destinationKind = getDestinationKind(destinationMap);
         SolaceTracingUtil.traceResourceInvocation(env, producer, destinationName);
@@ -200,9 +239,15 @@ public class ProducerActions {
                     DestinationConverter.fromDestinationInterface(destination);
 
             tracker = (PublishAcknowledgementTracker) producer.getNativeData(NATIVE_PUBLISH_ACK_TRACKER);
+            PublishAcknowledgementTracker.AwaitedPublish awaitedPublish = null;
             if (tracker != null && jcsmpMessage.getDeliveryMode() != com.solacesystems.jcsmp.DeliveryMode.DIRECT) {
                 try {
-                    correlationKey = tracker.register();
+                    if (acknowledgementTimeout != null) {
+                        awaitedPublish = tracker.registerAwaited();
+                        correlationKey = awaitedPublish.key();
+                    } else {
+                        correlationKey = tracker.register();
+                    }
                     jcsmpMessage.setCorrelationKey(correlationKey);
                 } catch (IllegalStateException e) {
                     return reportPublishFailure(producer, destinationName, destinationKind, "Producer is closing");
@@ -216,7 +261,6 @@ public class ProducerActions {
             Object result = CommonUtils.executeBlocking(() -> {
                 xmlProducer.send(finalMessage, finalDestination);
             });
-            long elapsedNanos = System.nanoTime() - startNanos;
 
             if (result instanceof BError bError) {
                 if (tracker != null && finalCorrelationKey != null) {
@@ -225,6 +269,19 @@ public class ProducerActions {
                 SolaceMetricsUtil.reportProducerError(producer, destinationName, destinationKind, ERROR_TYPE_PUBLISH);
                 return CommonUtils.createError(bError.getMessage());
             }
+
+            if (awaitedPublish != null) {
+                final PublishAcknowledgementTracker finalTracker = tracker;
+                final PublishAcknowledgementTracker.AwaitedPublish finalAwaitedPublish = awaitedPublish;
+                Object acknowledgementResult = CommonUtils.executeBlocking(() -> awaitAcknowledgement(
+                        finalTracker, finalAwaitedPublish, acknowledgementTimeout, destinationName));
+                if (acknowledgementResult instanceof BError acknowledgementError) {
+                    SolaceMetricsUtil.reportProducerError(producer, destinationName, destinationKind,
+                            ERROR_TYPE_PUBLISH);
+                    return acknowledgementError;
+                }
+            }
+            long elapsedNanos = System.nanoTime() - startNanos;
 
             int size = getPayloadSize(message);
             SolaceMetricsUtil.reportPublish(producer, destinationName, destinationKind, getDeliveryMode(message), size,
@@ -236,6 +293,41 @@ public class ProducerActions {
             }
             SolaceMetricsUtil.reportProducerError(producer, destinationName, destinationKind, ERROR_TYPE_PUBLISH);
             return CommonUtils.createError("Failed to send message", e);
+        }
+    }
+
+    /**
+     * Waits for the broker to acknowledge a guaranteed message.
+     *
+     * @return null if the broker acknowledged the message, otherwise the error to return from the send
+     */
+    private static BError awaitAcknowledgement(PublishAcknowledgementTracker tracker,
+                                               PublishAcknowledgementTracker.AwaitedPublish awaitedPublish,
+                                               Duration timeout, String destinationName) {
+        try {
+            awaitedPublish.confirmation().get(timeout.toMillis(), TimeUnit.MILLISECONDS);
+            return null;
+        } catch (TimeoutException e) {
+            // The outcome is unknown, so stop tracking the message instead of reporting it again on close
+            tracker.cancel(awaitedPublish.key());
+            return CommonUtils.createError(String.format(
+                    "Timed out after %d ms waiting for the broker to acknowledge the message published to '%s'",
+                    timeout.toMillis(), destinationName));
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof JCSMPException) {
+                return CommonUtils.createError(PUBLISH_REJECTED_ERROR, String.format(
+                        "The broker rejected the message published to '%s': %s", destinationName,
+                        cause.getMessage()));
+            }
+            return CommonUtils.createError(String.format(
+                    "Failed to confirm the message published to '%s'", destinationName), cause);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            tracker.cancel(awaitedPublish.key());
+            return CommonUtils.createError(String.format(
+                    "Interrupted while waiting for the broker to acknowledge the message published to '%s'",
+                    destinationName), e);
         }
     }
 

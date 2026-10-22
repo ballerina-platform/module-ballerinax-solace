@@ -178,6 +178,15 @@ task generateTestCerts() {
     }
 }
 
+task copyTestConfig(type: Copy) {
+    description = 'Copies the test configuration to tests/Config.toml, from which bal test reads the configurable values.'
+    from("${project.projectDir}/tests/resources") {
+        include 'config-test.toml'
+        rename 'config-test.toml', 'Config.toml'
+    }
+    into "${project.projectDir}/tests"
+}
+
 task startSolaceServer() {
     dependsOn generateTestCerts
     doLast {
@@ -236,6 +245,7 @@ publishing {
 clean {
     delete 'build'
     delete 'lib'
+    delete 'tests/Config.toml'
 }
 
 build.dependsOn unpackJballerinaTools
@@ -248,6 +258,7 @@ test.dependsOn ":${packageName}-native:build"
 test.dependsOn ":${packageName}-compiler-plugin:build"
 test.dependsOn unpackJballerinaTools
 test.dependsOn copyToLib
+test.dependsOn copyTestConfig
 test.dependsOn startSolaceServer
 test.finalizedBy stopSolaceServer
 

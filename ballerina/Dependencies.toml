@@ -362,7 +362,7 @@ modules = [
 [[package]]
 org = "ballerinax"
 name = "solace"
-version = "1.0.4"
+version = "1.0.5"
 dependencies = [
 	{org = "ballerina", name = "http"},
 	{org = "ballerina", name = "jballerina.java"},
