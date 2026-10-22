@@ -131,7 +131,7 @@ check producer->send({
 
 #### Produce a guaranteed message and wait for the broker acknowledgement
 
-`send` publishes `PERSISTENT` messages asynchronously, and reports a message rejected by the broker when the producer is closed. To know whether the broker stored a specific message, use `sendAwaitAcknowledgement`, which waits until the broker acknowledges the message.
+`send` publishes `PERSISTENT` messages asynchronously, and reports a message rejected by the broker when the producer is closed. To know whether the broker stored a specific message, use `sendAwaitAcknowledgement`, which waits until the broker acknowledges the message. The message must use the `PERSISTENT` delivery mode, as the broker does not acknowledge `DIRECT` messages, hence a `DIRECT` message is rejected (including one that leaves the delivery mode unset, as it defaults to `DIRECT`).
 
 ```ballerina
 solace:Error? result = producer->sendAwaitAcknowledgement({

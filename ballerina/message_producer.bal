@@ -71,7 +71,8 @@ public isolated client class MessageProducer {
     } external;
 
     # Send a guaranteed message to the specified destination and wait until the broker acknowledges it.
-    #
+    # Only `PERSISTENT` messages can be sent this way, as the broker does not acknowledge `DIRECT` messages.
+    # 
     # + message - The message to send. Must use the `PERSISTENT` delivery mode
     # + destination - The destination to send to (topic or queue)
     # + timeout - The maximum time in seconds to wait for the broker acknowledgement

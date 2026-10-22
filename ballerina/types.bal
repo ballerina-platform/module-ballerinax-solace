@@ -355,7 +355,9 @@ public type Message record {|
     # (e.g. `record {|*Message; string payload;|}`) to have the payload data-bound
     # into the declared type
     anydata payload;
-    # Delivery mode for the message (DIRECT, PERSISTENT, or NON_PERSISTENT)
+    # Delivery mode for the message (DIRECT or PERSISTENT). `MessageProducer->send` accepts both modes, whereas
+    # `MessageProducer->sendAwaitAcknowledgement` accepts only PERSISTENT, as the broker does not acknowledge DIRECT
+    # messages
     DeliveryMode deliveryMode = DIRECT;
     # Message priority (0-9, where 9 is the highest)
     int priority?;
