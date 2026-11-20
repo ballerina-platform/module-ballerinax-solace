@@ -227,6 +227,33 @@ function testListenerDirectTopic() returns error? {
     test:assertTrue(received, "Direct topic service should have received the message");
 }
 
+// A messageSelector on a direct (TEMPORARY) topic subscription is rejected during attach(), before the
+// subscription receiver or flow is created. This mirrors the pull-mode rejection in
+// testConsumerInitRejectsSelectorOnDirectTopic and guards the same JCSMP limitation.
+final Recorder directTopicSelectorRecorder = new;
+
+Service directTopicSelectorService = @ServiceConfig {
+    topicName: LISTENER_DIRECT_TOPIC,
+    durability: TEMPORARY,
+    messageSelector: "priority > 5"
+} service object {
+    remote function onMessage(StringPayloadMessage message) returns error? {
+        directTopicSelectorRecorder.add(message.payload);
+    }
+};
+
+@test:Config {groups: ["listener", "validation", "negative"]}
+function testListenerRejectsSelectorOnDirectTopic() returns error? {
+    Listener solaceListener = check new (BROKER_URL, {...connectionConfig()});
+    Error? result = solaceListener.attach(directTopicSelectorService);
+    test:assertTrue(result is error, "A direct topic with a messageSelector should fail validation");
+    if result is error {
+        test:assertEquals(result.message(),
+                "Failed to attach service: messageSelector is not supported for direct topic subscriptions");
+    }
+    check solaceListener.gracefulStop();
+}
+
 // ========================================
 // Queue service with CLIENT_ACK via Caller
 // ========================================

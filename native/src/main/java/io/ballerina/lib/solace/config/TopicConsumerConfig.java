@@ -144,6 +144,9 @@ public record TopicConsumerConfig(
     @Override
     public void validate() {
         ConsumerSubscriptionConfig.super.validate();
+        if (!isDurable() && selector != null && !selector.isEmpty()) {
+            throw new IllegalArgumentException("messageSelector is not supported for direct topic subscriptions");
+        }
         if (isDurable() && (endpointName == null || endpointName.isEmpty())) {
             throw new IllegalArgumentException("endpointName is required when the topic is DURABLE");
         }
