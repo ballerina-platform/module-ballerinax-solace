@@ -46,7 +46,17 @@ public type Destination Topic|Queue;
 
 # Acknowledgement modes for message consumption
 public enum AcknowledgementMode {
+    # For a `solace:Listener` service on a queue or durable topic endpoint, the message is acknowledged after
+    # `onMessage` returns successfully. If `onMessage` returns an error or panics, the message is settled as failed
+    # and redelivered until the queue's maximum redelivery count is reached. The broker's default count is
+    # unlimited, so configure a finite count to stop a message that always fails from being redelivered
+    # indefinitely. A message that cannot be bound to the declared `onMessage` parameter type is rejected. A
+    # rejected or redelivery-exhausted message moves to the queue's dead message queue only if it is DMQ-eligible;
+    # otherwise the broker discards it. Messages received on a direct topic subscription are neither acknowledged
+    # nor redelivered.
+    # For a `solace:MessageConsumer`, the message is acknowledged when it is received.
     AUTO_ACK,
+    # The message must be settled explicitly using `ack` or `nack`
     CLIENT_ACK
 }
 

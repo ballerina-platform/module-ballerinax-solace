@@ -486,10 +486,9 @@ function testServiceBindWithCaller() returns error? {
 }
 
 // ========================================
-// Negative cases: each keeps its own dedicated queue (NOT shared with anything else). A failed
-// data-binding attempt deliberately leaves the message unacknowledged so guaranteed flows redeliver
-// it (see SolaceMessageListener.deliver) - sharing a queue here would let one test's poisoned,
-// redeliverable message leak into an unrelated later test.
+// Negative cases: each keeps its own dedicated queue (NOT shared with anything else), so a message
+// that fails binding cannot leak into an unrelated later test. In AUTO_ACK mode such a message is
+// rejected, not redelivered.
 // ========================================
 
 // ----- int sent (-> BytesMessage), string expected -----
@@ -518,8 +517,12 @@ function testServiceBindMismatchIntSentStringExpected() returns error? {
     check producer->close();
 
     waitForBindingError(mismatchStringRecorder);
+    // Leave time for a redelivery to show up as a second error if the message was not rejected.
+    runtime:sleep(2);
     check solaceListener.gracefulStop();
 
+    boolean queueEmpty = check queueIsEmpty(BINDING_SVC_MISMATCH_STRING_QUEUE);
+    test:assertTrue(queueEmpty, "AUTO_ACK should reject a message that cannot be bound");
     test:assertEquals(mismatchStringRecorder.errorCount(), 1, "onError should have been invoked once");
     test:assertEquals(mismatchStringRecorder.lastError(),
             "Data binding failed: Cannot bind BytesMessage to type 'string'. Use TextMessage for string/xml payloads");
@@ -551,8 +554,12 @@ function testServiceBindMismatchStringSentIntExpected() returns error? {
     check producer->close();
 
     waitForBindingError(mismatchIntRecorder);
+    // Leave time for a redelivery to show up as a second error if the message was not rejected.
+    runtime:sleep(2);
     check solaceListener.gracefulStop();
 
+    boolean queueEmpty = check queueIsEmpty(BINDING_SVC_MISMATCH_INT_QUEUE);
+    test:assertTrue(queueEmpty, "AUTO_ACK should reject a message that cannot be bound");
     test:assertEquals(mismatchIntRecorder.errorCount(), 1, "onError should have been invoked once");
     test:assertEquals(mismatchIntRecorder.lastError(),
             "Data binding failed: Cannot bind TextMessage to type 'int'. Expected 'string' or 'xml'");
@@ -585,8 +592,12 @@ function testServiceBindMismatchIncompatibleRecord() returns error? {
     check producer->close();
 
     waitForBindingError(mismatchRecordRecorder);
+    // Leave time for a redelivery to show up as a second error if the message was not rejected.
+    runtime:sleep(2);
     check solaceListener.gracefulStop();
 
+    boolean queueEmpty = check queueIsEmpty(BINDING_SVC_MISMATCH_RECORD_QUEUE);
+    test:assertTrue(queueEmpty, "AUTO_ACK should reject a message that cannot be bound");
     test:assertEquals(mismatchRecordRecorder.errorCount(), 1, "onError should have been invoked once");
     test:assertTrue(mismatchRecordRecorder.lastError().startsWith("Data binding failed: "),
             "Error message should indicate a data binding failure");

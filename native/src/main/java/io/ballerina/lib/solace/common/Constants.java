@@ -29,6 +29,7 @@ public class Constants {
     public static final String NATIVE_CONSUMER = "native.consumer";
     public static final String NATIVE_SUBSCRIPTION_TYPE = "native.subscription.type";
     public static final String NATIVE_TRANSACTED = "native.transacted";
+    public static final String NATIVE_AUTO_ACK = "native.auto.ack";
     public static final String NATIVE_CLOSED = "native.closed";
     public static final String NATIVE_PRODUCER = "native.producer";
     public static final String NATIVE_MESSAGE = "native.message";

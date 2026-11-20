@@ -25,8 +25,8 @@ public isolated client class Caller {
 
     # Acknowledge a message in `CLIENT_ACK` mode.
     #
-    # In `AUTO_ACK` mode messages are acknowledged automatically after `onMessage` returns
-    # successfully and this method should not be called. When the listener connection is transacted,
+    # In `AUTO_ACK` mode the listener settles the message after `onMessage` returns, so this method
+    # logs a warning and does nothing. When the listener connection is transacted,
     # settlement is governed by `commit`/`rollback`, so this method does not apply.
     #
     # + message - The message to acknowledge
@@ -37,14 +37,17 @@ public isolated client class Caller {
 
     # Negatively acknowledge a message (NACK).
     #
+    # In `AUTO_ACK` mode the listener settles the message after `onMessage` returns, so this method
+    # logs a warning and does nothing.
+    #
     # When the listener connection is transacted, this method returns an `Error`: JCSMP's settle()
     # is a documented no-op on transacted flows, so calling `nack` there would silently have no
     # effect. Use `commit`/`rollback` instead to control settlement.
     #
     # + message - The message to negatively acknowledge
     # + requeue - If true, the message is requeued for redelivery (FAILED outcome).
-    # If false, the message moves to the DMQ immediately, if configured. If not, the message is simply
-    # discarded. (REJECTED outcome)
+    # If false, the message is rejected (REJECTED outcome): it moves to the queue's DMQ if it is DMQ-eligible
+    # and the queue has one; otherwise it is discarded.
     # + return - Error if NACK fails
     isolated remote function nack(Message message, boolean requeue = true) returns Error? = @java:Method {
         'class: "io.ballerina.lib.solace.caller.CallerActions"

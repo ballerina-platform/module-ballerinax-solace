@@ -20,6 +20,7 @@ package io.ballerina.lib.solace.listener;
 
 import com.solacesystems.jcsmp.BytesXMLMessage;
 import com.solacesystems.jcsmp.JCSMPException;
+import com.solacesystems.jcsmp.XMLMessage;
 import com.solacesystems.jcsmp.XMLMessageListener;
 import io.ballerina.lib.solace.common.BallerinaSolaceDatabindingException;
 import io.ballerina.lib.solace.common.CommonUtils;
@@ -48,6 +49,7 @@ import java.util.concurrent.TimeUnit;
 import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.CONTEXT_CONSUMER;
 import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_ACKNOWLEDGE;
 import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_DISPATCH;
+import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_NACK;
 import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_RECEIVE;
 
 /**
@@ -103,12 +105,18 @@ final class SolaceMessageListener implements XMLMessageListener {
                     ValueCreator.createTypedescValue(nativeService.getMessagePayloadType()));
         } catch (BallerinaSolaceDatabindingException e) {
             // The message could not be bound to the service's declared type - a receive-side failure.
-            submit(() -> dispatchError(CommonUtils.createError(e.getMessage()), null, ERROR_TYPE_RECEIVE));
+            submit(() -> {
+                dispatchError(CommonUtils.createError(e.getMessage()), null, ERROR_TYPE_RECEIVE);
+                rejectUndeliverable(message);
+            });
             return;
         } catch (Throwable t) {
             // The broker delivered a message the connector could not decode - a receive-side failure.
-            submit(() -> dispatchError(CommonUtils.createError("Failed to convert message",
-                    t instanceof Exception e ? e : new Exception(t)), null, ERROR_TYPE_RECEIVE));
+            submit(() -> {
+                dispatchError(CommonUtils.createError("Failed to convert message",
+                        t instanceof Exception e ? e : new Exception(t)), null, ERROR_TYPE_RECEIVE);
+                rejectUndeliverable(message);
+            });
             return;
         }
         SolaceMetricsUtil.reportConsume(url, vpn, destination, destinationKind,
@@ -120,15 +128,13 @@ final class SolaceMessageListener implements XMLMessageListener {
     private void deliver(BytesXMLMessage message, BMap<BString, Object> ballerinaMessage,
                          Map<String, String> traceContext) {
         long startNanos = System.nanoTime();
+        boolean processed = false;
         try {
             Object result = invokeOnMessage(ballerinaMessage, traceContext);
             if (result instanceof BError bError) {
                 dispatchError(bError, traceContext, ERROR_TYPE_DISPATCH);
-                return;
-            }
-            // In AUTO_ACK mode the flow is created with client acknowledgement, so settle on success here.
-            if (autoAck) {
-                settleAutoAck(message, traceContext);
+            } else {
+                processed = true;
             }
         } catch (BError bError) {
             dispatchError(bError, traceContext, ERROR_TYPE_DISPATCH);
@@ -136,26 +142,51 @@ final class SolaceMessageListener implements XMLMessageListener {
             dispatchError(CommonUtils.createError("Failed to dispatch message to service",
                     t instanceof Exception e ? e : new Exception(t)), traceContext, ERROR_TYPE_DISPATCH);
         } finally {
+            if (autoAck) {
+                settleAutoAck(message, processed ? XMLMessage.Outcome.ACCEPTED : XMLMessage.Outcome.FAILED,
+                        traceContext);
+            }
             SolaceMetricsUtil.reportProcessDuration(url, vpn, destination, destinationKind,
                     System.nanoTime() - startNanos);
         }
     }
 
     /**
-     * Settles a successfully processed message in AUTO_ACK mode.
-     * <p>
-     * The settlement is counted like an explicit {@code caller->ack()} - without it, {@code acks} silently
-     * undercounts auto-ack services and {@code consumed - acks} reads as a permanent backlog. A failure here is the
-     * broker's, not the service's, so it is reported as an acknowledgement error rather than a dispatch one; it is
-     * caught locally so the enclosing dispatch handler does not reclassify it.
+     * Settles an AUTO_ACK message that never reached {@code onMessage} because it could not be converted. Redelivery
+     * would fail the same way, so it is rejected rather than requeued. It is counted as consumed (raw size) so the
+     * consume and nack metrics stay balanced.
      */
-    private void settleAutoAck(BytesXMLMessage message, Map<String, String> traceContext) {
+    private void rejectUndeliverable(BytesXMLMessage message) {
+        SolaceMetricsUtil.reportConsume(url, vpn, destination, destinationKind,
+                message.getContentLength() + message.getAttachmentContentLength(), message.getRedelivered());
+        if (autoAck) {
+            settleAutoAck(message, XMLMessage.Outcome.REJECTED, null);
+        }
+    }
+
+    /**
+     * Settles a message in AUTO_ACK mode: {@code ACCEPTED} acks it, {@code FAILED} requeues it so the queue's
+     * redelivery count and DMQ apply, and {@code REJECTED} moves it to the DMQ if it is DMQ-eligible (or discards it).
+     * <p>
+     * The settlement is counted like an explicit {@code caller->ack()} / {@code caller->nack()} - without it,
+     * {@code acks} silently undercounts auto-ack services and {@code consumed - acks} reads as a permanent backlog. A
+     * failure here is the broker's, not the service's, so it is reported as an acknowledgement error rather than a
+     * dispatch one; it is caught locally so the enclosing dispatch handler does not reclassify it.
+     */
+    private void settleAutoAck(BytesXMLMessage message, XMLMessage.Outcome outcome,
+                               Map<String, String> traceContext) {
         try {
-            message.ackMessage();
-            SolaceMetricsUtil.reportAck(caller);
+            if (outcome == XMLMessage.Outcome.ACCEPTED) {
+                message.ackMessage();
+                SolaceMetricsUtil.reportAck(caller);
+            } else {
+                message.settle(outcome);
+                SolaceMetricsUtil.reportNack(caller, outcome == XMLMessage.Outcome.FAILED);
+            }
         } catch (Throwable t) {
-            dispatchError(CommonUtils.createError("Failed to acknowledge message",
-                    t instanceof Exception e ? e : new Exception(t)), traceContext, ERROR_TYPE_ACKNOWLEDGE);
+            dispatchError(CommonUtils.createError("Failed to settle message",
+                    t instanceof Exception e ? e : new Exception(t)), traceContext,
+                    outcome == XMLMessage.Outcome.ACCEPTED ? ERROR_TYPE_ACKNOWLEDGE : ERROR_TYPE_NACK);
         }
     }
 

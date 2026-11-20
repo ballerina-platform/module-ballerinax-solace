@@ -30,6 +30,7 @@ import io.ballerina.runtime.api.values.BString;
 
 import java.util.logging.Logger;
 
+import static io.ballerina.lib.solace.common.Constants.NATIVE_AUTO_ACK;
 import static io.ballerina.lib.solace.common.Constants.NATIVE_TX_SESSION;
 import static io.ballerina.lib.solace.observability.SolaceMetricsUtil.reportConsumerFailure;
 import static io.ballerina.lib.solace.observability.SolaceObservabilityConstants.ERROR_TYPE_ACKNOWLEDGE;
@@ -53,8 +54,15 @@ public class CallerActions {
                     + "on transacted flows. Use caller->rollback() to have the broker redeliver the message, or "
                     + "caller->commit() to accept it.";
 
+    private static final String AUTO_ACK_SETTLE_WARNING =
+            "%s is ignored for a service in AUTO_ACK mode; the listener settles the message after onMessage returns.";
+
     private static boolean isTransacted(BObject caller) {
         return caller.getNativeData(NATIVE_TX_SESSION) != null;
+    }
+
+    private static boolean isAutoAck(BObject caller) {
+        return Boolean.TRUE.equals(caller.getNativeData(NATIVE_AUTO_ACK));
     }
 
     /**
@@ -67,6 +75,10 @@ public class CallerActions {
     public static BError ack(BObject caller, BMap<BString, Object> message) {
         if (isTransacted(caller)) {
             LOGGER.warning(String.format(TRANSACTED_SETTLE_WARNING, "ack()"));
+            return null;
+        }
+        if (isAutoAck(caller)) {
+            LOGGER.warning(String.format(AUTO_ACK_SETTLE_WARNING, "ack()"));
             return null;
         }
         try {
@@ -99,6 +111,10 @@ public class CallerActions {
     public static BError nack(BObject caller, BMap<BString, Object> message, boolean requeue) {
         if (isTransacted(caller)) {
             return reportConsumerFailure(caller, ERROR_TYPE_NACK, TRANSACTED_NACK_ERROR);
+        }
+        if (isAutoAck(caller)) {
+            LOGGER.warning(String.format(AUTO_ACK_SETTLE_WARNING, "nack()"));
+            return null;
         }
         try {
             XMLMessage nativeMessage = MessageConverter.extractNativeMessage(message);
