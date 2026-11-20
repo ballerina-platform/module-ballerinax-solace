@@ -70,6 +70,29 @@ isolated function testConsumerInitWithDurableTopic() returns error? {
     check consumer->close();
 }
 
+// A messageSelector is supported for DURABLE topic subscriptions: the flow is created via
+// ConsumerFlowProperties.setSelector() in ConsumerUtils.configureFlowProperties(), unlike direct topics
+// where JCSMP has no selector parameter on session.addSubscription(Topic). This test preserves the
+// supported behavior that the new direct-topic rejection must not break.
+@test:Config {groups: ["consumer", "init"]}
+isolated function testConsumerInitWithDurableTopicAndSelector() returns error? {
+    MessageConsumer consumer = check new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {
+            username: BROKER_USERNAME,
+            password: BROKER_PASSWORD
+        },
+        subscriptionConfig: {
+            topicName: CONSUMER_DURABLE_TOPIC,
+            durability: DURABLE,
+            endpointName: CONSUMER_DURABLE_ENDPOINT,
+            messageSelector: "priority > 5"
+        }
+    });
+
+    check consumer->close();
+}
+
 @test:Config {groups: ["consumer", "init"]}
 isolated function testConsumerInitWithSelector() returns error? {
     MessageConsumer consumer = check new (BROKER_URL, {
@@ -252,6 +275,29 @@ isolated function testConsumerInitWithDurableTopicMissingEndpointName() returns 
     if consumer is error {
         test:assertEquals(consumer.message(),
                 "Failed to initialize consumer: endpointName is required when the topic is DURABLE");
+    }
+}
+
+// A messageSelector is supported for queue and durable-topic flows (applied via ConsumerFlowProperties),
+// but the JCSMP API has no selector parameter on session.addSubscription(Topic), so a direct (TEMPORARY)
+// topic subscription cannot filter messages. The error is raised at consumer initialization, before any
+// broker connection is established.
+@test:Config {groups: ["consumer", "init", "validation", "negative"]}
+isolated function testConsumerInitRejectsSelectorOnDirectTopic() returns error? {
+    MessageConsumer|error consumer = new (BROKER_URL, {
+        messageVpn: MESSAGE_VPN,
+        auth: {username: BROKER_USERNAME, password: BROKER_PASSWORD},
+        subscriptionConfig: {
+            topicName: CONSUMER_DIRECT_TOPIC,
+            durability: TEMPORARY,
+            messageSelector: "priority > 5"
+        }
+    });
+
+    test:assertTrue(consumer is error, "A direct topic with a messageSelector should fail validation");
+    if consumer is error {
+        test:assertEquals(consumer.message(),
+                "Failed to initialize consumer: messageSelector is not supported for direct topic subscriptions");
     }
 }
 
